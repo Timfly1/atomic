@@ -75,6 +75,8 @@ const MACOS_FULL_DISK_ACCESS_URL =
   'x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_AllFiles';
 import { formatRelativeDate } from '../../lib/date';
 import { getBrowserTimeZone, getSupportedTimeZones } from '../../lib/tz';
+import { useTranslation } from 'react-i18next';
+import { languages } from '../../i18n';
 import { useDatabasesStore, type DatabaseInfo, type DatabaseStats } from '../../stores/databases';
 import { OverrideControls } from './OverrideControls';
 
@@ -903,6 +905,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
   const fetchSettings = useSettingsStore(s => s.fetchSettings);
   const setSetting = useSettingsStore(s => s.setSetting);
   const testOpenRouterConnection = useSettingsStore(s => s.testOpenRouterConnection);
+  const { t, i18n } = useTranslation();
   // Per-DB context was previously consumed by the briefing schedule panel,
   // which moved onto the reports primitive in phase 3. Removing the
   // selectors keeps the modal from re-rendering on unrelated DB-list
@@ -912,6 +915,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
   const [theme, setTheme] = useState<Theme>('obsidian');
   const [font, setFont] = useState<Font>('ibm-plex-sans');
   const [timezone, setTimezone] = useState(getBrowserTimeZone());
+  const [language, setLanguage] = useState(i18n.language || 'en');
   const supportedTimeZones = useMemo(() => getSupportedTimeZones(), []);
 
   // Provider selection
@@ -1729,6 +1733,22 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
               {/* ===== GENERAL TAB ===== */}
               {activeTab === 'general' && (
                 <>
+                  {/* Language Selector */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-[var(--color-text-primary)]">
+                      {t('settings_language')}
+                    </label>
+                    <CustomSelect
+                      value={language}
+                      onChange={(v) => {
+                        setLanguage(v);
+                        i18n.changeLanguage(v);
+                        localStorage.setItem('i18nextLng', v);
+                      }}
+                      options={languages.map(l => ({ value: l.code, label: l.name }))}
+                    />
+                  </div>
+
                   {/* Theme Selector */}
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-[var(--color-text-primary)]">
