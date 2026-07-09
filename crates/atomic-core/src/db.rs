@@ -1289,10 +1289,27 @@ impl Database {
 
 // ==================== Dimension Change Helpers ====================
 
-/// Get embedding dimension based on current settings
+/// Get embedding dimension from actual database schema (not settings).
+/// This detects when the DB schema dimension differs from what settings say,
+/// which can happen when switching embedding providers with different dimensions.
 pub fn get_current_embedding_dimension(conn: &Connection) -> usize {
+    // First check the actual vec_chunks table schema
+    if let Ok(sql) = conn.query_row(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='vec_chunks'",
+        [],
+        |row| row.get::<_, String>(0),
+    ) {
+        if let Some(start) = sql.find("float[") {
+            let after = &sql[start + 6..];
+            if let Some(end) = after.find(']') {
+                if let Ok(dim) = after[..end].parse::<usize>() {
+                    return dim;
+                }
+            }
+        }
+    }
+    // Fall back to settings
     use crate::providers::ProviderConfig;
-
     let settings_map = crate::settings::get_all_settings(conn).unwrap_or_default();
     let config = ProviderConfig::from_settings(&settings_map);
     config.embedding_dimension()

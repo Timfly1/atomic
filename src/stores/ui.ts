@@ -393,6 +393,8 @@ export const useUIStore = create<UIStore>()(
           },
         })),
 
+      clearExpandedTags: () => set({ expandedTagIds: {} }),
+
       // -- Tab actions ---------------------------------------------------
 
       /// Single entry point for opening any kind of routed entry. Three rules:

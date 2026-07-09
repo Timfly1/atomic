@@ -163,15 +163,17 @@ export function MainView() {
 
   const createAtom = useAtomsStore(s => s.createAtom);
   const openReaderEditing = useUIStore(s => s.openReaderEditing);
+  const selectedTagId = useUIStore(s => s.selectedTagId);
 
   const handleNewAtom = useCallback(async () => {
     try {
-      const newAtom = await createAtom('');
+      const tagIds = selectedTagId ? [selectedTagId] : [];
+      const newAtom = await createAtom('', undefined, tagIds);
       openReaderEditing(newAtom.id);
     } catch (error) {
       console.error('Failed to create atom:', error);
     }
-  }, [createAtom, openReaderEditing]);
+  }, [createAtom, openReaderEditing, selectedTagId]);
 
   const handleRetryEmbedding = useCallback(async (atomId: string) => {
     try {

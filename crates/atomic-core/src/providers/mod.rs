@@ -50,6 +50,10 @@ impl ProviderType {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProviderConfig {
     pub provider_type: ProviderType,
+    /// Separate embedding provider type (if set, overrides provider_type for embedding only)
+    pub embedding_provider_type: Option<ProviderType>,
+    /// Separate embedding provider base URL (for OpenAI-compatible embedding)
+    pub embedding_provider_url: Option<String>,
     // OpenRouter settings
     pub openrouter_api_key: Option<String>,
     pub openrouter_embedding_model: String,
@@ -81,8 +85,17 @@ impl ProviderConfig {
                 .unwrap_or("openrouter"),
         );
 
+        // Parse separate embedding provider (if configured)
+        let embedding_provider_type = settings
+            .get("embedding_provider")
+            .map(|s| ProviderType::from_string(s))
+            .filter(|t| *t != ProviderType::OpenRouter); // OpenRouter uses same key for both
+        let embedding_provider_url = settings.get("embedding_provider_url").cloned();
+
         ProviderConfig {
             provider_type,
+            embedding_provider_type,
+            embedding_provider_url,
             openrouter_api_key: settings.get("openrouter_api_key").cloned(),
             openrouter_embedding_model: settings
                 .get("embedding_model")
@@ -152,7 +165,8 @@ impl ProviderConfig {
 
     /// Get the embedding model for the current provider
     pub fn embedding_model(&self) -> &str {
-        match self.provider_type {
+        let embedding_provider_type = self.embedding_provider_type.as_ref().unwrap_or(&self.provider_type);
+        match embedding_provider_type {
             ProviderType::OpenRouter => &self.openrouter_embedding_model,
             ProviderType::Ollama => &self.ollama_embedding_model,
             ProviderType::OpenAICompat => &self.openai_compat_embedding_model,
@@ -170,7 +184,8 @@ impl ProviderConfig {
 
     /// Get the embedding dimension for the current embedding model
     pub fn embedding_dimension(&self) -> usize {
-        match self.provider_type {
+        let embedding_provider_type = self.embedding_provider_type.as_ref().unwrap_or(&self.provider_type);
+        match embedding_provider_type {
             ProviderType::OpenRouter => {
                 openrouter::models::get_embedding_dimension(&self.openrouter_embedding_model)
                     .unwrap_or(1536) // Fall back to 1536 for unknown models
@@ -223,7 +238,10 @@ impl ProviderConfig {
 pub fn create_embedding_provider(
     config: &ProviderConfig,
 ) -> Result<Arc<dyn EmbeddingProvider>, ProviderError> {
-    match config.provider_type {
+    // Use separate embedding provider if configured, otherwise fall back to main provider
+    let embedding_provider_type = config.embedding_provider_type.as_ref().unwrap_or(&config.provider_type);
+
+    match embedding_provider_type {
         ProviderType::OpenRouter => {
             let api_key = config.openrouter_api_key.clone().ok_or_else(|| {
                 ProviderError::Configuration("OpenRouter API key not configured".to_string())
@@ -235,13 +253,18 @@ pub fn create_embedding_provider(
             Some(config.ollama_timeout_secs),
         ))),
         ProviderType::OpenAICompat => {
-            if config.openai_compat_base_url.is_empty() {
+            // Use separate embedding URL if provided, otherwise fall back to main OpenAI-compatible URL
+            let base_url = config
+                .embedding_provider_url
+                .clone()
+                .unwrap_or_else(|| config.openai_compat_base_url.clone());
+            if base_url.is_empty() {
                 return Err(ProviderError::Configuration(
                     "OpenAI Compatible base URL not configured".to_string(),
                 ));
             }
             Ok(Arc::new(OpenAICompatProvider::new(
-                config.openai_compat_base_url.clone(),
+                base_url,
                 config.openai_compat_api_key.clone(),
                 Some(config.openai_compat_timeout_secs),
             )))

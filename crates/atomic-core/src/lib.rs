@@ -3041,8 +3041,13 @@ impl AtomicCore {
 
         if settings::is_embedding_space_key(key) && value_changed {
             embedding_space_changed = true;
-            let current_config = ProviderConfig::from_settings(&current_settings);
-            old_dim = current_config.embedding_dimension();
+            // Read old_dim from actual DB schema, not settings (settings may already be updated)
+            if let Some(conn) = self.storage.as_sqlite() {
+                old_dim = db::get_current_embedding_dimension(&conn.db.conn.lock().unwrap());
+            } else {
+                let current_config = ProviderConfig::from_settings(&current_settings);
+                old_dim = current_config.embedding_dimension();
+            }
 
             let mut new_settings = current_settings.clone();
             new_settings.insert(key.to_string(), value.to_string());

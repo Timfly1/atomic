@@ -75,6 +75,8 @@ const MACOS_FULL_DISK_ACCESS_URL =
   'x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_AllFiles';
 import { formatRelativeDate } from '../../lib/date';
 import { getBrowserTimeZone, getSupportedTimeZones } from '../../lib/tz';
+import { useTranslation } from 'react-i18next';
+import { languages } from '../../i18n';
 import { useDatabasesStore, type DatabaseInfo, type DatabaseStats } from '../../stores/databases';
 import { OverrideControls } from './OverrideControls';
 
@@ -903,6 +905,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
   const fetchSettings = useSettingsStore(s => s.fetchSettings);
   const setSetting = useSettingsStore(s => s.setSetting);
   const testOpenRouterConnection = useSettingsStore(s => s.testOpenRouterConnection);
+  const { t, i18n } = useTranslation();
   // Per-DB context was previously consumed by the briefing schedule panel,
   // which moved onto the reports primitive in phase 3. Removing the
   // selectors keeps the modal from re-rendering on unrelated DB-list
@@ -912,6 +915,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
   const [theme, setTheme] = useState<Theme>('obsidian');
   const [font, setFont] = useState<Font>('ibm-plex-sans');
   const [timezone, setTimezone] = useState(getBrowserTimeZone());
+  const [language, setLanguage] = useState(i18n.language || 'en');
   const supportedTimeZones = useMemo(() => getSupportedTimeZones(), []);
 
   // Provider selection
@@ -948,6 +952,10 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
   const [ollamaContextLength, setOllamaContextLength] = useState('65536');
   const [ollamaTimeoutSecs, setOllamaTimeoutSecs] = useState('120');
   const [isLoadingOllamaModels, setIsLoadingOllamaModels] = useState(false);
+
+  // Separate embedding provider settings
+  const [embeddingProvider, setEmbeddingProvider] = useState<'openrouter' | 'ollama' | 'openai_compat' | ''>('');
+  const [embeddingProviderUrl, setEmbeddingProviderUrl] = useState('');
 
   // Common settings
   const [autoTaggingEnabled, setAutoTaggingEnabled] = useState(true);
@@ -1393,6 +1401,8 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
     setOpenaiCompatLlmModel(settings.openai_compat_llm_model || '');
     setOpenaiCompatContextLength(settings.openai_compat_context_length || '65536');
     setOpenaiCompatTimeoutSecs(settings.openai_compat_timeout_secs || '300');
+    setEmbeddingProvider(settings.embedding_provider as 'openrouter' | 'ollama' | 'openai_compat' | '' || '');
+    setEmbeddingProviderUrl(settings.embedding_provider_url || '');
   }, [settings]);
 
   // Check Ollama connection when provider is ollama or host changes.
@@ -1729,6 +1739,22 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
               {/* ===== GENERAL TAB ===== */}
               {activeTab === 'general' && (
                 <>
+                  {/* Language Selector */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-[var(--color-text-primary)]">
+                      {t('settings_language')}
+                    </label>
+                    <CustomSelect
+                      value={language}
+                      onChange={(v) => {
+                        setLanguage(v);
+                        i18n.changeLanguage(v);
+                        localStorage.setItem('i18nextLng', v);
+                      }}
+                      options={languages.map(l => ({ value: l.code, label: l.name }))}
+                    />
+                  </div>
+
                   {/* Theme Selector */}
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-[var(--color-text-primary)]">
@@ -2160,6 +2186,69 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                   {/* OpenAI Compatible Settings */}
                   {provider === 'openai_compat' && (
                     <>
+                      {/* Embedding Provider Override — use a different provider for embeddings */}
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-[var(--color-text-primary)]">
+                          Embedding Provider
+                        </label>
+                        <p className="text-xs text-[var(--color-text-secondary)]">
+                          Use a different provider for semantic search embeddings
+                        </p>
+                        <CustomSelect
+                          value={embeddingProvider}
+                          onChange={(v) => {
+                            const val = v as 'openrouter' | 'ollama' | 'openai_compat' | '';
+                            setEmbeddingProvider(val);
+                            autoSave('embedding_provider', val);
+                          }}
+                          options={[
+                            { value: '', label: 'Same as main provider' },
+                            { value: 'ollama', label: 'Ollama' },
+                            { value: 'openai_compat', label: 'OpenAI Compatible' },
+                          ]}
+                        />
+                      </div>
+
+                      {/* Ollama host for embedding — shown when Ollama is selected as embedding provider */}
+                      {embeddingProvider === 'ollama' && (
+                        <div className="space-y-2">
+                          <label className="block text-sm font-medium text-[var(--color-text-primary)]">
+                            Ollama Host (for Embedding)
+                          </label>
+                          <p className="text-xs text-[var(--color-text-secondary)]">
+                            Ollama server URL for embedding model (e.g. http://10.70.0.52:11434)
+                          </p>
+                          <input
+                            type="text"
+                            value={ollamaHost}
+                            onChange={(e) => setOllamaHost(e.target.value)}
+                            onBlur={() => autoSave('ollama_host', ollamaHost)}
+                            placeholder="http://127.0.0.1:11434"
+                            className="w-full px-3 py-2 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors duration-150"
+                          />
+                        </div>
+                      )}
+
+                      {/* OpenAI-Compatible URL for embedding — shown when OpenAI-Compatible is selected as embedding provider */}
+                      {embeddingProvider === 'openai_compat' && (
+                        <div className="space-y-2">
+                          <label className="block text-sm font-medium text-[var(--color-text-primary)]">
+                            Embedding Provider URL
+                          </label>
+                          <p className="text-xs text-[var(--color-text-secondary)]">
+                            OpenAI-compatible endpoint for embeddings
+                          </p>
+                          <input
+                            type="text"
+                            value={embeddingProviderUrl}
+                            onChange={(e) => setEmbeddingProviderUrl(e.target.value)}
+                            onBlur={() => autoSave('embedding_provider_url', embeddingProviderUrl)}
+                            placeholder="http://localhost:11434/v1"
+                            className="w-full px-3 py-2 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors duration-150"
+                          />
+                        </div>
+                      )}
+
                       <div className="space-y-2">
                         <label className="block text-sm font-medium text-[var(--color-text-primary)]">
                           Base URL

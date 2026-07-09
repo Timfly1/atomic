@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo, useEffect, MouseEvent } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Pencil, Plus, Trash2, Inbox, Search } from 'lucide-react';
+import { Pencil, Plus, Trash2, Inbox, Search, FileText } from 'lucide-react';
 import { TagNode } from './TagNode';
 import { ContextMenu } from '../ui/ContextMenu';
 import { Modal } from '../ui/Modal';
@@ -60,6 +60,7 @@ export function TagTree({ onOpenTagSettings }: TagTreeProps = {}) {
   const setSelectedTag = useUIStore(s => s.setSelectedTag);
   const openSearchPalette = useUIStore(s => s.openSearchPalette);
   const expandedTagIds = useUIStore(s => s.expandedTagIds);
+  const clearExpandedTags = useUIStore(s => s.clearExpandedTags);
   const fetchAtoms = useAtomsStore(s => s.fetchAtoms);
   const fetchAtomsByTag = useAtomsStore(s => s.fetchAtomsByTag);
 
@@ -162,6 +163,7 @@ export function TagTree({ onOpenTagSettings }: TagTreeProps = {}) {
     if (deleteModal.tag) {
       await deleteTag(deleteModal.tag.id, deleteModal.recursive);
       if (selectedTagId === deleteModal.tag.id) {
+        clearExpandedTags();
         handleSelectTag(null);
       }
       setDeleteModal({ isOpen: false, tag: null, recursive: false });
@@ -177,6 +179,18 @@ export function TagTree({ onOpenTagSettings }: TagTreeProps = {}) {
 
   const contextMenuItems = contextMenu.tag
     ? [
+        {
+          label: 'New Atom Here',
+          onClick: async () => {
+            const createAtom = useAtomsStore.getState().createAtom;
+            const openReaderEditing = useUIStore.getState().openReaderEditing;
+            const newAtom = await createAtom('', undefined, [contextMenu.tag!.id]);
+            openReaderEditing(newAtom.id);
+          },
+          icon: (
+            <FileText className="w-4 h-4" strokeWidth={2} />
+          ),
+        },
         {
           label: 'Rename',
           onClick: () => {
