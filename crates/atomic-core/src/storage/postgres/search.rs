@@ -710,6 +710,11 @@ async fn pg_batch_fetch_atoms(
                 embedding_error: r.11,
                 tagging_error: r.12,
                 kind,
+                image_path: None,
+                document_path: None,
+                document_name: None,
+                document_type: None,
+                embedded_images: vec![],
             };
             (r.0, atom)
         })

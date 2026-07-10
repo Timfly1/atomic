@@ -61,7 +61,7 @@ export function ConversationCard({ conversation, onClick, onDelete }: Conversati
         {/* Delete button */}
         <button
           onClick={onDelete}
-          className="p-1.5 text-[var(--color-text-tertiary)] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+          className="p-1.5 text-[var(--color-text-tertiary)] hover:text-red-400 opacity-60 hover:opacity-100 transition-all"
           aria-label="Delete conversation"
         >
           <Trash2 className="w-4 h-4" strokeWidth={2} />

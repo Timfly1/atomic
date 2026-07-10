@@ -6,6 +6,13 @@ export interface Transport {
   isConnected(): boolean;
   readonly mode: 'http';
   onConnectionChange?: (connected: boolean) => void;
+  uploadImage(atomId: string, file: File): Promise<{ image_path: string }>;
+  getImageUrl(atomId: string): string;
+  deleteImage(atomId: string): Promise<void>;
+  uploadDocument(atomId: string, file: File): Promise<{ document_path: string; content_type: string }>;
+  getDocumentUrl(atomId: string): string;
+  deleteDocument(atomId: string): Promise<void>;
+  getConfig(): HttpTransportConfig;
 }
 
 export interface HttpTransportConfig {

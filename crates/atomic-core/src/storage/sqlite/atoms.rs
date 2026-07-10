@@ -241,6 +241,11 @@ impl SqliteStorage {
             // User-facing inserts only ever produce captured atoms. The
             // column default in V18 matches; this is the explicit form.
             kind: crate::models::AtomKind::Captured,
+            image_path: None,
+            document_path: None,
+            document_name: None,
+            document_type: None,
+            embedded_images: vec![],
         };
 
         let tags = {
@@ -324,6 +329,11 @@ impl SqliteStorage {
                     embedding_error: None,
                     tagging_error: None,
                     kind: crate::models::AtomKind::Captured,
+                    image_path: None,
+                    document_path: None,
+                    document_name: None,
+                    document_type: None,
+                    embedded_images: vec![],
                 };
 
                 atoms_with_tags.push(AtomWithTags { atom, tags: vec![] });
@@ -450,8 +460,13 @@ impl SqliteStorage {
                                  embedding_error = NULL,
                                  tagging_error = NULL,
                                  title = ?8,
-                                 snippet = ?9
-                             WHERE id = ?10 AND updated_at = ?11",
+                                 snippet = ?9,
+                                 image_path = COALESCE(?10, image_path),
+                                 document_path = COALESCE(?11, document_path),
+                                 document_name = COALESCE(?12, document_name),
+                                 document_type = COALESCE(?13, document_type),
+                                 embedded_images = COALESCE(?14, embedded_images)
+                             WHERE id = ?15 AND updated_at = ?16",
                             (
                                 &request.content,
                                 &request.source_url,
@@ -462,6 +477,11 @@ impl SqliteStorage {
                                 "pending",
                                 &title,
                                 &snippet,
+                                &request.image_path,
+                                &request.document_path,
+                                &request.document_name,
+                                &request.document_type,
+                                &request.embedded_images,
                                 id,
                                 expected,
                             ),
@@ -479,8 +499,13 @@ impl SqliteStorage {
                                  embedding_error = NULL,
                                  tagging_error = NULL,
                                  title = ?8,
-                                 snippet = ?9
-                             WHERE id = ?10",
+                                 snippet = ?9,
+                                 image_path = COALESCE(?10, image_path),
+                                 document_path = COALESCE(?11, document_path),
+                                 document_name = COALESCE(?12, document_name),
+                                 document_type = COALESCE(?13, document_type),
+                                 embedded_images = COALESCE(?14, embedded_images)
+                             WHERE id = ?15",
                             (
                                 &request.content,
                                 &request.source_url,
@@ -491,6 +516,11 @@ impl SqliteStorage {
                                 "pending",
                                 &title,
                                 &snippet,
+                                &request.image_path,
+                                &request.document_path,
+                                &request.document_name,
+                                &request.document_type,
+                                &request.embedded_images,
                                 id,
                             ),
                         )?
@@ -521,8 +551,13 @@ impl SqliteStorage {
                                  embedding_error = NULL,
                                  tagging_error = NULL,
                                  title = ?8,
-                                 snippet = ?9
-                             WHERE id = ?10",
+                                 snippet = ?9,
+                                 image_path = COALESCE(?10, image_path),
+                                 document_path = COALESCE(?11, document_path),
+                                 document_name = COALESCE(?12, document_name),
+                                 document_type = COALESCE(?13, document_type),
+                                 embedded_images = COALESCE(?14, embedded_images)
+                             WHERE id = ?15",
                             (
                                 &request.content,
                                 &request.source_url,
@@ -533,6 +568,11 @@ impl SqliteStorage {
                                 "pending",
                                 &title,
                                 &snippet,
+                                &request.image_path,
+                                &request.document_path,
+                                &request.document_name,
+                                &request.document_type,
+                                &request.embedded_images,
                                 id,
                             ),
                         )?;
@@ -542,8 +582,8 @@ impl SqliteStorage {
                         // Content unchanged — FTS stays in sync without a resync.
                         conn.execute(
                             "UPDATE atoms SET content = ?1, source_url = ?2, source = ?3, published_at = ?4, updated_at = ?5,
-                             title = ?6, snippet = ?7
-                             WHERE id = ?8",
+                             title = ?6, snippet = ?7, image_path = COALESCE(?8, image_path), document_path = COALESCE(?9, document_path), document_name = COALESCE(?10, document_name), document_type = COALESCE(?11, document_type), embedded_images = COALESCE(?12, embedded_images)
+                             WHERE id = ?13",
                             (
                                 &request.content,
                                 &request.source_url,
@@ -552,6 +592,11 @@ impl SqliteStorage {
                                 updated_at,
                                 &title,
                                 &snippet,
+                                &request.image_path,
+                                &request.document_path,
+                                &request.document_name,
+                                &request.document_type,
+                                &request.embedded_images,
                                 id,
                             ),
                         )?;
@@ -599,6 +644,54 @@ impl SqliteStorage {
                 .map_err(|e| AtomicCoreError::Lock(e.to_string()))?;
             get_tags_for_atom(&conn, id)?
         };
+
+        Ok(AtomWithTags { atom, tags })
+    }
+
+    pub(crate) fn clear_document_impl(&self, id: &str) -> StorageResult<AtomWithTags> {
+        let conn = self
+            .db
+            .conn
+            .lock()
+            .map_err(|e| AtomicCoreError::Lock(e.to_string()))?;
+
+        // Clear ALL attachments and content
+        conn.execute(
+            "UPDATE atoms SET content = '', snippet = '', title = '', image_path = NULL, document_path = NULL, document_name = NULL, document_type = NULL, embedded_images = NULL WHERE id = ?1",
+            [id],
+        )?;
+
+        let atom = conn.query_row(
+            &format!("SELECT {} FROM atoms WHERE id = ?1", ATOM_COLUMNS),
+            [id],
+            atom_from_row,
+        )?;
+
+        let tags = get_tags_for_atom(&conn, id)?;
+
+        Ok(AtomWithTags { atom, tags })
+    }
+
+    pub(crate) fn clear_image_impl(&self, id: &str) -> StorageResult<AtomWithTags> {
+        let conn = self
+            .db
+            .conn
+            .lock()
+            .map_err(|e| AtomicCoreError::Lock(e.to_string()))?;
+
+        // Clear ALL attachments and content
+        conn.execute(
+            "UPDATE atoms SET content = '', snippet = '', title = '', image_path = NULL, document_path = NULL, document_name = NULL, document_type = NULL, embedded_images = NULL WHERE id = ?1",
+            [id],
+        )?;
+
+        let atom = conn.query_row(
+            &format!("SELECT {} FROM atoms WHERE id = ?1", ATOM_COLUMNS),
+            [id],
+            atom_from_row,
+        )?;
+
+        let tags = get_tags_for_atom(&conn, id)?;
 
         Ok(AtomWithTags { atom, tags })
     }
@@ -1725,6 +1818,14 @@ impl AtomStore for SqliteStorage {
 
     async fn delete_atom(&self, id: &str) -> StorageResult<()> {
         self.delete_atom_impl(id)
+    }
+
+    async fn clear_document(&self, id: &str) -> StorageResult<AtomWithTags> {
+        self.clear_document_impl(id)
+    }
+
+    async fn clear_image(&self, id: &str) -> StorageResult<AtomWithTags> {
+        self.clear_image_impl(id)
     }
 
     async fn get_atoms_by_tag(

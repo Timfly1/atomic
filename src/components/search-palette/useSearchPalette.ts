@@ -429,6 +429,7 @@ export function useSearchPalette({ isOpen, onClose, initialQuery = '' }: UseSear
           if (ancestorIds.length > 0) {
             useUIStore.getState().expandTagPath(ancestorIds);
           }
+          useUIStore.getState().setViewMode('atoms');
           useUIStore.getState().setSelectedTag(item.result.id);
           void useAtomsStore.getState().fetchAtomsByTag(item.result.id);
           break;

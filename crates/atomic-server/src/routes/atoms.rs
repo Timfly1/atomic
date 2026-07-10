@@ -6,10 +6,11 @@ use crate::event_bridge::embedding_event_callback;
 use crate::state::{AppState, ServerEvent};
 use actix_web::{web, HttpResponse};
 use atomic_core::{
-    AtomLink, AtomWithTags, BulkCreateResult, PaginatedAtoms, PaginatedTagChildren, SourceInfo,
-    Tag, TagWithCount,
+    AtomLink, AtomWithTags, BulkCreateResult, PaginatedAtoms,
+    PaginatedTagChildren, SourceInfo, Tag, TagWithCount, UpdateAtomRequest,
 };
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 use utoipa::{IntoParams, ToSchema};
 
 // ==================== Atoms ====================
@@ -399,18 +400,6 @@ pub async fn bulk_create_atoms(
     }
 }
 
-#[derive(Deserialize, Serialize, ToSchema)]
-pub struct UpdateAtomRequest {
-    /// Updated markdown content
-    pub content: String,
-    /// Updated source URL
-    pub source_url: Option<String>,
-    /// Updated publication date
-    pub published_at: Option<String>,
-    /// Updated tag IDs (if provided, replaces all tags)
-    pub tag_ids: Option<Vec<String>>,
-}
-
 #[utoipa::path(
     put,
     path = "/api/atoms/{id}",
@@ -443,6 +432,11 @@ pub async fn update_atom(
                 source_url: req.source_url,
                 published_at: req.published_at,
                 tag_ids: req.tag_ids,
+                image_path: req.image_path.clone(),
+                document_path: None,
+                document_name: None,
+                document_type: None,
+                embedded_images: None,
             },
             on_event,
         )
@@ -486,6 +480,11 @@ pub async fn update_atom_content_only(
                 source_url: req.source_url,
                 published_at: req.published_at,
                 tag_ids: req.tag_ids,
+                image_path: req.image_path.clone(),
+                document_path: None,
+                document_name: None,
+                document_type: None,
+                embedded_images: None,
             },
         )
         .await,
@@ -529,6 +528,47 @@ pub async fn process_atom_pipeline(
 )]
 pub async fn delete_atom(db: Db, path: web::Path<String>) -> HttpResponse {
     let id = path.into_inner();
+
+    // Get atom before deleting to retrieve file paths
+    if let Ok(Some(atom)) = db.0.get_atom(&id).await {
+        let storage_path = db.0.db_path();
+
+        // Delete image file
+        if let Some(img_path_str) = &atom.atom.image_path {
+            let images_dir = get_images_dir(&storage_path);
+            let extension = std::path::Path::new(img_path_str)
+                .extension()
+                .and_then(|e| e.to_str())
+                .unwrap_or("png");
+            let image_filename = format!("{}.{}", id, extension);
+            let image_path = images_dir.join(&image_filename);
+            if image_path.exists() {
+                let _ = tokio::fs::remove_file(&image_path).await;
+            } else {
+                let fallback = std::path::Path::new(img_path_str);
+                if fallback.exists() {
+                    let _ = tokio::fs::remove_file(fallback).await;
+                }
+            }
+        }
+
+        // Delete document file
+        if let Some(doc_path_str) = &atom.atom.document_path {
+            let doc_path = std::path::Path::new(doc_path_str);
+            if doc_path.exists() {
+                let _ = tokio::fs::remove_file(doc_path).await;
+            }
+        }
+
+        // Delete embedded images
+        for img in &atom.atom.embedded_images {
+            let img_path = std::path::Path::new(&img.stored_path);
+            if img_path.exists() {
+                let _ = tokio::fs::remove_file(img_path).await;
+            }
+        }
+    }
+
     ok_or_error(db.0.delete_atom(&id).await)
 }
 
@@ -768,4 +808,903 @@ pub async fn configure_autotag_targets(
         db.0.configure_autotag_targets(&req.keep_defaults, &req.add_custom)
             .await,
     )
+}
+
+// ==================== Image Upload/Download ====================
+
+fn detect_image_content_type(data: &[u8]) -> Option<&'static str> {
+    if data.len() >= 2 {
+        if data[0] == 0xFF && data[1] == 0xD8 {
+            return Some("image/jpeg");
+        }
+        if data.len() >= 4 {
+            if data[0] == 0x89 && data[1] == 0x50 && data[2] == 0x4E && data[3] == 0x47 {
+                return Some("image/png");
+            }
+            if data[0] == 0x47 && data[1] == 0x49 && data[2] == 0x46 {
+                return Some("image/gif");
+            }
+            if data[0] == 0x52 && data[1] == 0x49 && data[2] == 0x46 && data[3] == 0x46 {
+                return Some("image/webp");
+            }
+        }
+    }
+    None
+}
+
+fn get_image_extension(content_type: &str) -> &'static str {
+    match content_type {
+        "image/jpeg" => "jpg",
+        "image/png" => "png",
+        "image/gif" => "gif",
+        "image/webp" => "webp",
+        _ => "bin",
+    }
+}
+
+fn get_images_dir(storage_path: &std::path::Path) -> PathBuf {
+    // Use parent directory of the database file for images
+    storage_path.parent().unwrap_or(storage_path).join("images")
+}
+
+pub async fn upload_atom_image(
+    db: Db,
+    path: web::Path<String>,
+    body: web::Bytes,
+) -> HttpResponse {
+    let atom_id = path.into_inner();
+
+    // Verify atom exists and get current content
+    let existing_atom = match db.0.get_atom(&atom_id).await {
+        Ok(Some(atom)) => atom,
+        Ok(None) => {
+            return HttpResponse::NotFound().json(ApiErrorResponse {
+                error: "Atom not found".to_string(),
+            });
+        }
+        Err(e) => {
+            return HttpResponse::NotFound().json(ApiErrorResponse {
+                error: format!("Atom not found: {}", e),
+            });
+        }
+    };
+    let existing_content = existing_atom.atom.content.clone();
+
+    // Detect content type
+    let content_type = match detect_image_content_type(&body) {
+        Some(ct) => ct,
+        None => {
+            return HttpResponse::BadRequest().json(ApiErrorResponse {
+                error: "Unsupported image format. Supported: JPEG, PNG, GIF, WebP".to_string(),
+            });
+        }
+    };
+
+    // Get storage path for images
+    let storage_path = db.0.db_path();
+    let images_dir = get_images_dir(storage_path);
+
+    // Create images directory if it doesn't exist
+    if images_dir.exists() {
+        if !images_dir.is_dir() {
+            // Remove the file and create directory
+            if let Err(e) = std::fs::remove_file(&images_dir) {
+                return HttpResponse::InternalServerError().json(ApiErrorResponse {
+                    error: format!("Failed to remove conflicting file: {}", e),
+                });
+            }
+        }
+    }
+    if let Err(e) = std::fs::create_dir_all(&images_dir) {
+        return HttpResponse::InternalServerError().json(ApiErrorResponse {
+            error: format!("Failed to create images directory: {}", e),
+        });
+    }
+
+    // Determine file extension and path
+    let extension = get_image_extension(content_type);
+    let image_filename = format!("{}.{}", atom_id, extension);
+    let image_path = images_dir.join(&image_filename);
+
+    tracing::debug!(
+        "upload_atom_image: atom_id={}, content_type={}, images_dir={}, image_path={}",
+        atom_id, content_type, images_dir.display(), image_path.display()
+    );
+
+    // Delete existing image if present
+    if image_path.exists() {
+        if let Err(e) = std::fs::remove_file(&image_path) {
+            tracing::warn!("Failed to remove existing image: {}", e);
+        }
+    }
+
+    // Save the image file (blocking I/O in spawn_blocking)
+    let image_path_clone = image_path.clone();
+    let result = tokio::task::spawn_blocking(move || {
+        std::fs::write(&image_path_clone, &body)
+    })
+    .await;
+
+    if let Err(e) = result {
+        return HttpResponse::InternalServerError().json(ApiErrorResponse {
+            error: format!("Failed to save image: {}", e),
+        });
+    }
+    if let Err(e) = result.unwrap() {
+        return HttpResponse::InternalServerError().json(ApiErrorResponse {
+            error: format!("Failed to write image file: {}", e),
+        });
+    }
+
+    // Get tesseract_host from settings
+    let settings = match db.0.get_settings().await {
+        Ok(s) => s,
+        Err(e) => {
+            tracing::warn!("Failed to get settings for OCR: {}", e);
+            // Continue without OCR if settings fail
+            let image_path_str = image_path.to_string_lossy().to_string();
+            let update_req = UpdateAtomRequest {
+                content: existing_content,
+                source_url: None,
+                published_at: None,
+                tag_ids: None,
+                image_path: Some(image_path_str.clone()),
+                document_path: None,
+                document_name: None,
+                document_type: None,
+                embedded_images: None,
+            };
+            if let Err(e) = db.0.update_atom(&atom_id, update_req, |_| {}).await {
+                return HttpResponse::InternalServerError().json(ApiErrorResponse {
+                    error: format!("Failed to update atom: {}", e),
+                });
+            }
+            return HttpResponse::Ok().json(serde_json::json!({
+                "image_path": image_path_str,
+                "content_type": content_type,
+            }));
+        }
+    };
+
+    let tesseract_host = settings.get("tesseract_host").cloned().unwrap_or_else(|| {
+        "http://10.70.0.52:8080".to_string()
+    });
+
+    // Run OCR on the image
+    let ocr_result = atomic_core::extract_text_from_image(&tesseract_host, &image_path).await;
+    let ocr_text = match ocr_result {
+        Ok(ocr) => {
+            tracing::info!("OCR extracted {} chars from image for atom {}", ocr.text.len(), atom_id);
+            ocr.text
+        }
+        Err(e) => {
+            tracing::warn!("OCR failed for atom {}: {}", atom_id, e);
+            // Continue without OCR text if OCR fails
+            String::new()
+        }
+    };
+
+    // Combine existing content with OCR text (don't add image reference - it's already in the sidebar)
+    let new_content = if ocr_text.is_empty() {
+        existing_content
+    } else if existing_content.is_empty() {
+        format!("[OCR from image]\n{}", ocr_text)
+    } else {
+        format!("{}\n\n[OCR from image]\n{}", existing_content, ocr_text)
+    };
+
+    // Update atom's Image_path and content
+    let image_path_str = image_path.to_string_lossy().to_string();
+    let update_req = UpdateAtomRequest {
+        content: new_content,
+        source_url: None,
+        published_at: None,
+        tag_ids: None,
+        image_path: Some(image_path_str.clone()),
+        document_path: None,
+        document_name: None,
+        document_type: None,
+        embedded_images: None,
+    };
+
+    if let Err(e) = db.0.update_atom(&atom_id, update_req, |_| {}).await {
+        return HttpResponse::InternalServerError().json(ApiErrorResponse {
+            error: format!("Failed to update atom: {}", e),
+        });
+    }
+
+    HttpResponse::Ok().json(serde_json::json!({
+        "image_path": image_path_str,
+        "content_type": content_type,
+        "ocr_text_length": ocr_text.len(),
+    }))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/atoms/{id}/image",
+    params(
+        ("id" = String, Path, description = "Atom ID"),
+    ),
+    responses(
+        (status = 200, description = "Image file"),
+        (status = 404, description = "Atom or image not found"),
+    ),
+    tag = "atoms",
+    security(()),
+)]
+pub async fn get_atom_image(
+    db: Db,
+    path: web::Path<String>,
+) -> HttpResponse {
+    let atom_id = path.into_inner();
+
+    // Get atom to retrieve image_path
+    let atom = match db.0.get_atom(&atom_id).await {
+        Ok(Some(a)) => a,
+        Ok(None) => {
+            return HttpResponse::NotFound().json(ApiErrorResponse {
+                error: "Atom not found".to_string(),
+            });
+        }
+        Err(_) => {
+            return HttpResponse::NotFound().json(ApiErrorResponse {
+                error: "Atom not found".to_string(),
+            });
+        }
+    };
+
+    let stored_path = match &atom.atom.image_path {
+        Some(p) => p,
+        None => {
+            return HttpResponse::NotFound().json(ApiErrorResponse {
+                error: "No image attached to this atom".to_string(),
+            });
+        }
+    };
+
+    // Compute the correct path using the same logic as upload_atom_image
+    let storage_path = db.0.db_path();
+    let images_dir = get_images_dir(&storage_path);
+
+    tracing::debug!(
+        "get_atom_image: atom_id={}, stored_path={}, db_path={}, images_dir={}",
+        atom_id, stored_path, storage_path.display(), images_dir.display()
+    );
+
+    // Get extension from stored path
+    let extension = std::path::Path::new(stored_path)
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("png");
+
+    let image_filename = format!("{}.{}", atom_id, extension);
+    let image_path = images_dir.join(&image_filename);
+
+    tracing::debug!(
+        "get_atom_image: extension={}, image_filename={}, image_path={}, exists={}",
+        extension, image_filename, image_path.display(), image_path.exists()
+    );
+
+    if !image_path.exists() {
+        // Try the stored path directly (for backwards compatibility)
+        let fallback_path = std::path::Path::new(stored_path);
+        if fallback_path.exists() {
+            // Read and serve from fallback path
+            let body = match tokio::fs::read(fallback_path).await {
+                Ok(b) => b,
+                Err(e) => {
+                    return HttpResponse::InternalServerError().json(ApiErrorResponse {
+                        error: format!("Failed to read image: {}", e),
+                    });
+                }
+            };
+            let content_type = detect_image_content_type(&body).unwrap_or("application/octet-stream");
+            return HttpResponse::Ok()
+                .content_type(content_type)
+                .body(body);
+        }
+        return HttpResponse::NotFound().json(ApiErrorResponse {
+            error: "Image file not found on disk".to_string(),
+        });
+    }
+
+    // Read file and determine content type
+    let body = match tokio::fs::read(&image_path).await {
+        Ok(b) => b,
+        Err(e) => {
+            return HttpResponse::InternalServerError().json(ApiErrorResponse {
+                error: format!("Failed to read image: {}", e),
+            });
+        }
+    };
+
+    let content_type = detect_image_content_type(&body).unwrap_or("application/octet-stream");
+
+    HttpResponse::Ok()
+        .content_type(content_type)
+        .body(body)
+}
+
+#[utoipa::path(
+    delete,
+    path = "/api/atoms/{id}/image",
+    params(
+        ("id" = String, Path, description = "Atom ID"),
+    ),
+    responses(
+        (status = 200, description = "Image deleted successfully"),
+        (status = 404, description = "Atom or image not found"),
+    ),
+    tag = "atoms",
+)]
+pub async fn delete_atom_image(
+    db: Db,
+    path: web::Path<String>,
+) -> HttpResponse {
+    let atom_id = path.into_inner();
+
+    // Get atom to retrieve image_path and document_path
+    let atom = match db.0.get_atom(&atom_id).await {
+        Ok(Some(a)) => a,
+        Ok(None) => {
+            return HttpResponse::NotFound().json(ApiErrorResponse {
+                error: "Atom not found".to_string(),
+            });
+        }
+        Err(_) => {
+            return HttpResponse::NotFound().json(ApiErrorResponse {
+                error: "Atom not found".to_string(),
+            });
+        }
+    };
+
+    let storage_path = db.0.db_path();
+
+    // Delete image file if exists
+    if let Some(stored_path) = &atom.atom.image_path {
+        let images_dir = get_images_dir(&storage_path);
+        let extension = std::path::Path::new(stored_path)
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("png");
+        let image_filename = format!("{}.{}", atom_id, extension);
+        let image_path = images_dir.join(&image_filename);
+
+        if image_path.exists() {
+            if let Err(e) = tokio::fs::remove_file(&image_path).await {
+                tracing::warn!("Failed to delete image file: {}", e);
+            }
+        } else {
+            let fallback_path = std::path::Path::new(stored_path);
+            if fallback_path.exists() {
+                if let Err(e) = tokio::fs::remove_file(fallback_path).await {
+                    tracing::warn!("Failed to delete image file: {}", e);
+                }
+            }
+        }
+    }
+
+    // Delete document file if exists
+    if let Some(doc_path_str) = &atom.atom.document_path {
+        let doc_path = std::path::Path::new(doc_path_str);
+        if doc_path.exists() {
+            if let Err(e) = tokio::fs::remove_file(doc_path).await {
+                tracing::warn!("Failed to delete document file: {}", e);
+            }
+        }
+    }
+
+    // Delete embedded images
+    for img in &atom.atom.embedded_images {
+        let img_path = std::path::Path::new(&img.stored_path);
+        if img_path.exists() {
+            let _ = tokio::fs::remove_file(img_path).await;
+        }
+    }
+
+    // Clear ALL attachment fields in atom
+    if let Err(e) = db.0.clear_image(&atom_id).await {
+        return HttpResponse::InternalServerError().json(ApiErrorResponse {
+            error: format!("Failed to clear attachment fields: {}", e),
+        });
+    }
+
+    HttpResponse::Ok().json(serde_json::json!({
+        "message": "Image deleted successfully",
+    }))
+}
+
+// ==================== Document Upload/Download ====================
+
+fn get_documents_dir(storage_path: &std::path::Path) -> PathBuf {
+    storage_path.parent().unwrap_or(storage_path).join("documents")
+}
+
+fn detect_document_content_type(data: &[u8], filename: &str) -> Option<String> {
+    let lower = filename.to_lowercase();
+
+    // Check by extension first
+    if lower.ends_with(".docx") {
+        return Some("application/vnd.openxmlformats-officedocument.wordprocessingml.document".to_string());
+    }
+    if lower.ends_with(".doc") {
+        return Some("application/msword".to_string());
+    }
+    if lower.ends_with(".xlsx") {
+        return Some("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet".to_string());
+    }
+    if lower.ends_with(".xls") {
+        return Some("application/vnd.ms-excel".to_string());
+    }
+    if lower.ends_with(".pdf") {
+        return Some("application/pdf".to_string());
+    }
+    if lower.ends_with(".txt") {
+        return Some("text/plain".to_string());
+    }
+
+    // Check magic bytes
+    if data.len() >= 4 {
+        if data[0] == 0x50 && data[1] == 0x4B {
+            // ZIP-based (docx, xlsx)
+            if lower.ends_with(".docx") {
+                return Some("application/vnd.openxmlformats-officedocument.wordprocessingml.document".to_string());
+            }
+            if lower.ends_with(".xlsx") {
+                return Some("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet".to_string());
+            }
+            // ZIP magic but unknown extension - assume docx by default for Word XML
+            return Some("application/vnd.openxmlformats-officedocument.wordprocessingml.document".to_string());
+        }
+        if data[0] == 0x25 && data[1] == 0x50 && data[2] == 0x44 && data[3] == 0x46 {
+            return Some("application/pdf".to_string());
+        }
+        // OLE2 compound document (old Office formats: .doc, .xls, .ppt)
+        // Note: These are not supported by our current parsers
+        if data[0] == 0xD0 && data[1] == 0xCF {
+            // Return None to indicate unsupported format
+            return None;
+        }
+    }
+
+    None
+}
+
+fn get_document_extension(content_type: &str) -> &'static str {
+    if content_type.contains("wordprocessingml") {
+        "docx"
+    } else if content_type.contains("msword") {
+        "doc"
+    } else if content_type.contains("spreadsheetml") {
+        "xlsx"
+    } else if content_type.contains("excel") {
+        "xls"
+    } else if content_type.contains("pdf") {
+        "pdf"
+    } else if content_type.contains("text") {
+        "txt"
+    } else {
+        "bin"
+    }
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/atoms/{id}/document",
+    params(
+        ("id" = String, Path, description = "Atom ID"),
+    ),
+    request_body = String,
+    responses(
+        (status = 200, description = "Document uploaded successfully"),
+        (status = 400, description = "Unsupported document format"),
+        (status = 404, description = "Atom not found"),
+    ),
+    tag = "atoms",
+    security(()),
+)]
+pub async fn upload_atom_document(
+    db: Db,
+    path: web::Path<String>,
+    body: web::Bytes,
+    filename: Option<String>,
+) -> HttpResponse {
+    let atom_id = path.into_inner();
+
+    // Verify atom exists
+    let existing_atom = match db.0.get_atom(&atom_id).await {
+        Ok(Some(atom)) => atom,
+        Ok(None) => {
+            return HttpResponse::NotFound().json(ApiErrorResponse {
+                error: "Atom not found".to_string(),
+            });
+        }
+        Err(e) => {
+            return HttpResponse::NotFound().json(ApiErrorResponse {
+                error: format!("Atom not found: {}", e),
+            });
+        }
+    };
+    let existing_content = existing_atom.atom.content.clone();
+
+    // Get filename from header or use default
+    let fname = filename.unwrap_or_else(|| "document".to_string());
+
+    // Detect content type
+    let content_type = match detect_document_content_type(&body, &fname) {
+        Some(ct) => ct,
+        None => {
+            return HttpResponse::BadRequest().json(ApiErrorResponse {
+                error: "Unsupported document format. Supported: Word (.docx), Excel (.xlsx), PDF (.pdf), Text (.txt)".to_string(),
+            });
+        }
+    };
+
+    // Get storage path for documents
+    let storage_path = db.0.db_path();
+    let documents_dir = get_documents_dir(storage_path);
+
+    // Create documents directory if it doesn't exist
+    if !documents_dir.exists() {
+        if let Err(e) = std::fs::create_dir_all(&documents_dir) {
+            return HttpResponse::InternalServerError().json(ApiErrorResponse {
+                error: format!("Failed to create documents directory: {}", e),
+            });
+        }
+    }
+
+    // Determine file extension and path
+    let extension = get_document_extension(&content_type);
+    let doc_filename = format!("{}.{}", atom_id, extension);
+    let doc_path = documents_dir.join(&doc_filename);
+
+    // Store original filename for display/download
+    let original_filename = fname.clone();
+
+    tracing::debug!(
+        "upload_atom_document: atom_id={}, content_type={}, documents_dir={}, doc_path={}",
+        atom_id, content_type, documents_dir.display(), doc_path.display()
+    );
+
+    // Delete existing document if present
+    if doc_path.exists() {
+        if let Err(e) = std::fs::remove_file(&doc_path) {
+            tracing::warn!("Failed to remove existing document: {}", e);
+        }
+    }
+
+    // Save the document file
+    let doc_path_clone = doc_path.clone();
+    let body_vec = body.to_vec();
+    let body_vec_clone = body_vec.clone();
+    let result = tokio::task::spawn_blocking(move || {
+        std::fs::write(&doc_path_clone, &body_vec_clone)
+    })
+    .await;
+
+    if let Err(e) = result {
+        return HttpResponse::InternalServerError().json(ApiErrorResponse {
+            error: format!("Failed to save document: {}", e),
+        });
+    }
+    if let Err(e) = result.unwrap() {
+        return HttpResponse::InternalServerError().json(ApiErrorResponse {
+            error: format!("Failed to write document file: {}", e),
+        });
+    }
+
+    // Parse document and extract content
+    let parse_result = atomic_core::parse_document(&body_vec, atomic_core::DocumentType::from_mime_type(&content_type)).await;
+
+    let (new_content, embedded_images_json) = match parse_result {
+        Ok(result) => {
+            tracing::info!("Document parsed successfully for atom {}: {} chars, {} images",
+                atom_id, result.content.len(), result.images.len());
+
+            // Store embedded images
+            let mut stored_images = Vec::new();
+            let images_dir = get_images_dir(&storage_path);
+
+            for img in &result.images {
+                let img_filename = format!("{}-{}.img", atom_id, img.id);
+                let img_path = images_dir.join(&img_filename);
+
+                if let Err(e) = std::fs::write(&img_path, &img.data) {
+                    tracing::warn!("Failed to save embedded image {}: {}", img.id, e);
+                    continue;
+                }
+
+                stored_images.push(atomic_core::EmbeddedImage {
+                    id: img.id.clone(),
+                    original_ref: img.original_ref.clone(),
+                    stored_path: img_path.to_string_lossy().to_string(),
+                    content_type: img.content_type.clone(),
+                });
+            }
+
+            let embedded_json = serde_json::to_string(&stored_images).unwrap_or_default();
+
+            // Convert to Markdown format
+            let converter_config = atomic_core::document::ConverterConfig::new();
+            let conversion = atomic_core::document::convert(
+                result.clone(),
+                converter_config,
+            );
+
+            // Append to existing content if any
+            let final_content = if existing_content.is_empty() {
+                conversion.content
+            } else {
+                format!("{}\n\n---\n\n{}", existing_content, conversion.content)
+            };
+
+            (final_content, embedded_json)
+        }
+        Err(e) => {
+            tracing::warn!("Failed to parse document for atom {}: {}", atom_id, e);
+            // Keep existing content if parsing fails
+            (existing_content.clone(), String::from("[]"))
+        }
+    };
+
+    // Update atom's document_path and content
+    let doc_path_str = doc_path.to_string_lossy().to_string();
+    let update_req = UpdateAtomRequest {
+        content: new_content,
+        source_url: None,
+        published_at: None,
+        tag_ids: None,
+        image_path: None,
+        document_path: Some(doc_path_str.clone()),
+        document_name: Some(original_filename),
+        document_type: Some(content_type.clone()),
+        embedded_images: Some(embedded_images_json),
+    };
+
+    if let Err(e) = db.0.update_atom(&atom_id, update_req, |_| {}).await {
+        return HttpResponse::InternalServerError().json(ApiErrorResponse {
+            error: format!("Failed to update atom: {}", e),
+        });
+    }
+
+    HttpResponse::Ok().json(serde_json::json!({
+        "document_path": doc_path_str,
+        "content_type": content_type,
+    }))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/atoms/{id}/document",
+    params(
+        ("id" = String, Path, description = "Atom ID"),
+    ),
+    responses(
+        (status = 200, description = "Document file"),
+        (status = 404, description = "Atom or document not found"),
+    ),
+    tag = "atoms",
+    security(()),
+)]
+pub async fn get_atom_document(
+    db: Db,
+    path: web::Path<String>,
+) -> HttpResponse {
+    let atom_id = path.into_inner();
+
+    let atom = match db.0.get_atom(&atom_id).await {
+        Ok(Some(a)) => a,
+        Ok(None) => {
+            return HttpResponse::NotFound().json(ApiErrorResponse {
+                error: "Atom not found".to_string(),
+            });
+        }
+        Err(_) => {
+            return HttpResponse::NotFound().json(ApiErrorResponse {
+                error: "Atom not found".to_string(),
+            });
+        }
+    };
+
+    let stored_path = match &atom.atom.document_path {
+        Some(p) => p,
+        None => {
+            return HttpResponse::NotFound().json(ApiErrorResponse {
+                error: "No document attached to this atom".to_string(),
+            });
+        }
+    };
+
+    let doc_path = std::path::Path::new(stored_path);
+
+    if !doc_path.exists() {
+        return HttpResponse::NotFound().json(ApiErrorResponse {
+            error: "Document file not found on disk".to_string(),
+        });
+    }
+
+    let body = match tokio::fs::read(doc_path).await {
+        Ok(b) => b,
+        Err(e) => {
+            return HttpResponse::InternalServerError().json(ApiErrorResponse {
+                error: format!("Failed to read document: {}", e),
+            });
+        }
+    };
+
+    let content_type = atom.atom.document_type.clone()
+        .unwrap_or_else(|| "application/octet-stream".to_string());
+
+    // Use original filename if available, otherwise fall back to atom_id with extension
+    let download_filename = atom.atom.document_name.clone()
+        .unwrap_or_else(|| {
+            let extension = get_document_extension(&content_type);
+            format!("{}.{}", atom_id, extension)
+        });
+
+    HttpResponse::Ok()
+        .content_type(content_type.as_str())
+        .insert_header(("Content-Disposition", format!("attachment; filename=\"{}\"", download_filename)))
+        .body(body)
+}
+
+#[utoipa::path(
+    delete,
+    path = "/api/atoms/{id}/document",
+    params(
+        ("id" = String, Path, description = "Atom ID"),
+    ),
+    responses(
+        (status = 200, description = "Document deleted successfully"),
+        (status = 404, description = "Atom or document not found"),
+    ),
+    tag = "atoms",
+)]
+pub async fn delete_atom_document(
+    db: Db,
+    path: web::Path<String>,
+) -> HttpResponse {
+    let atom_id = path.into_inner();
+
+    let atom = match db.0.get_atom(&atom_id).await {
+        Ok(Some(a)) => a,
+        Ok(None) => {
+            return HttpResponse::NotFound().json(ApiErrorResponse {
+                error: "Atom not found".to_string(),
+            });
+        }
+        Err(_) => {
+            return HttpResponse::NotFound().json(ApiErrorResponse {
+                error: "Atom not found".to_string(),
+            });
+        }
+    };
+
+    let storage_path = db.0.db_path();
+
+    // Delete document file if exists
+    if let Some(stored_path) = &atom.atom.document_path {
+        let doc_path = std::path::Path::new(stored_path);
+        if doc_path.exists() {
+            if let Err(e) = tokio::fs::remove_file(doc_path).await {
+                tracing::warn!("Failed to delete document file: {}", e);
+            }
+        }
+    }
+
+    // Delete image file if exists
+    if let Some(img_path_str) = &atom.atom.image_path {
+        let images_dir = get_images_dir(&storage_path);
+        let extension = std::path::Path::new(img_path_str)
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("png");
+        let image_filename = format!("{}.{}", atom_id, extension);
+        let image_path = images_dir.join(&image_filename);
+
+        if image_path.exists() {
+            if let Err(e) = tokio::fs::remove_file(&image_path).await {
+                tracing::warn!("Failed to delete image file: {}", e);
+            }
+        } else {
+            let fallback_path = std::path::Path::new(img_path_str);
+            if fallback_path.exists() {
+                if let Err(e) = tokio::fs::remove_file(fallback_path).await {
+                    tracing::warn!("Failed to delete image file: {}", e);
+                }
+            }
+        }
+    }
+
+    // Delete embedded images
+    for img in &atom.atom.embedded_images {
+        let img_path = std::path::Path::new(&img.stored_path);
+        if img_path.exists() {
+            let _ = tokio::fs::remove_file(img_path).await;
+        }
+    }
+
+    // Clear ALL attachment fields in atom
+    if let Err(e) = db.0.clear_document(&atom_id).await {
+        return HttpResponse::InternalServerError().json(ApiErrorResponse {
+            error: format!("Failed to clear attachment fields: {}", e),
+        });
+    }
+
+    HttpResponse::Ok().json(serde_json::json!({
+        "message": "Document deleted successfully",
+    }))
+}
+
+#[derive(serde::Deserialize)]
+pub struct EmbeddedImagePath {
+    pub id: String,
+    #[serde(rename = "imageId")]
+    pub image_id: String,
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/atoms/{id}/embedded-images/{imageId}",
+    params(
+        ("id" = String, Path, description = "Atom ID"),
+        ("imageId" = String, Path, description = "Embedded Image ID"),
+    ),
+    responses(
+        (status = 200, description = "Embedded image file"),
+        (status = 404, description = "Atom or image not found"),
+    ),
+    tag = "atoms",
+)]
+pub async fn get_atom_embedded_image(
+    db: Db,
+    path: web::Path<EmbeddedImagePath>,
+) -> HttpResponse {
+    let EmbeddedImagePath { id: atom_id, image_id } = path.into_inner();
+
+    let atom = match db.0.get_atom(&atom_id).await {
+        Ok(Some(a)) => a,
+        Ok(None) => {
+            return HttpResponse::NotFound().json(ApiErrorResponse {
+                error: "Atom not found".to_string(),
+            });
+        }
+        Err(_) => {
+            return HttpResponse::NotFound().json(ApiErrorResponse {
+                error: "Atom not found".to_string(),
+            });
+        }
+    };
+
+    // Find the embedded image with matching id
+    let embedded_image = match atom.atom.embedded_images.iter().find(|img| img.id == image_id) {
+        Some(img) => img,
+        None => {
+            return HttpResponse::NotFound().json(ApiErrorResponse {
+                error: "Embedded image not found".to_string(),
+            });
+        }
+    };
+
+    let img_path = std::path::Path::new(&embedded_image.stored_path);
+
+    if !img_path.exists() {
+        return HttpResponse::NotFound().json(ApiErrorResponse {
+            error: "Image file not found on disk".to_string(),
+        });
+    }
+
+    let body = match tokio::fs::read(img_path).await {
+        Ok(b) => b,
+        Err(e) => {
+            return HttpResponse::InternalServerError().json(ApiErrorResponse {
+                error: format!("Failed to read image: {}", e),
+            });
+        }
+    };
+
+    HttpResponse::Ok()
+        .content_type(embedded_image.content_type.as_str())
+        .body(body)
 }

@@ -326,6 +326,11 @@ impl AtomicMcpServer {
             source_url,
             published_at,
             tag_ids: params.tag_ids,
+            image_path: existing.atom.image_path.clone(),
+            document_path: existing.atom.document_path.clone(),
+            document_name: existing.atom.document_name.clone(),
+            document_type: existing.atom.document_type.clone(),
+            embedded_images: None,
         };
 
         let on_event = embedding_event_callback(self.event_tx.clone());
@@ -401,6 +406,11 @@ impl AtomicMcpServer {
             source_url: existing.atom.source_url.clone(),
             published_at: existing.atom.published_at.clone(),
             tag_ids: None,
+            image_path: existing.atom.image_path.clone(),
+            document_path: existing.atom.document_path.clone(),
+            document_name: existing.atom.document_name.clone(),
+            document_type: existing.atom.document_type.clone(),
+            embedded_images: None,
         };
 
         let on_event = embedding_event_callback(self.event_tx.clone());

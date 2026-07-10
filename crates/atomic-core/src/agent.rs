@@ -690,11 +690,21 @@ async fn execute_edit_atom(
         return Err("Cannot update an atom to empty content".to_string());
     }
 
+    let embedded_images_json = if existing.atom.embedded_images.is_empty() {
+        None
+    } else {
+        serde_json::to_string(&existing.atom.embedded_images).ok()
+    };
     let request = crate::UpdateAtomRequest {
         content: content.clone(),
         source_url: existing.atom.source_url,
         published_at: existing.atom.published_at,
         tag_ids: None,
+        image_path: existing.atom.image_path.clone(),
+        document_path: existing.atom.document_path.clone(),
+        document_name: existing.atom.document_name.clone(),
+        document_type: existing.atom.document_type.clone(),
+        embedded_images: embedded_images_json,
     };
     let now = Utc::now().to_rfc3339();
     let atom = storage

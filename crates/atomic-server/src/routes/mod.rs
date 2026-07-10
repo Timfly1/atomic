@@ -56,6 +56,29 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         "/atoms/{id}/embedding-status",
         web::get().to(embedding::get_embedding_status),
     );
+    // Image upload/download
+    cfg.service(
+        web::resource("/atoms/{id}/image")
+            .app_data(actix_web::web::PayloadConfig::new(50 * 1024 * 1024)) // 50MB limit
+            .route(web::post().to(atoms::upload_atom_image))
+            .route(web::get().to(atoms::get_atom_image))
+            .route(web::delete().to(atoms::delete_atom_image)),
+    );
+
+    // Document upload/download
+    cfg.service(
+        web::resource("/atoms/{id}/document")
+            .app_data(actix_web::web::PayloadConfig::new(50 * 1024 * 1024)) // 50MB limit
+            .route(web::post().to(atoms::upload_atom_document))
+            .route(web::get().to(atoms::get_atom_document))
+            .route(web::delete().to(atoms::delete_atom_document)),
+    );
+
+    // Embedded images (from document parsing)
+    cfg.service(
+        web::resource("/atoms/{id}/embedded-images/{imageId}")
+            .route(web::get().to(atoms::get_atom_embedded_image)),
+    );
 
     // Tags
     cfg.route("/tags", web::get().to(atoms::get_tags));

@@ -276,7 +276,7 @@ impl Database {
     ///   1. Add a new `if version < N` block at the end (before the virtual-table section)
     ///   2. End the block with `PRAGMA user_version = N;`
     ///   3. Bump LATEST_VERSION
-    const LATEST_VERSION: i32 = 22;
+    const LATEST_VERSION: i32 = 25;
 
     pub fn run_migrations(conn: &Connection) -> Result<(), AtomicCoreError> {
         Self::run_migrations_internal(conn, false)
@@ -1084,6 +1084,71 @@ impl Database {
         // at server startup with a per-DB idempotency flag. A pure SQL drop
         // here would discard history before the Rust path could rehome it.
         if version < 22 {
+            conn.execute_batch(&format!("PRAGMA user_version = {};", Self::LATEST_VERSION))?;
+        }
+
+        // V23: Add image_path column for image attachments
+        if version < 23 {
+            let has_column: bool = conn
+                .query_row(
+                    "SELECT COUNT(*) > 0 FROM pragma_table_info('atoms') WHERE name = 'image_path'",
+                    [],
+                    |row| row.get(0),
+                )
+                .unwrap_or(false);
+
+            if !has_column {
+                conn.execute(
+                    "ALTER TABLE atoms ADD COLUMN image_path TEXT",
+                    [],
+                )?;
+            }
+            conn.execute_batch(&format!("PRAGMA user_version = {};", Self::LATEST_VERSION))?;
+        }
+
+        // V24: Add document_path, document_type, embedded_images columns for document attachments
+        if version < 24 {
+            let has_doc_path: bool = conn
+                .query_row(
+                    "SELECT COUNT(*) > 0 FROM pragma_table_info('atoms') WHERE name = 'document_path'",
+                    [],
+                    |row| row.get(0),
+                )
+                .unwrap_or(false);
+
+            if !has_doc_path {
+                conn.execute(
+                    "ALTER TABLE atoms ADD COLUMN document_path TEXT",
+                    [],
+                )?;
+                conn.execute(
+                    "ALTER TABLE atoms ADD COLUMN document_type TEXT",
+                    [],
+                )?;
+                conn.execute(
+                    "ALTER TABLE atoms ADD COLUMN embedded_images TEXT",
+                    [],
+                )?;
+            }
+            conn.execute_batch(&format!("PRAGMA user_version = {};", Self::LATEST_VERSION))?;
+        }
+
+        // V25: Add document_name column to store original uploaded filename
+        if version < 25 {
+            let has_doc_name: bool = conn
+                .query_row(
+                    "SELECT COUNT(*) > 0 FROM pragma_table_info('atoms') WHERE name = 'document_name'",
+                    [],
+                    |row| row.get(0),
+                )
+                .unwrap_or(false);
+
+            if !has_doc_name {
+                conn.execute(
+                    "ALTER TABLE atoms ADD COLUMN document_name TEXT",
+                    [],
+                )?;
+            }
             conn.execute_batch(&format!("PRAGMA user_version = {};", Self::LATEST_VERSION))?;
         }
 

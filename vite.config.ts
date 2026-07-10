@@ -105,6 +105,7 @@ export default defineConfig({
   server: {
     port: 1420,
     strictPort: true,
+    host: '0.0.0.0',
     allowedHosts: true,
     watch: {
       // The Capacitor iOS scaffold copies dist-web into mobile/ios/App/App/public

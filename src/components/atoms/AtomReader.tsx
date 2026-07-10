@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { ChevronDown, Trash2 } from 'lucide-react';
+import { ChevronDown, Trash2, Upload, X, Eye, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { openExternalUrl } from '../../lib/platform';
 import { Modal } from '../ui/Modal';
 import { Input } from '../ui/Input';
@@ -9,7 +10,7 @@ import { MiniGraphPreview } from '../canvas/MiniGraphPreview';
 import { useAtomsStore, type AtomWithTags, type SemanticSearchResult, type SimilarAtomResult } from '../../stores/atoms';
 import { useTagsStore } from '../../stores/tags';
 import { useUIStore } from '../../stores/ui';
-import { useInlineEditor } from '../../hooks';
+import { useInlineEditor, useIsMobile } from '../../hooks';
 import { formatDate } from '../../lib/date';
 import { getTransport } from '../../lib/transport';
 import { readerEditorActions } from '../../lib/reader-editor-bridge';
@@ -54,6 +55,7 @@ export function AtomReader({ atomId, highlightText, initialEditing }: AtomReader
   const overlayDismiss = useUIStore(s => s.overlayDismiss);
   const removeAtomFromTabs = useUIStore(s => s.removeAtomFromTabs);
   const redirectAtomTabToFinding = useUIStore(s => s.redirectAtomTabToFinding);
+  const isMobile = useIsMobile();
 
   const [atom, setAtom] = useState<AtomWithTags | null>(null);
   const [isLoadingAtom, setIsLoadingAtom] = useState(true);
@@ -157,6 +159,7 @@ export function AtomReader({ atomId, highlightText, initialEditing }: AtomReader
           onRelatedAtomClick={(id, opts) => overlayNavigate({ type: 'reader', atomId: id }, opts)}
           onViewGraph={(opts) => overlayNavigate({ type: 'graph', atomId }, opts)}
           onAtomUpdated={(updated) => setAtom(updated)}
+          refreshAtom={refreshAtom}
         />
       )}
     </div>
@@ -173,25 +176,35 @@ interface AtomReaderContentProps {
   onRelatedAtomClick: (atomId: string, opts?: { newTab?: boolean }) => void;
   onViewGraph: (opts?: { newTab?: boolean }) => void;
   onAtomUpdated?: (atom: AtomWithTags) => void;
+  refreshAtom: () => Promise<void>;
 }
 
 function AtomReaderContent({
   atom, highlightText, initialEditing,
   onDismiss, onDelete, onTagClick, onRelatedAtomClick, onViewGraph, onAtomUpdated,
+  refreshAtom,
 }: AtomReaderContentProps) {
   const readerTheme = useUIStore(s => s.readerTheme);
   const setReaderEditState = useUIStore(s => s.setReaderEditState);
   const retryTagging = useAtomsStore(s => s.retryTagging);
+  const isMobile = useIsMobile();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const editorHandleRef = useRef<AtomicCodeMirrorEditorHandle | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showTagSelector, setShowTagSelector] = useState(false);
+  const [showImagePreview, setShowImagePreview] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [showDocumentPreview, setShowDocumentPreview] = useState(false);
+  const [isUploadingDocument, setIsUploadingDocument] = useState(false);
+  const documentFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const {
     editContent, editSourceUrl, editTags, saveStatus,
     editorRevision,
-    startEditing, setEditContent, setEditSourceUrl, setEditTags, saveNow, flushDraft,
+    startEditing, setEditContent, setEditSourceUrl, setEditTags, saveNow, flushDraft, resetToAtom,
   } = useInlineEditor({ atom, onAtomUpdated });
   const isTaggingInFlight = atom.tagging_status === 'pending' || atom.tagging_status === 'processing';
 
@@ -199,6 +212,67 @@ function AtomReaderContent({
     await retryTagging(atom.id);
     onAtomUpdated?.({ ...atom, tagging_status: 'pending' });
   }, [retryTagging, atom, onAtomUpdated]);
+
+  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    try {
+      await getTransport().uploadImage(atom.id, file);
+      await refreshAtom();
+      resetToAtom();
+    } catch (error) {
+      console.error('Failed to upload image:', error);
+    } finally {
+      setIsUploadingImage(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  }, [atom.id, refreshAtom, resetToAtom]);
+
+  const handleImageDelete = useCallback(async () => {
+    try {
+      await getTransport().deleteImage(atom.id);
+      await refreshAtom();
+      resetToAtom();
+    } catch (error) {
+      console.error('Failed to delete image:', error);
+    }
+  }, [atom.id, refreshAtom, resetToAtom]);
+
+  const handleDocumentUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingDocument(true);
+    try {
+      await getTransport().uploadDocument(atom.id, file);
+      await refreshAtom();
+      resetToAtom();
+    } catch (error) {
+      console.error('Failed to upload document:', error);
+    } finally {
+      setIsUploadingDocument(false);
+      if (documentFileInputRef.current) {
+        documentFileInputRef.current.value = '';
+      }
+    }
+  }, [atom.id, refreshAtom, resetToAtom]);
+
+  const handleDocumentDelete = useCallback(async () => {
+    try {
+      await getTransport().deleteDocument(atom.id);
+      await refreshAtom();
+      resetToAtom();
+    } catch (error) {
+      console.error('Failed to delete document:', error);
+    }
+  }, [atom.id, refreshAtom, resetToAtom]);
+
+  const imageUrl = atom.image_path ? getTransport().getImageUrl(atom.id) : null;
+  const documentUrl = atom.document_path ? getTransport().getDocumentUrl(atom.id) : null;
 
   useEffect(() => {
     setReaderEditState(Boolean(initialEditing), saveStatus);
@@ -374,6 +448,12 @@ function AtomReaderContent({
                 blurEditorOnMount={!initialEditing}
                 onMarkdownChange={setEditContent}
                 onLinkClick={(url) => {
+                  // Intercept embedded image URLs and show preview instead of opening externally
+                  if (url.includes('/embedded-images/')) {
+                    setPreviewImageUrl(url);
+                    setShowImagePreview(true);
+                    return;
+                  }
                   void openExternalUrl(url);
                 }}
                 editorHandleRef={editorHandleRef}
@@ -414,6 +494,140 @@ function AtomReaderContent({
                 >
                   Open source
                 </button>
+              )}
+            </div>
+
+            {/* Image section */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-[var(--color-text-secondary)]">Image</span>
+              </div>
+              {imageUrl ? (
+                <div className="relative group">
+                  <button
+                    type="button"
+                    onClick={() => setShowImagePreview(true)}
+                    className="w-full rounded overflow-hidden border border-[var(--color-border)]"
+                  >
+                    <img
+                      src={imageUrl}
+                      alt="Atom image"
+                      className="w-full h-32 object-cover"
+                    />
+                  </button>
+                  <div className={`absolute top-1 right-1 flex gap-1 transition-opacity ${isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                    <button
+                      type="button"
+                      onClick={() => setShowImagePreview(true)}
+                      className="p-1 rounded bg-black/50 text-white hover:bg-black/70"
+                      title="View full image"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleImageDelete}
+                      className="p-1 rounded bg-black/50 text-red-400 hover:bg-black/70"
+                      title="Delete image"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="border border-dashed border-[var(--color-border)] rounded p-4 text-center">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    id={`image-upload-${atom.id}`}
+                  />
+                  <label
+                    htmlFor={`image-upload-${atom.id}`}
+                    className="flex flex-col items-center gap-1 cursor-pointer"
+                  >
+                    {isUploadingImage ? (
+                      <span className="text-xs text-[var(--color-text-tertiary)]">Uploading...</span>
+                    ) : (
+                      <>
+                        <Upload className="w-5 h-5 text-[var(--color-text-tertiary)]" />
+                        <span className="text-xs text-[var(--color-text-tertiary)]">Upload image</span>
+                      </>
+                    )}
+                  </label>
+                </div>
+              )}
+            </div>
+
+            {/* Document section */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-[var(--color-text-secondary)]">Document</span>
+              </div>
+              {documentUrl ? (
+                <div className="relative group border border-[var(--color-border)] rounded p-3">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowDocumentPreview(true)}
+                      className="flex-1 min-w-0 text-left"
+                    >
+                      <p className="text-xs text-[var(--color-text-primary)] truncate">
+                        {atom.document_name || atom.document_type || 'Document'}
+                      </p>
+                      <p className="text-[10px] text-[var(--color-text-tertiary)]">
+                        Click to preview/download
+                      </p>
+                    </button>
+                    <div className={`flex gap-1 transition-opacity ${isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                      <button
+                        type="button"
+                        onClick={() => setShowDocumentPreview(true)}
+                        className="p-1 rounded bg-black/50 text-white hover:bg-black/70"
+                        title="View document"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDocumentDelete}
+                        className="p-1 rounded bg-black/50 text-red-400 hover:bg-black/70"
+                        title="Delete document"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="border border-dashed border-[var(--color-border)] rounded p-4 text-center">
+                  <input
+                    ref={documentFileInputRef}
+                    type="file"
+                    accept=".doc,.docx,.xls,.xlsx,.pdf"
+                    onChange={handleDocumentUpload}
+                    className="hidden"
+                    id={`document-upload-${atom.id}`}
+                  />
+                  <label
+                    htmlFor={`document-upload-${atom.id}`}
+                    className="flex flex-col items-center gap-1 cursor-pointer"
+                  >
+                    {isUploadingDocument ? (
+                      <span className="text-xs text-[var(--color-text-tertiary)]">Uploading...</span>
+                    ) : (
+                      <>
+                        <Upload className="w-5 h-5 text-[var(--color-text-tertiary)]" />
+                        <span className="text-xs text-[var(--color-text-tertiary)]">Upload document</span>
+                        <span className="text-[10px] text-[var(--color-text-tertiary)]">
+                          Word, Excel, PDF
+                        </span>
+                      </>
+                    )}
+                  </label>
+                </div>
               )}
             </div>
 
@@ -493,6 +707,106 @@ function AtomReaderContent({
         onConfirm={handleDelete}
       >
         <p>Are you sure you want to delete this atom? This action cannot be undone.</p>
+      </Modal>
+
+      {/* Image Preview Modal with Zoom/Pan */}
+      <Modal
+        isOpen={showImagePreview}
+        onClose={() => setShowImagePreview(false)}
+        title="Image Preview"
+        confirmLabel="Close"
+        onConfirm={() => setShowImagePreview(false)}
+      >
+        {(previewImageUrl || imageUrl) && (
+          <TransformWrapper
+            initialScale={1}
+            minScale={0.5}
+            maxScale={8}
+            centerOnInit
+            limitToBounds={false}
+          >
+            {({ zoomIn, zoomOut, resetTransform }) => (
+              <>
+                <div className="flex justify-center gap-2 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => zoomIn()}
+                    className="p-1.5 rounded bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)]"
+                    title="Zoom in"
+                  >
+                    <ZoomIn className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => zoomOut()}
+                    className="p-1.5 rounded bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)]"
+                    title="Zoom out"
+                  >
+                    <ZoomOut className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => resetTransform()}
+                    className="p-1.5 rounded bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)]"
+                    title="Reset zoom"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </button>
+                </div>
+                <TransformComponent
+                  wrapperClass="!w-full !h-[60vh]"
+                  contentClass="!w-full !h-full"
+                >
+                  <img
+                    src={previewImageUrl || imageUrl || undefined}
+                    alt="Atom image full size"
+                    className="max-w-full max-h-full object-contain"
+                  />
+                </TransformComponent>
+              </>
+            )}
+          </TransformWrapper>
+        )}
+      </Modal>
+
+      {/* Document Preview Modal */}
+      <Modal
+        isOpen={showDocumentPreview}
+        onClose={() => setShowDocumentPreview(false)}
+        title={atom.document_name || 'Document Preview'}
+        confirmLabel="Close"
+        onConfirm={() => setShowDocumentPreview(false)}
+      >
+        {documentUrl && (
+          <div className="flex flex-col items-center gap-4">
+            {atom.document_type === 'application/pdf' ? (
+              <iframe
+                src={documentUrl}
+                className="w-full h-[70vh] border border-[var(--color-border)] rounded"
+                title="PDF Preview"
+              />
+            ) : (
+              <div className="w-full p-8 border border-dashed border-[var(--color-border)] rounded-lg text-center">
+                <p className="text-sm text-[var(--color-text-secondary)] mb-2">
+                  {atom.document_name || 'Document'}
+                </p>
+                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">
+                  Content has been extracted and stored in the note.
+                </p>
+                <p className="text-xs text-[var(--color-text-tertiary)]">
+                  Scroll up to view the extracted content with images.
+                </p>
+              </div>
+            )}
+            <a
+              href={documentUrl}
+              download={atom.document_name || undefined}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-accent)] text-white rounded-lg text-sm hover:bg-[var(--color-accent-light)] transition-colors"
+            >
+              Download Document
+            </a>
+          </div>
+        )}
       </Modal>
     </div>
   );

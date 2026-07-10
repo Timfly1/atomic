@@ -272,4 +272,185 @@ export class HttpTransport implements Transport {
     subs.add(callback);
     return () => { subs.delete(callback); };
   }
+
+  async uploadImage(atomId: string, file: File): Promise<{ image_path: string }> {
+    if (this.authExpired) {
+      throw new Error('Authentication expired. Please reconnect with a valid token.');
+    }
+    if (!this.config.baseUrl) {
+      throw new Error('Not connected to a server');
+    }
+
+    const url = `${this.config.baseUrl}/api/atoms/${encodeURIComponent(atomId)}/image`;
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${this.config.authToken}`,
+    };
+
+    const body = await file.arrayBuffer();
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers,
+      body,
+    });
+
+    if (!resp.ok) {
+      if (resp.status === 401) {
+        this.authExpired = true;
+        this.disconnect();
+        localStorage.removeItem('atomic-server-config');
+        window.dispatchEvent(new CustomEvent('atomic:auth-expired'));
+        throw new Error('Authentication expired. Please reconnect with a valid token.');
+      }
+      const text = await resp.text();
+      let errorMsg: string;
+      try {
+        const errJson = JSON.parse(text);
+        errorMsg = errJson.error || text;
+      } catch {
+        errorMsg = text;
+      }
+      throw errorMsg;
+    }
+
+    return resp.json();
+  }
+
+  getImageUrl(atomId: string): string {
+    if (!this.config.baseUrl) {
+      throw new Error('Not connected to a server');
+    }
+    return `${this.config.baseUrl}/api/atoms/${encodeURIComponent(atomId)}/image?token=${encodeURIComponent(this.config.authToken)}`;
+  }
+
+  async deleteImage(atomId: string): Promise<void> {
+    if (this.authExpired) {
+      throw new Error('Authentication expired. Please reconnect with a valid token.');
+    }
+    if (!this.config.baseUrl) {
+      throw new Error('Not connected to a server');
+    }
+
+    const url = `${this.config.baseUrl}/api/atoms/${encodeURIComponent(atomId)}/image`;
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${this.config.authToken}`,
+    };
+
+    const resp = await fetch(url, {
+      method: 'DELETE',
+      headers,
+    });
+
+    if (!resp.ok) {
+      if (resp.status === 401) {
+        this.authExpired = true;
+        this.disconnect();
+        localStorage.removeItem('atomic-server-config');
+        window.dispatchEvent(new CustomEvent('atomic:auth-expired'));
+        throw new Error('Authentication expired. Please reconnect with a valid token.');
+      }
+      const text = await resp.text();
+      let errorMsg: string;
+      try {
+        const errJson = JSON.parse(text);
+        errorMsg = errJson.error || text;
+      } catch {
+        errorMsg = text;
+      }
+      throw errorMsg;
+    }
+  }
+
+  async uploadDocument(atomId: string, file: File): Promise<{ document_path: string; content_type: string }> {
+    if (this.authExpired) {
+      throw new Error('Authentication expired. Please reconnect with a valid token.');
+    }
+    if (!this.config.baseUrl) {
+      throw new Error('Not connected to a server');
+    }
+
+    const url = `${this.config.baseUrl}/api/atoms/${encodeURIComponent(atomId)}/document?filename=${encodeURIComponent(file.name)}`;
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${this.config.authToken}`,
+    };
+
+    const body = await file.arrayBuffer();
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers,
+      body,
+    });
+
+    if (!resp.ok) {
+      if (resp.status === 401) {
+        this.authExpired = true;
+        this.disconnect();
+        localStorage.removeItem('atomic-server-config');
+        window.dispatchEvent(new CustomEvent('atomic:auth-expired'));
+        throw new Error('Authentication expired. Please reconnect with a valid token.');
+      }
+      const text = await resp.text();
+      let errorMsg: string;
+      try {
+        const errJson = JSON.parse(text);
+        errorMsg = errJson.error || text;
+      } catch {
+        errorMsg = text;
+      }
+      throw errorMsg;
+    }
+
+    return resp.json();
+  }
+
+  getDocumentUrl(atomId: string): string {
+    if (!this.config.baseUrl) {
+      throw new Error('Not connected to a server');
+    }
+    return `${this.config.baseUrl}/api/atoms/${encodeURIComponent(atomId)}/document?token=${encodeURIComponent(this.config.authToken)}`;
+  }
+
+  getEmbeddedImageUrl(atomId: string, imageId: string): string {
+    if (!this.config.baseUrl) {
+      throw new Error('Not connected to a server');
+    }
+    return `${this.config.baseUrl}/api/atoms/${encodeURIComponent(atomId)}/embedded-images/${encodeURIComponent(imageId)}?token=${encodeURIComponent(this.config.authToken)}`;
+  }
+
+  async deleteDocument(atomId: string): Promise<void> {
+    if (this.authExpired) {
+      throw new Error('Authentication expired. Please reconnect with a valid token.');
+    }
+    if (!this.config.baseUrl) {
+      throw new Error('Not connected to a server');
+    }
+
+    const url = `${this.config.baseUrl}/api/atoms/${encodeURIComponent(atomId)}/document`;
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${this.config.authToken}`,
+    };
+
+    const resp = await fetch(url, {
+      method: 'DELETE',
+      headers,
+    });
+
+    if (!resp.ok) {
+      if (resp.status === 401) {
+        this.authExpired = true;
+        this.disconnect();
+        localStorage.removeItem('atomic-server-config');
+        window.dispatchEvent(new CustomEvent('atomic:auth-expired'));
+        throw new Error('Authentication expired. Please reconnect with a valid token.');
+      }
+      const text = await resp.text();
+      let errorMsg: string;
+      try {
+        const errJson = JSON.parse(text);
+        errorMsg = errJson.error || text;
+      } catch {
+        errorMsg = text;
+      }
+      throw errorMsg;
+    }
+  }
 }

@@ -138,6 +138,9 @@ export function TagTree({ onOpenTagSettings }: TagTreeProps = {}) {
 
   const handleSelectTag = async (tagId: string | null) => {
     setSelectedTag(tagId);
+    // Switch to atoms view when selecting a tag
+    const setViewMode = useUIStore.getState().setViewMode;
+    setViewMode('atoms');
     if (tagId) {
       await fetchAtomsByTag(tagId);
     } else {

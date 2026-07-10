@@ -50,6 +50,29 @@ export function edgeColor(theme: CanvasTheme, weight: number): string {
 
 export const CANVAS_THEMES: CanvasTheme[] = [
   {
+    id: 'arctic',
+    name: 'Arctic',
+    background: '#f5f5f7',
+    nodeMin: [100, 140, 200],
+    nodeMax: [40, 80, 180],
+    palette: [
+      [60, 120, 200],  // blue
+      [80, 160, 140],  // teal
+      [160, 80, 160],  // purple
+      [200, 100, 80],  // coral
+      [100, 180, 120], // green
+      [180, 140, 80],  // gold
+      [120, 100, 200], // violet
+      [80, 140, 180],  // sky
+    ],
+    edgeMin: [200, 200, 205],
+    edgeMax: [140, 160, 190],
+    labelColor: 'rgb(60, 60, 80)',
+    labelBg: 'rgb(255, 255, 255)',
+    labelBorder: 'rgba(100, 120, 160, 0.3)',
+    nodeLabelColor: '#404060',
+  },
+  {
     id: 'ember',
     name: 'Ember',
     background: '#1a1816',
@@ -167,3 +190,5 @@ export const CANVAS_THEMES: CanvasTheme[] = [
 ];
 
 export const DEFAULT_THEME = CANVAS_THEMES.find(t => t.id === 'steel-violet')!;
+
+export const LIGHT_THEME = CANVAS_THEMES.find(t => t.id === 'arctic')!;

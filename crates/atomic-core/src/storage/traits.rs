@@ -78,6 +78,12 @@ pub trait AtomStore: Send + Sync {
     /// Delete an atom and all associated data (tags, chunks, embeddings, edges).
     async fn delete_atom(&self, id: &str) -> StorageResult<()>;
 
+    /// Clear document attachment fields (document_path, document_name, document_type, embedded_images).
+    async fn clear_document(&self, id: &str) -> StorageResult<AtomWithTags>;
+
+    /// Clear image attachment field (image_path).
+    async fn clear_image(&self, id: &str) -> StorageResult<AtomWithTags>;
+
     /// Get all atoms with a specific tag (including descendants of that tag).
     /// `kinds` restricts which atom kinds are included — see
     /// [`crate::models::KindFilter`].

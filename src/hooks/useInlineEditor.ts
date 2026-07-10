@@ -2,10 +2,60 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useAtomsStore, type AtomWithTags, type Tag } from '../stores/atoms';
 import { useTagsStore } from '../stores/tags';
 import { useUIStore } from '../stores/ui';
+import { getTransport } from '../lib/transport';
 
 const AUTO_SAVE_DELAY = 1500; // ms
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
+
+/** Resolve atomic:// embedded image URLs to actual API URLs for display in editor */
+function resolveAtomicUrls(content: string, atomId: string, authToken: string): string {
+  const baseUrl = getTransport().getConfig().baseUrl?.replace(/\/$/, '') || '';
+  // Resolve atomic:// protocol URLs
+  let resolved = content.replace(
+    /!\[([^\]]*)\]\(atomic:\/\/embedded-image\/([^)]+)\)/g,
+    (_, alt, imageId) => {
+      const apiUrl = `${baseUrl}/api/atoms/${encodeURIComponent(atomId)}/embedded-images/${encodeURIComponent(imageId)}?token=${encodeURIComponent(authToken)}`;
+      return `![${alt}](${apiUrl})`;
+    }
+  );
+  // Resolve relative /api/atoms/{id}/image URLs to include auth token
+  resolved = resolved.replace(
+    /!\[([^\]]*)\]\(\/api\/atoms\/([^/]+)\/image\)/g,
+    (_, alt, id) => {
+      const apiUrl = `${baseUrl}/api/atoms/${encodeURIComponent(id)}/image?token=${encodeURIComponent(authToken)}`;
+      return `![${alt}](${apiUrl})`;
+    }
+  );
+  return resolved;
+}
+
+/** Convert resolved HTTP URLs back to atomic:// protocol for storage */
+function unresolveAtomicUrls(content: string, atomId: string): string {
+  const baseUrl = getTransport().getConfig().baseUrl?.replace(/\/$/, '') || '';
+  // Match embedded image URLs like: http://localhost:8080/api/atoms/{atomId}/embedded-images/{imageId}?token=...
+  const embeddedPattern = new RegExp(
+    `!\\[([^\\]]*)\\]\\(${escapeRegex(baseUrl)}/api/atoms/${escapeRegex(atomId)}/embedded-images/([^?)]+)\\?[^)]*\\)`,
+    'g'
+  );
+  let result = content.replace(embeddedPattern, (_, alt, imageId) => {
+    return `![${alt}](atomic://embedded-image/${decodeURIComponent(imageId)})`;
+  });
+  // Match main image URLs like: http://localhost:8080/api/atoms/{atomId}/image?token=...
+  const imagePattern = new RegExp(
+    `!\\[([^\\]]*)\\]\\(${escapeRegex(baseUrl)}/api/atoms/${escapeRegex(atomId)}/image\\?[^)]*\\)`,
+    'g'
+  );
+  result = result.replace(imagePattern, (_, alt) => {
+    return `![${alt}](/api/atoms/${atomId}/image)`;
+  });
+  return result;
+}
+
+/** Escape special regex characters in a string */
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 interface UseInlineEditorOptions {
   atom: AtomWithTags;
@@ -29,6 +79,7 @@ interface UseInlineEditorReturn {
   setEditTags: (tags: Tag[]) => void;
   saveNow: () => Promise<void>;
   flushDraft: () => Promise<void>;
+  resetToAtom: () => void;
 }
 
 export function useInlineEditor({
@@ -45,7 +96,7 @@ export function useInlineEditor({
 
   const [isEditing, setIsEditing] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [editContent, setEditContent] = useState(atom.content);
+  const [editContent, setEditContent] = useState(() => resolveAtomicUrls(atom.content, atom.id, getTransport().getConfig().authToken || ''));
   const [editSourceUrl, setEditSourceUrl] = useState(atom.source_url || '');
   const [editTags, setEditTags] = useState<Tag[]>(atom.tags);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
@@ -61,6 +112,7 @@ export function useInlineEditor({
   const editContentRef = useRef(editContent);
   const editSourceUrlRef = useRef(editSourceUrl);
   const editTagsRef = useRef(editTags);
+  const forceSyncRef = useRef(false);
   // Track what was last saved to detect dirty state
   const lastSavedRef = useRef({
     content: atom.content,
@@ -100,16 +152,22 @@ export function useInlineEditor({
       editSourceUrlRef.current !== lastSavedRef.current.sourceUrl ||
       currentTagIds !== lastSavedRef.current.tagIds;
 
-    if (!atomChanged && hasLocalDraftChanges) {
+    // Skip sync if there are local draft changes AND we're not forcing a sync
+    if (!atomChanged && hasLocalDraftChanges && !forceSyncRef.current) {
       return;
     }
 
+    // Reset force sync flag after using it
+    forceSyncRef.current = false;
+
     const shouldRemountEditor = atomChanged || incoming.content !== editContentRef.current;
     atomIdRef.current = atom.id;
-    setEditContent(atom.content);
+    // Resolve atomic:// URLs when syncing from external content updates (e.g., document upload)
+    const resolvedContent = resolveAtomicUrls(atom.content, atom.id, getTransport().getConfig().authToken || '');
+    setEditContent(resolvedContent);
     setEditSourceUrl(atom.source_url || '');
     setEditTags(atom.tags);
-    editContentRef.current = atom.content;
+    editContentRef.current = resolvedContent;
     editSourceUrlRef.current = atom.source_url || '';
     editTagsRef.current = atom.tags;
     lastSavedRef.current = incoming;
@@ -141,7 +199,8 @@ export function useInlineEditor({
     setSaveStatus('saving');
     const promise = (async () => {
       try {
-        const content = editContentRef.current;
+        // Convert resolved HTTP URLs back to atomic:// protocol for storage
+        const content = unresolveAtomicUrls(editContentRef.current, atom.id);
         const sourceUrl = editSourceUrlRef.current;
         const tags = editTagsRef.current;
         const tagIds = tags.map(t => t.id);
@@ -314,7 +373,8 @@ export function useInlineEditor({
           savingPromiseRef.current
             .catch(() => {})
             .then(async () => {
-              const latestContent = editContentRef.current;
+              // Convert resolved HTTP URLs back to atomic:// protocol for storage
+              const latestContent = unresolveAtomicUrls(editContentRef.current, atom.id);
               const latestSourceUrl = editSourceUrlRef.current;
               const latestTags = editTagsRef.current;
               const tagIds = latestTags.map(t => t.id);
@@ -339,6 +399,12 @@ export function useInlineEditor({
     }
   }, [saveStatus]);
 
+  const resetToAtom = useCallback(() => {
+    // Force sync by setting flag and bumping editor revision
+    forceSyncRef.current = true;
+    setEditorRevision((revision) => revision + 1);
+  }, []);
+
   return {
     isEditing,
     isTransitioning,
@@ -355,5 +421,6 @@ export function useInlineEditor({
     setEditTags: handleSetTags,
     saveNow,
     flushDraft,
+    resetToAtom,
   };
 }

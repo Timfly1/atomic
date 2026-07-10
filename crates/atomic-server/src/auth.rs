@@ -7,6 +7,7 @@ use actix_web::web;
 use actix_web::Error;
 use futures::future::{ok, LocalBoxFuture, Ready};
 use std::task::{Context, Poll};
+use urlencoding;
 
 /// Middleware that requires a valid Bearer token (looked up in the api_tokens table)
 pub struct BearerAuth {
@@ -53,13 +54,20 @@ where
     fn call(&self, req: ServiceRequest) -> Self::Future {
         let state = self.state.clone();
 
-        // Extract the Authorization header
+        // Extract token from Authorization header OR query string (for <img> tags etc.)
         let raw_token = req
             .headers()
             .get("Authorization")
             .and_then(|v| v.to_str().ok())
             .and_then(|h| h.strip_prefix("Bearer "))
-            .map(String::from);
+            .map(String::from)
+            .or_else(|| {
+                req.query_string()
+                    .split('&')
+                    .find(|pair| pair.starts_with("token="))
+                    .and_then(|pair| pair.strip_prefix("token="))
+                    .map(|t| urlencoding::decode(t).map(|d| d.into_owned()).unwrap_or_default())
+            });
 
         let raw_token = match raw_token {
             Some(t) => t,

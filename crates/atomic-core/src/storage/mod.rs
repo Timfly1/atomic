@@ -357,6 +357,10 @@ dispatch! {
         => sqlite: update_atom_content_only_impl, pg_trait: AtomStore, pg_method: update_atom_content_only;
     fn delete_atom_impl(&self, id: &str) -> Result<(), AtomicCoreError>
         => sqlite: delete_atom_impl, pg_trait: AtomStore, pg_method: delete_atom;
+    fn clear_document_impl(&self, id: &str) -> Result<AtomWithTags, AtomicCoreError>
+        => sqlite: clear_document_impl, pg_trait: AtomStore, pg_method: clear_document;
+    fn clear_image_impl(&self, id: &str) -> Result<AtomWithTags, AtomicCoreError>
+        => sqlite: clear_image_impl, pg_trait: AtomStore, pg_method: clear_image;
     fn get_atoms_by_tag_impl(&self, tag_id: &str, kinds: &crate::models::KindFilter) -> Result<Vec<AtomWithTags>, AtomicCoreError>
         => sqlite: get_atoms_by_tag_impl, pg_trait: AtomStore, pg_method: get_atoms_by_tag;
     fn get_atom_links_impl(&self, atom_id: &str) -> Result<Vec<AtomLink>, AtomicCoreError>

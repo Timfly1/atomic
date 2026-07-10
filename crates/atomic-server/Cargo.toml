@@ -64,6 +64,7 @@ utoipa-scalar = { version = "0.3", features = ["actix-web"] }
 sha2 = "0.10"
 rand = "0.8"
 base64 = "0.22"
+urlencoding = "2"
 
 [dev-dependencies]
 tempfile = "3"

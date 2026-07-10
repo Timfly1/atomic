@@ -233,7 +233,7 @@ pub use utoipa_scalar::{Scalar, Servable};
         atomic_core::FailedAtom,
         // Server request types
         routes::atoms::CreateAtomRequest,
-        routes::atoms::UpdateAtomRequest,
+        atomic_core::UpdateAtomRequest,
         routes::atoms::CreateTagRequest,
         routes::atoms::UpdateTagRequest,
         routes::atoms::SetAutotagTargetRequest,

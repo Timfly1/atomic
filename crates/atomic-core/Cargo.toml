@@ -23,7 +23,7 @@ async-trait = "0.1"
 futures = "0.3"
 
 # HTTP
-reqwest = { version = "0.12", features = ["json", "stream"] }
+reqwest = { version = "0.12", features = ["json", "stream", "multipart"] }
 
 # Serialization
 serde = { version = "1", features = ["derive"] }
@@ -43,7 +43,7 @@ tiktoken-rs = "0.6"
 zerocopy = { version = "0.8", features = ["derive"] }
 thiserror = "1"
 tracing = "0.1"
-utoipa = { version = "5", features = ["preserve_order"], optional = true }
+utoipa = { version = "5", features = ["preserve_order"] }
 
 # Token auth
 sha2 = "0.10"
@@ -64,9 +64,16 @@ urlencoding = "2"
 url = "2"
 zip = { version = "2", default-features = false, features = ["deflate"] }
 
+# Document processing
+# Note: docx files are parsed using zip + quick-xml (no external docx crate needed)
+calamine = "0.26"      # Excel (.xlsx, .xls) parsing
+lopdf = "0.32"         # PDF parsing
+image = "0.24"         # Image processing
+quick-xml = "0.31"     # XML parsing (used by docx/xlsx internally)
+
 [features]
 default = []
-openapi = ["utoipa"]
+openapi = []
 postgres = ["sqlx", "pgvector", "log"]
 
 [dev-dependencies]

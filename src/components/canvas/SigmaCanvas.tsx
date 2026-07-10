@@ -10,12 +10,14 @@ import EdgeCurveProgram from '@sigma/edge-curve';
 import {
   CANVAS_THEMES,
   DEFAULT_THEME,
+  LIGHT_THEME,
   nodeColor,
   edgeColor,
   type CanvasTheme,
 } from './sigma/themes';
 import { AtomPreviewPopover } from './AtomPreviewPopover';
 import { useCanvasStore } from '../../stores/canvas';
+import { useTheme } from '../../hooks/useTheme';
 
 function truncLabel(str: string, max: number): string {
   return str.length > max ? str.substring(0, max - 1) + '\u2026' : str;
@@ -75,13 +77,20 @@ export function SigmaCanvas({
   const [data, setData] = useState<GlobalCanvasData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [theme, setTheme] = useState<CanvasTheme>(DEFAULT_THEME);
+  const appTheme = useTheme();
+  const [manualTheme, setManualTheme] = useState<CanvasTheme | null>(null);
+  const theme = manualTheme ?? (appTheme === 'liquid-glass' ? LIGHT_THEME : DEFAULT_THEME);
   const [themePickerOpen, setThemePickerOpen] = useState(false);
   const [edgeThreshold, setEdgeThreshold] = useState(0);
   const edgeThresholdRef = useRef(0);
   const edgeAnimProgress = useRef(0); // 0 = invisible, 1 = fully visible
   const themeRef = useRef(theme);
   themeRef.current = theme;
+
+  // Reset manual theme when app theme changes
+  useEffect(() => {
+    setManualTheme(null);
+  }, [appTheme]);
 
   // Hover emphasis: when a node is hovered, dim everything outside its neighborhood.
   // neighborsRef lets the edge/node reducers answer "is X a neighbor of hovered?" in O(1).
@@ -524,7 +533,7 @@ export function SigmaCanvas({
         const pSize = sigma!.scaleSize(pAttrs.size as number);
         ctx.beginPath();
         ctx.arc(pPos.x, pPos.y, pSize + 3, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+        ctx.strokeStyle = t.labelColor.replace('rgb(', 'rgba(').replace(')', ',0.75)');
         ctx.lineWidth = 2;
         ctx.stroke();
 
@@ -564,7 +573,7 @@ export function SigmaCanvas({
         ctx.globalAlpha = hAnim;
         ctx.beginPath();
         ctx.arc(hPos.x, hPos.y, hSize + 2, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+        ctx.strokeStyle = t.labelColor.replace('rgb(', 'rgba(').replace(')', ',0.35)');
         ctx.lineWidth = 1.5;
         ctx.stroke();
         ctx.globalAlpha = 1;
@@ -993,7 +1002,7 @@ export function SigmaCanvas({
                 {CANVAS_THEMES.filter(t => t.id !== theme.id).map((t) => (
                   <button
                     key={t.id}
-                    onClick={() => { setTheme(t); setThemePickerOpen(false); }}
+                    onClick={() => { setManualTheme(t); setThemePickerOpen(false); }}
                     title={t.name}
                     className="w-5 h-5 rounded-full border border-white/15 hover:border-white/40 transition-all flex-shrink-0"
                     style={{

@@ -112,7 +112,8 @@ export function FilterSheet({ isOpen, onClose, displayCount }: FilterSheetProps)
 
         {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
-          {/* View mode */}
+          {/*
+          // View mode - TEMPORARILY DISABLED (view switching now in titlebar)
           <section>
             <h3 className="text-xs font-medium uppercase tracking-wider text-[var(--color-text-tertiary)] mb-2">
               View
@@ -156,6 +157,7 @@ export function FilterSheet({ isOpen, onClose, displayCount }: FilterSheetProps)
               </div>
             )}
           </section>
+          */}
 
           {/* Source filter */}
           <section>

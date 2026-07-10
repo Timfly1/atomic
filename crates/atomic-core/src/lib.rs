@@ -36,6 +36,7 @@ pub mod chunking;
 pub mod clustering;
 pub mod compaction;
 pub mod db;
+pub mod document;
 pub mod embedding;
 pub mod error;
 pub mod executor;
@@ -46,6 +47,7 @@ pub mod import;
 pub mod ingest;
 pub mod manager;
 pub mod models;
+pub mod ocr;
 pub mod pipeline_task;
 pub mod projection;
 pub mod providers;
@@ -62,12 +64,14 @@ pub mod wiki;
 pub use agent::{CanvasClusterSummary, CanvasContext, ChatEvent, PageContext};
 pub use atom_edit::{apply_atom_edits, AtomEditOperation};
 pub use db::Database;
+pub use document::{parse_document, convert, ConversionResult, ConverterConfig, DocumentError, DocumentType, ParseResult};
 pub use embedding::{EmbeddingEvent, EmbeddingStrategy, TaggingStrategy};
 pub use error::AtomicCoreError;
 pub use export::{MarkdownArchiveFormat, MarkdownExportProgress, MarkdownExportResult};
 pub use import::{ImportProgress, ImportResult};
 pub use ingest::{FeedPollResult, IngestionEvent, IngestionRequest, IngestionResult};
 pub use manager::DatabaseManager;
+pub use ocr::{extract_text_from_image, OcrResult};
 pub use models::*;
 pub use providers::{ProviderConfig, ProviderType};
 pub use registry::{DatabaseInfo, OAuthCodeInfo, Registry};
@@ -76,9 +80,11 @@ pub use tokens::ApiTokenInfo;
 
 use chrono::Utc;
 use rusqlite::Connection;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 /// Request to create a new atom
@@ -93,12 +99,22 @@ pub struct CreateAtomRequest {
 }
 
 /// Request to update an existing atom
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct UpdateAtomRequest {
     pub content: String,
     pub source_url: Option<String>,
     pub published_at: Option<String>,
     pub tag_ids: Option<Vec<String>>,
+    /// Path to attached image (local filesystem)
+    pub image_path: Option<String>,
+    /// Path to attached document (local filesystem)
+    pub document_path: Option<String>,
+    /// Original filename of the attached document
+    pub document_name: Option<String>,
+    /// MIME type of the attached document
+    pub document_type: Option<String>,
+    /// Embedded images extracted from document (JSON serialized)
+    pub embedded_images: Option<String>,
 }
 
 /// Rebuilder closure registered by `AtomicCore` so the cache can recompute
@@ -1200,6 +1216,20 @@ impl AtomicCore {
         self.storage.delete_atom_impl(id).await?;
         self.canvas_cache.invalidate();
         Ok(())
+    }
+
+    /// Clear document attachment fields (document_path, document_name, document_type, embedded_images).
+    pub async fn clear_document(&self, id: &str) -> Result<AtomWithTags, AtomicCoreError> {
+        let result = self.storage.clear_document_impl(id).await?;
+        self.canvas_cache.invalidate_debounced();
+        Ok(result)
+    }
+
+    /// Clear image attachment field (image_path).
+    pub async fn clear_image(&self, id: &str) -> Result<AtomWithTags, AtomicCoreError> {
+        let result = self.storage.clear_image_impl(id).await?;
+        self.canvas_cache.invalidate_debounced();
+        Ok(result)
     }
 
     /// Get atoms by tag (includes atoms with descendant tags).
@@ -4427,10 +4457,10 @@ pub(crate) fn parse_source(source_url: &str) -> String {
 }
 
 /// Standard SELECT columns for reading an Atom from the DB.
-pub(crate) const ATOM_COLUMNS: &str = "id, content, title, snippet, source_url, source, published_at, created_at, updated_at, COALESCE(embedding_status, 'pending'), COALESCE(tagging_status, 'pending'), embedding_error, tagging_error, COALESCE(kind, 'captured')";
+pub(crate) const ATOM_COLUMNS: &str = "id, content, title, snippet, source_url, source, published_at, created_at, updated_at, COALESCE(embedding_status, 'pending'), COALESCE(tagging_status, 'pending'), embedding_error, tagging_error, COALESCE(kind, 'captured'), image_path, document_path, document_name, document_type, embedded_images";
 
 /// Same columns but table-aliased for JOINs.
-pub(crate) const ATOM_COLUMNS_A: &str = "a.id, a.content, a.title, a.snippet, a.source_url, a.source, a.published_at, a.created_at, a.updated_at, COALESCE(a.embedding_status, 'pending'), COALESCE(a.tagging_status, 'pending'), a.embedding_error, a.tagging_error, COALESCE(a.kind, 'captured')";
+pub(crate) const ATOM_COLUMNS_A: &str = "a.id, a.content, a.title, a.snippet, a.source_url, a.source, a.published_at, a.created_at, a.updated_at, COALESCE(a.embedding_status, 'pending'), COALESCE(a.tagging_status, 'pending'), a.embedding_error, a.tagging_error, COALESCE(a.kind, 'captured'), a.image_path, a.document_path, a.document_name, a.document_type, a.embedded_images";
 
 /// Parse an Atom from a row selected with ATOM_COLUMNS.
 pub(crate) fn atom_from_row(row: &rusqlite::Row) -> rusqlite::Result<Atom> {
@@ -4453,6 +4483,14 @@ pub(crate) fn atom_from_row(row: &rusqlite::Row) -> rusqlite::Result<Atom> {
         embedding_error: row.get(11)?,
         tagging_error: row.get(12)?,
         kind,
+        image_path: row.get(14)?,
+        document_path: row.get(15).ok(),
+        document_name: row.get(16).ok(),
+        document_type: row.get(17).ok(),
+        embedded_images: row.get::<_, Option<String>>(18).ok()
+            .flatten()
+            .and_then(|s| serde_json::from_str(&s).ok())
+            .unwrap_or_default(),
     })
 }
 
@@ -5498,6 +5536,7 @@ mod tests {
                 source_url: None,
                 published_at: None,
                 tag_ids: None,
+                image_path: None,
             },
             |_| {},
         )

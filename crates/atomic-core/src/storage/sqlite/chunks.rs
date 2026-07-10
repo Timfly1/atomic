@@ -1738,6 +1738,7 @@ mod tests {
                 source_url: None,
                 published_at: None,
                 tag_ids: None,
+                image_path: None,
             },
         )
         .await

@@ -10,15 +10,14 @@ import {
   Network,
   BookOpen,
   Search,
-  Filter,
   Telescope,
 } from 'lucide-react';
 import { motion, LayoutGroup } from 'motion/react';
 import { AtomGrid } from '../atoms/AtomGrid';
 import { AtomList } from '../atoms/AtomList';
 import { AtomReader } from '../atoms/AtomReader';
-import { FilterBar } from '../atoms/FilterBar';
-import { FilterSheet } from '../atoms/FilterSheet';
+// import { FilterBar } from '../atoms/FilterBar'; // TEMPORARILY DISABLED
+// import { FilterSheet } from '../atoms/FilterSheet'; // TEMPORARILY DISABLED
 import { SigmaCanvas } from '../canvas/SigmaCanvas';
 import { LocalGraphView } from '../canvas/LocalGraphView';
 import { DashboardView } from '../dashboard/DashboardView';
@@ -28,6 +27,7 @@ import { WikiReader } from '../wiki/WikiReader';
 import { ReportsFullView, ReportDetailView, FindingReader } from '../reports';
 import { ChatViewer } from '../chat/ChatViewer';
 import { TabStrip } from './TabStrip';
+import { BottomNav } from './BottomNav';
 import { useAtomsStore } from '../../stores/atoms';
 import { useUIStore } from '../../stores/ui';
 import { isTauri } from '../../lib/platform';
@@ -45,10 +45,10 @@ export function MainView() {
   const semanticSearchQuery = useAtomsStore(s => s.semanticSearchQuery);
   const retryEmbedding = useAtomsStore(s => s.retryEmbedding);
   const retryTagging = useAtomsStore(s => s.retryTagging);
-  const sourceFilter = useAtomsStore(s => s.sourceFilter);
-  const sourceValue = useAtomsStore(s => s.sourceValue);
-  const sortBy = useAtomsStore(s => s.sortBy);
-  const sortOrder = useAtomsStore(s => s.sortOrder);
+  // const sourceFilter = useAtomsStore(s => s.sourceFilter); // TEMPORARILY DISABLED
+  // const sourceValue = useAtomsStore(s => s.sourceValue); // TEMPORARILY DISABLED
+  // const sortBy = useAtomsStore(s => s.sortBy); // TEMPORARILY DISABLED
+  // const sortOrder = useAtomsStore(s => s.sortOrder); // TEMPORARILY DISABLED
   const search = useAtomsStore(s => s.search);
   const clearSemanticSearch = useAtomsStore(s => s.clearSemanticSearch);
 
@@ -79,9 +79,9 @@ export function MainView() {
   const toggleChatSidebar = useUIStore(s => s.toggleChatSidebar);
   const [isResizingChat, setIsResizingChat] = useState(false);
 
-  const [filterBarOpen, setFilterBarOpen] = useState(false);
+  // const [filterBarOpen, setFilterBarOpen] = useState(false); // TEMPORARILY DISABLED
   const isMobile = useIsMobile();
-  const hasActiveFilter = sourceFilter !== 'all' || !!sourceValue || sortBy !== 'updated' || sortOrder !== 'desc';
+  // const hasActiveFilter = sourceFilter !== 'all' || !!sourceValue || sortBy !== 'updated' || sortOrder !== 'desc'; // TEMPORARILY DISABLED
 
   // Main nav is "active" only when no tab is open and the current view mode
   // matches. Once a tab is active, the pill carries the active styling and
@@ -145,21 +145,24 @@ export function MainView() {
     // - Keyword: highlight the search query terms
     // - Semantic: highlight the matching chunk content
     // - Hybrid: highlight the search query (prioritize keywords over chunk)
-    const isSearch = useAtomsStore.getState().semanticSearchResults !== null;
+    const state = useAtomsStore.getState();
+    const isSearch = state.semanticSearchResults !== null;
     if (!isSearch) {
       openReader(atomId, undefined, opts);
       return;
     }
-    const mode = useAtomsStore.getState().searchMode;
-    const query = useAtomsStore.getState().semanticSearchQuery;
+    const mode = state.searchMode;
+    const query = state.semanticSearchQuery;
     let highlightText: string | undefined;
     if (mode === 'keyword' || mode === 'hybrid') {
       highlightText = query;
     } else {
-      highlightText = matchingChunkMap?.get(atomId);
+      // Look up directly from store state to avoid stale closure issues
+      const result = state.semanticSearchResults?.find(r => r.id === atomId);
+      highlightText = result?.matching_chunk_content;
     }
     openReader(atomId, highlightText, opts);
-  }, [openReader, matchingChunkMap]);
+  }, [openReader]);
 
   const createAtom = useAtomsStore(s => s.createAtom);
   const openReaderEditing = useUIStore(s => s.openReaderEditing);
@@ -239,7 +242,7 @@ export function MainView() {
 
   return (
     <>
-    <main className="relative flex-1 flex flex-col h-full bg-[var(--color-bg-main)] overflow-hidden">
+    <main className="relative flex-1 flex flex-col h-full bg-[var(--color-bg-main)] overflow-hidden pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0">
       {/* Titlebar row — the row itself is a Tauri drag region; interactive
           elements inside it (buttons, tabs) receive their own events normally. */}
       <div
@@ -265,41 +268,40 @@ export function MainView() {
             a continuous slide instead of a fade-swap when the user
             changes views. */}
         <LayoutGroup>
-          {!isMobile && (
-            <div className="flex items-center gap-1 shrink-0">
-              {([
-                ['dashboard', LayoutDashboard, 'Dashboard'],
-                ['atoms', Library, 'Atoms'],
-                ['canvas', Network, 'Canvas view'],
-                ['wiki', BookOpen, 'Wiki view'],
-                ['reports', Telescope, 'Reports'],
-              ] as const).map(([mode, IconCmp, label]) => {
-                const isActiveNav = onBaseView && viewMode === mode;
-                return (
-                  <button
-                    key={mode}
-                    onClick={() => setViewMode(mode)}
-                    className={`relative p-1.5 rounded-md ${
-                      isActiveNav
-                        ? 'text-white'
-                        : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors'
-                    }`}
-                    title={label}
-                    aria-label={label}
-                  >
-                    {isActiveNav && (
-                      <motion.div
-                        layoutId="active-tab-blob"
-                        className="absolute inset-0 bg-[var(--color-accent)] rounded-md shadow-sm"
-                        transition={{ type: 'spring', stiffness: 520, damping: 32, mass: 0.9 }}
-                      />
-                    )}
-                    <IconCmp className="relative z-[1] w-4 h-4" strokeWidth={2} />
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          {/* Desktop nav — hidden on mobile, bottom nav handles that */}
+          <div className="hidden md:flex items-center gap-1 shrink-0">
+            {([
+              ['dashboard', LayoutDashboard, 'Dashboard'],
+              ['atoms', Library, 'Atoms'],
+              ['canvas', Network, 'Canvas view'],
+              ['wiki', BookOpen, 'Wiki view'],
+              ['reports', Telescope, 'Reports'],
+            ] as const).map(([mode, IconCmp, label]) => {
+              const isActiveNav = onBaseView && viewMode === mode;
+              return (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  className={`relative p-1.5 rounded-md ${
+                    isActiveNav
+                      ? 'text-white'
+                      : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors'
+                  }`}
+                  title={label}
+                  aria-label={label}
+                >
+                  {isActiveNav && (
+                    <motion.div
+                      layoutId="active-tab-blob"
+                      className="absolute inset-0 bg-[var(--color-accent)] rounded-md shadow-sm"
+                      transition={{ type: 'spring', stiffness: 520, damping: 32, mass: 0.9 }}
+                    />
+                  )}
+                  <IconCmp className="relative z-[1] w-4 h-4" strokeWidth={2} />
+                </button>
+              );
+            })}
+          </div>
 
           {/* Search button — find-in-note when an atom tab is active, else palette. */}
           <button
@@ -330,6 +332,7 @@ export function MainView() {
         )}
 
         {/* Filter toggle + atom count — base view + atoms only. */}
+        {/*
         {onBaseView && (isMobile || viewMode === 'atoms') && (
           <div className="flex items-center gap-2 shrink-0">
             <button
@@ -353,6 +356,7 @@ export function MainView() {
             )}
           </div>
         )}
+        */}
 
         {/* Atoms layout sub-toggle — sits right-aligned next to the chat
             button so the cluster of left-side nav stays stable when
@@ -412,9 +416,12 @@ export function MainView() {
       )}
 
       {/* Filter bar — desktop inline strip, atoms view only */}
+      {/*
       {!isMobile && !isSemanticSearch && viewMode === 'atoms' && filterBarOpen && <FilterBar />}
+      */}
 
       {/* Filter sheet — mobile bottom sheet hosts view mode + filter + sort */}
+      {/*
       {isMobile && (
         <FilterSheet
           isOpen={filterBarOpen}
@@ -422,6 +429,7 @@ export function MainView() {
           displayCount={displayCount}
         />
       )}
+      */}
 
       {/* Content */}
       <div className="flex-1 overflow-hidden relative">
@@ -474,6 +482,9 @@ export function MainView() {
 
       {/* FAB — on atoms + dashboard base views only (no active tab) */}
       {onBaseView && (viewMode === 'atoms' || viewMode === 'dashboard') && <FAB onClick={handleNewAtom} title="Create new atom" />}
+
+      {/* Bottom nav — mobile only */}
+      <BottomNav />
     </main>
 
     {/* Chat sidebar backdrop — mobile only */}

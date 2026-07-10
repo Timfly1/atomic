@@ -7,6 +7,31 @@ use crate::{
     UpdateAtomRequest,
 };
 use async_trait::async_trait;
+use sqlx::FromRow;
+
+/// Row struct for querying atoms from Postgres (matches SELECT column order)
+#[derive(FromRow)]
+struct AtomRow {
+    id: String,
+    content: String,
+    title: String,
+    snippet: String,
+    source_url: Option<String>,
+    source: Option<String>,
+    published_at: Option<String>,
+    created_at: String,
+    updated_at: String,
+    embedding_status: String,
+    tagging_status: String,
+    embedding_error: Option<String>,
+    tagging_error: Option<String>,
+    kind: String,
+    image_path: Option<String>,
+    document_path: Option<String>,
+    document_name: Option<String>,
+    document_type: Option<String>,
+    embedded_images: Option<String>,
+}
 
 fn escape_like_pattern(input: &str) -> String {
     let mut escaped = String::with_capacity(input.len());
@@ -178,43 +203,36 @@ impl PostgresStorage {
     }
 
     /// Build an Atom from a full row tuple.
-    fn atom_from_tuple(
-        row: (
-            String,         // id
-            String,         // content
-            String,         // title
-            String,         // snippet
-            Option<String>, // source_url
-            Option<String>, // source
-            Option<String>, // published_at
-            String,         // created_at
-            String,         // updated_at
-            String,         // embedding_status
-            String,         // tagging_status
-            Option<String>, // embedding_error
-            Option<String>, // tagging_error
-            String,         // kind
-        ),
-    ) -> Atom {
+    fn atom_from_row(row: AtomRow) -> Atom {
         let kind = row
-            .13
+            .kind
             .parse::<crate::models::AtomKind>()
             .unwrap_or(crate::models::AtomKind::Captured);
+        let embedded_images = row
+            .embedded_images
+            .as_ref()
+            .and_then(|s| serde_json::from_str(s).ok())
+            .unwrap_or_default();
         Atom {
-            id: row.0,
-            content: row.1,
-            title: row.2,
-            snippet: row.3,
-            source_url: row.4,
-            source: row.5,
-            published_at: row.6,
-            created_at: row.7,
-            updated_at: row.8,
-            embedding_status: row.9,
-            tagging_status: row.10,
-            embedding_error: row.11,
-            tagging_error: row.12,
+            id: row.id,
+            content: row.content,
+            title: row.title,
+            snippet: row.snippet,
+            source_url: row.source_url,
+            source: row.source,
+            published_at: row.published_at,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+            embedding_status: row.embedding_status,
+            tagging_status: row.tagging_status,
+            embedding_error: row.embedding_error,
+            tagging_error: row.tagging_error,
             kind,
+            image_path: row.image_path,
+            document_path: row.document_path,
+            document_name: row.document_name,
+            document_type: row.document_type,
+            embedded_images,
         }
     }
 }
@@ -222,28 +240,14 @@ impl PostgresStorage {
 #[async_trait]
 impl AtomStore for PostgresStorage {
     async fn get_all_atoms(&self) -> StorageResult<Vec<AtomWithTags>> {
-        let rows: Vec<(
-            String,
-            String,
-            String,
-            String,
-            Option<String>,
-            Option<String>,
-            Option<String>,
-            String,
-            String,
-            String,
-            String,
-            Option<String>,
-            Option<String>,
-            String,
-        )> = sqlx::query_as(
+        let rows: Vec<AtomRow> = sqlx::query_as(
             "SELECT id, content, title, snippet, source_url, source, published_at,
                     created_at, updated_at,
                     COALESCE(embedding_status, 'pending'),
                     COALESCE(tagging_status, 'pending'),
                     embedding_error, tagging_error,
-                    COALESCE(kind, 'captured')
+                    COALESCE(kind, 'captured'),
+                    image_path, document_path, document_type, embedded_images
              FROM atoms WHERE db_id = $1 ORDER BY updated_at DESC",
         )
         .bind(&self.db_id)
@@ -251,14 +255,14 @@ impl AtomStore for PostgresStorage {
         .await
         .map_err(|e| AtomicCoreError::DatabaseOperation(e.to_string()))?;
 
-        let atom_ids: Vec<String> = rows.iter().map(|r| r.0.clone()).collect();
+        let atom_ids: Vec<String> = rows.iter().map(|r| r.id.clone()).collect();
         let tag_map = self.tags_for_atom_ids(&atom_ids).await?;
 
         let result = rows
             .into_iter()
             .map(|row| {
-                let id = row.0.clone();
-                let atom = Self::atom_from_tuple(row);
+                let id = row.id.clone();
+                let atom = Self::atom_from_row(row);
                 let tags = tag_map.get(&id).cloned().unwrap_or_default();
                 AtomWithTags { atom, tags }
             })
@@ -277,28 +281,14 @@ impl AtomStore for PostgresStorage {
     }
 
     async fn get_atom(&self, id: &str) -> StorageResult<Option<AtomWithTags>> {
-        let row: Option<(
-            String,
-            String,
-            String,
-            String,
-            Option<String>,
-            Option<String>,
-            Option<String>,
-            String,
-            String,
-            String,
-            String,
-            Option<String>,
-            Option<String>,
-            String,
-        )> = sqlx::query_as(
+        let row: Option<AtomRow> = sqlx::query_as(
             "SELECT id, content, title, snippet, source_url, source, published_at,
                     created_at, updated_at,
                     COALESCE(embedding_status, 'pending'),
                     COALESCE(tagging_status, 'pending'),
                     embedding_error, tagging_error,
-                    COALESCE(kind, 'captured')
+                    COALESCE(kind, 'captured'),
+                    image_path, document_path, document_type, embedded_images
              FROM atoms WHERE id = $1 AND db_id = $2",
         )
         .bind(id)
@@ -309,7 +299,7 @@ impl AtomStore for PostgresStorage {
 
         match row {
             Some(r) => {
-                let atom = Self::atom_from_tuple(r);
+                let atom = Self::atom_from_row(r);
                 let tags = self.tags_for_atom(id).await?;
                 Ok(Some(AtomWithTags { atom, tags }))
             }
@@ -388,6 +378,11 @@ impl AtomStore for PostgresStorage {
             embedding_error: None,
             tagging_error: None,
             kind: crate::models::AtomKind::Captured,
+            image_path: None,
+            document_path: None,
+            document_name: None,
+            document_type: None,
+            embedded_images: vec![],
         };
 
         Ok(AtomWithTags { atom, tags })
@@ -454,6 +449,11 @@ impl AtomStore for PostgresStorage {
                 embedding_error: None,
                 tagging_error: None,
                 kind: crate::models::AtomKind::Captured,
+                image_path: None,
+                document_path: None,
+                document_name: None,
+                document_type: None,
+                embedded_images: vec![],
             };
 
             atoms_with_tags.push(AtomWithTags { atom, tags: vec![] });
@@ -551,28 +551,14 @@ impl AtomStore for PostgresStorage {
             .map_err(|e| AtomicCoreError::DatabaseOperation(e.to_string()))?;
 
         // Re-fetch the atom
-        let row: (
-            String,
-            String,
-            String,
-            String,
-            Option<String>,
-            Option<String>,
-            Option<String>,
-            String,
-            String,
-            String,
-            String,
-            Option<String>,
-            Option<String>,
-            String,
-        ) = sqlx::query_as(
+        let row: AtomRow = sqlx::query_as(
             "SELECT id, content, title, snippet, source_url, source, published_at,
                     created_at, updated_at,
                     COALESCE(embedding_status, 'pending'),
                     COALESCE(tagging_status, 'pending'),
                     embedding_error, tagging_error,
-                    COALESCE(kind, 'captured')
+                    COALESCE(kind, 'captured'),
+                    image_path, document_path, document_type, embedded_images
              FROM atoms WHERE id = $1 AND db_id = $2",
         )
         .bind(id)
@@ -581,7 +567,7 @@ impl AtomStore for PostgresStorage {
         .await
         .map_err(|e| AtomicCoreError::DatabaseOperation(e.to_string()))?;
 
-        let atom = Self::atom_from_tuple(row);
+        let atom = Self::atom_from_row(row);
         let tags = self.tags_for_atom(id).await?;
 
         Ok(AtomWithTags { atom, tags })
@@ -676,28 +662,14 @@ impl AtomStore for PostgresStorage {
             .await
             .map_err(|e| AtomicCoreError::DatabaseOperation(e.to_string()))?;
 
-        let row: (
-            String,
-            String,
-            String,
-            String,
-            Option<String>,
-            Option<String>,
-            Option<String>,
-            String,
-            String,
-            String,
-            String,
-            Option<String>,
-            Option<String>,
-            String,
-        ) = sqlx::query_as(
+        let row: AtomRow = sqlx::query_as(
             "SELECT id, content, title, snippet, source_url, source, published_at,
                     created_at, updated_at,
                     COALESCE(embedding_status, 'pending'),
                     COALESCE(tagging_status, 'pending'),
                     embedding_error, tagging_error,
-                    COALESCE(kind, 'captured')
+                    COALESCE(kind, 'captured'),
+                    image_path, document_path, document_type, embedded_images
              FROM atoms WHERE id = $1 AND db_id = $2",
         )
         .bind(id)
@@ -706,7 +678,7 @@ impl AtomStore for PostgresStorage {
         .await
         .map_err(|e| AtomicCoreError::DatabaseOperation(e.to_string()))?;
 
-        let atom = Self::atom_from_tuple(row);
+        let atom = Self::atom_from_row(row);
         let tags = self.tags_for_atom(id).await?;
 
         Ok(AtomWithTags { atom, tags })
@@ -816,28 +788,14 @@ impl AtomStore for PostgresStorage {
             .await
             .map_err(|e| AtomicCoreError::DatabaseOperation(e.to_string()))?;
 
-        let row: (
-            String,
-            String,
-            String,
-            String,
-            Option<String>,
-            Option<String>,
-            Option<String>,
-            String,
-            String,
-            String,
-            String,
-            Option<String>,
-            Option<String>,
-            String,
-        ) = sqlx::query_as(
+        let row: AtomRow = sqlx::query_as(
             "SELECT id, content, title, snippet, source_url, source, published_at,
                     created_at, updated_at,
                     COALESCE(embedding_status, 'pending'),
                     COALESCE(tagging_status, 'pending'),
                     embedding_error, tagging_error,
-                    COALESCE(kind, 'captured')
+                    COALESCE(kind, 'captured'),
+                    image_path, document_path, document_type, embedded_images
              FROM atoms WHERE id = $1 AND db_id = $2",
         )
         .bind(id)
@@ -846,7 +804,7 @@ impl AtomStore for PostgresStorage {
         .await
         .map_err(|e| AtomicCoreError::DatabaseOperation(e.to_string()))?;
 
-        let atom = Self::atom_from_tuple(row);
+        let atom = Self::atom_from_row(row);
         let tags = self.tags_for_atom(id).await?;
 
         Ok(AtomWithTags { atom, tags })
@@ -896,6 +854,42 @@ impl AtomStore for PostgresStorage {
         Ok(())
     }
 
+    async fn clear_document(&self, id: &str) -> StorageResult<AtomWithTags> {
+        // Clear ALL attachments and content
+        sqlx::query(
+            "UPDATE atoms SET content = '', document_path = NULL, document_name = NULL, document_type = NULL, embedded_images = NULL, image_path = NULL WHERE id = $1 AND db_id = $2",
+        )
+        .bind(id)
+        .bind(&self.db_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AtomicCoreError::DatabaseOperation(e.to_string()))?;
+
+        self.get_atom(id).await.and_then(|opt| {
+            opt.ok_or_else(|| {
+                AtomicCoreError::NotFound(format!("Atom {}", id))
+            })
+        })
+    }
+
+    async fn clear_image(&self, id: &str) -> StorageResult<AtomWithTags> {
+        // Clear ALL attachments and content
+        sqlx::query(
+            "UPDATE atoms SET content = '', image_path = NULL, document_path = NULL, document_name = NULL, document_type = NULL, embedded_images = NULL WHERE id = $1 AND db_id = $2",
+        )
+        .bind(id)
+        .bind(&self.db_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AtomicCoreError::DatabaseOperation(e.to_string()))?;
+
+        self.get_atom(id).await.and_then(|opt| {
+            opt.ok_or_else(|| {
+                AtomicCoreError::NotFound(format!("Atom {}", id))
+            })
+        })
+    }
+
     async fn get_atoms_by_tag(
         &self,
         tag_id: &str,
@@ -903,22 +897,7 @@ impl AtomStore for PostgresStorage {
     ) -> StorageResult<Vec<AtomWithTags>> {
         let kind_predicate = kinds.postgres_predicate("a.kind", "$3");
         let kind_strings = kinds.kind_strings();
-        let rows: Vec<(
-            String,
-            String,
-            String,
-            String,
-            Option<String>,
-            Option<String>,
-            Option<String>,
-            String,
-            String,
-            String,
-            String,
-            Option<String>,
-            Option<String>,
-            String,
-        )> = {
+        let rows: Vec<AtomRow> = {
             let sql = format!(
                 "WITH RECURSIVE descendant_tags(id) AS (
                     SELECT id FROM tags WHERE id = $1 AND db_id = $2
@@ -931,7 +910,8 @@ impl AtomStore for PostgresStorage {
                        COALESCE(a.embedding_status, 'pending'),
                        COALESCE(a.tagging_status, 'pending'),
                        a.embedding_error, a.tagging_error,
-                       COALESCE(a.kind, 'captured')
+                       COALESCE(a.kind, 'captured'),
+                       a.image_path, a.document_path, a.document_type, a.embedded_images
                 FROM atom_tags at
                 INNER JOIN atoms a ON a.id = at.atom_id
                 WHERE at.tag_id IN (SELECT id FROM descendant_tags)
@@ -939,7 +919,8 @@ impl AtomStore for PostgresStorage {
                 GROUP BY a.id, a.content, a.title, a.snippet, a.source_url, a.source,
                          a.published_at, a.created_at, a.updated_at,
                          a.embedding_status, a.tagging_status,
-                         a.embedding_error, a.tagging_error, a.kind
+                         a.embedding_error, a.tagging_error, a.kind,
+                         a.image_path, a.document_path, a.document_type, a.embedded_images
                 ORDER BY a.updated_at DESC"
             );
             let mut q = sqlx::query_as(&sql).bind(tag_id).bind(&self.db_id);
@@ -951,14 +932,14 @@ impl AtomStore for PostgresStorage {
                 .map_err(|e| AtomicCoreError::DatabaseOperation(e.to_string()))?
         };
 
-        let atom_ids: Vec<String> = rows.iter().map(|r| r.0.clone()).collect();
+        let atom_ids: Vec<String> = rows.iter().map(|r| r.id.clone()).collect();
         let tag_map = self.tags_for_atom_ids(&atom_ids).await?;
 
         let result = rows
             .into_iter()
             .map(|row| {
-                let id = row.0.clone();
-                let atom = Self::atom_from_tuple(row);
+                let id = row.id.clone();
+                let atom = Self::atom_from_row(row);
                 let tags = tag_map.get(&id).cloned().unwrap_or_default();
                 AtomWithTags { atom, tags }
             })
@@ -1609,28 +1590,11 @@ impl AtomStore for PostgresStorage {
                     COALESCE(embedding_status, 'pending'),
                     COALESCE(tagging_status, 'pending'),
                     embedding_error, tagging_error,
-                    COALESCE(kind, 'captured')
+                    COALESCE(kind, 'captured'),
+                    image_path, document_path, document_type, embedded_images
              FROM atoms WHERE db_id = $1 AND {kind_predicate} ORDER BY updated_at DESC"
         );
-        let mut q = sqlx::query_as::<
-            _,
-            (
-                String,
-                String,
-                String,
-                String,
-                Option<String>,
-                Option<String>,
-                Option<String>,
-                String,
-                String,
-                String,
-                String,
-                Option<String>,
-                Option<String>,
-                String,
-            ),
-        >(&sql)
+        let mut q = sqlx::query_as::<_, AtomRow>(&sql)
         .bind(&self.db_id);
         if kinds.has_bind_value() {
             q = q.bind(kinds.kind_strings());
@@ -1640,7 +1604,7 @@ impl AtomStore for PostgresStorage {
             .await
             .map_err(|e| AtomicCoreError::DatabaseOperation(e.to_string()))?;
 
-        let atom_ids: Vec<String> = rows.iter().map(|r| r.0.clone()).collect();
+        let atom_ids: Vec<String> = rows.iter().map(|r| r.id.clone()).collect();
         let tag_map = self.tags_for_atom_ids(&atom_ids).await?;
 
         // Batch-load average embeddings for all atoms.
@@ -1666,8 +1630,8 @@ impl AtomStore for PostgresStorage {
         let result = rows
             .into_iter()
             .map(|row| {
-                let id = row.0.clone();
-                let atom = Self::atom_from_tuple(row);
+                let id = row.id.clone();
+                let atom = Self::atom_from_row(row);
                 let tags = tag_map.get(&id).cloned().unwrap_or_default();
                 let embedding = embedding_map.get(&id).cloned();
                 AtomWithEmbedding {
@@ -1712,28 +1676,14 @@ impl AtomStore for PostgresStorage {
     }
 
     async fn get_atom_by_source_url(&self, url: &str) -> StorageResult<Option<AtomWithTags>> {
-        let row: Option<(
-            String,
-            String,
-            String,
-            String,
-            Option<String>,
-            Option<String>,
-            Option<String>,
-            String,
-            String,
-            String,
-            String,
-            Option<String>,
-            Option<String>,
-            String,
-        )> = sqlx::query_as(
+        let row: Option<AtomRow> = sqlx::query_as(
             "SELECT id, content, title, snippet, source_url, source, published_at,
                     created_at, updated_at,
                     COALESCE(embedding_status, 'pending'),
                     COALESCE(tagging_status, 'pending'),
                     embedding_error, tagging_error,
-                    COALESCE(kind, 'captured')
+                    COALESCE(kind, 'captured'),
+                    image_path, document_path, document_type, embedded_images
              FROM atoms WHERE source_url = $1 AND db_id = $2",
         )
         .bind(url)
@@ -1744,7 +1694,7 @@ impl AtomStore for PostgresStorage {
 
         match row {
             Some(r) => {
-                let atom = Self::atom_from_tuple(r);
+                let atom = Self::atom_from_row(r);
                 let tags = self.tags_for_atom(&atom.id).await?;
                 Ok(Some(AtomWithTags { atom, tags }))
             }
@@ -2073,6 +2023,11 @@ impl AtomStore for PostgresStorage {
                     embedding_error: row.get(11),
                     tagging_error: row.get(12),
                     kind,
+                    image_path: None,
+                    document_path: None,
+                    document_name: None,
+                    document_type: None,
+                    embedded_images: vec![],
                 }
             })
             .collect();

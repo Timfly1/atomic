@@ -16,6 +16,10 @@ export interface Atom {
   updated_at: string;
   embedding_status: 'pending' | 'processing' | 'complete' | 'failed';
   tagging_status: 'pending' | 'processing' | 'complete' | 'failed' | 'skipped';
+  image_path: string | null;
+  document_path: string | null;
+  document_name: string | null;
+  document_type: string | null;
   /// Discriminator added in phase-1 of the reports work. `captured`
   /// is what users write or import; `report` is agent-written finding
   /// output. The atom list view filters to `captured` by default, but

@@ -160,6 +160,35 @@ pub struct Atom {
     /// Backwards-compatible default for clients that don't send the field.
     #[serde(default)]
     pub kind: AtomKind,
+    /// Path to attached image file (local filesystem)
+    #[serde(default)]
+    pub image_path: Option<String>,
+    /// Path to attached document file (local filesystem)
+    #[serde(default)]
+    pub document_path: Option<String>,
+    /// Original filename of the attached document
+    #[serde(default)]
+    pub document_name: Option<String>,
+    /// MIME type of the attached document
+    #[serde(default)]
+    pub document_type: Option<String>,
+    /// Embedded images extracted from document (stored as JSON)
+    #[serde(default)]
+    pub embedded_images: Vec<EmbeddedImage>,
+}
+
+/// Image embedded in a document (e.g., images in Word/PDF)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+pub struct EmbeddedImage {
+    /// Unique identifier for this embedded image
+    pub id: String,
+    /// Original reference/path in the document
+    pub original_ref: String,
+    /// Storage path relative to the images directory
+    pub stored_path: String,
+    /// MIME content type
+    pub content_type: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
