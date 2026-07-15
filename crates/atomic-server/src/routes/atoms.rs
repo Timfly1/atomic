@@ -990,9 +990,9 @@ pub async fn upload_atom_image(
     let new_content = if ocr_text.is_empty() {
         existing_content
     } else if existing_content.is_empty() {
-        format!("[OCR from image]\n{}", ocr_text)
+        ocr_text
     } else {
-        format!("{}\n\n[OCR from image]\n{}", existing_content, ocr_text)
+        format!("{}\n\n{}", existing_content, ocr_text)
     };
 
     // Update atom's Image_path and content

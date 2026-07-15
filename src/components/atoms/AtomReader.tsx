@@ -640,36 +640,21 @@ function AtomReaderContent({
                 <span className="text-xs font-medium text-[var(--color-text-secondary)]">{t('atoms_image_section')}</span>
               </div>
               {imageUrl ? (
-                <div className="relative group">
+                <div className="relative">
+                  <img
+                    src={imageUrl}
+                    alt={t('atoms_image_alt')}
+                    className="w-full h-32 object-cover rounded border border-[var(--color-border)] cursor-pointer"
+                    onClick={() => setShowImagePreview(true)}
+                  />
                   <button
                     type="button"
-                    onClick={() => setShowImagePreview(true)}
-                    className="w-full rounded overflow-hidden border border-[var(--color-border)]"
+                    onClick={handleImageDelete}
+                    className="absolute top-1 right-1 p-1 rounded bg-black/60 text-red-400 hover:bg-black/80"
+                    title={t('atoms_delete_image')}
                   >
-                    <img
-                      src={imageUrl}
-                      alt={t('atoms_image_alt')}
-                      className="w-full h-32 object-cover"
-                    />
+                    <X className="w-3.5 h-3.5" />
                   </button>
-                  <div className={`absolute top-1 right-1 flex gap-1 transition-opacity ${isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                    <button
-                      type="button"
-                      onClick={() => setShowImagePreview(true)}
-                      className="p-1 rounded bg-black/50 text-white hover:bg-black/70"
-                      title={t('atoms_view_full_image')}
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleImageDelete}
-                      className="p-1 rounded bg-black/50 text-red-400 hover:bg-black/70"
-                      title={t('atoms_delete_image')}
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
                 </div>
               ) : (
                 <div className="border border-dashed border-[var(--color-border)] rounded p-3">
@@ -731,31 +716,22 @@ function AtomReaderContent({
                     const imgUrl = embeddedImageUrls[index];
                     const isDeleting = deletingImageId === img.id;
                     return (
-                      <div key={img.id} className="relative group aspect-square">
+                      <div key={img.id} className="relative aspect-square">
                         <img
                           src={imgUrl}
                           alt={img.original_ref || `${t('atoms_image_alt')} ${index + 1}`}
-                          className="w-full h-full object-cover rounded border border-[var(--color-border)]"
+                          className="w-full h-full object-cover rounded border border-[var(--color-border)] cursor-pointer"
+                          onClick={() => handleEmbeddedImagePreview(imgUrl)}
                         />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => handleEmbeddedImagePreview(imgUrl)}
-                            className="p-1 rounded bg-black/50 text-white hover:bg-black/70"
-                            title={t('atoms_view_full_image')}
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleEmbeddedImageDelete(img.id)}
-                            disabled={isDeleting}
-                            className="p-1 rounded bg-black/50 text-red-400 hover:bg-black/70 disabled:opacity-50"
-                            title={t('atoms_delete_image')}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleEmbeddedImageDelete(img.id)}
+                          disabled={isDeleting}
+                          className="absolute top-1 right-1 p-1 rounded bg-black/60 text-red-400 hover:bg-black/80 disabled:opacity-50"
+                          title={t('atoms_delete_image')}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                         {isDeleting && (
                           <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded">
                             <span className="text-white text-xs">{t('common_loading')}</span>
@@ -1094,7 +1070,7 @@ function FullscreenImagePreview({ src, onClose }: { src: string; onClose: () => 
     >
       {/* Image container */}
       <div
-        className="flex-1 flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing"
+        className="flex-1 flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing p-4"
         onClick={(e) => e.stopPropagation()}
       >
         <TransformWrapper
@@ -1105,8 +1081,8 @@ function FullscreenImagePreview({ src, onClose }: { src: string; onClose: () => 
           limitToBounds={false}
         >
           <TransformComponent
-            wrapperClass="!w-full !h-full"
-            contentClass="!w-full !h-full"
+            wrapperClass="!w-full !h-full flex items-center justify-center"
+            contentClass="!w-full !h-full flex items-center justify-center"
           >
             <img
               src={src}
