@@ -1,4 +1,5 @@
 import { memo, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Quote } from 'lucide-react';
 import { ReportFindingWithAtom, useReportsStore } from '../../stores/reports';
 import { formatRelativeDate } from '../../lib/date';
@@ -16,6 +17,7 @@ interface FindingRowProps {
 /// Cheaper than fetching counts for the whole list up front, since the
 /// virtualizer only renders rows in view + a small overscan window.
 export const FindingRow = memo(function FindingRow({ item, onClick }: FindingRowProps) {
+  const { t } = useTranslation();
   const count = useReportsStore(s => s.citationCountsByAtomId[item.atom.id]);
   const fetchCitationCount = useReportsStore(s => s.fetchCitationCount);
 
@@ -34,8 +36,8 @@ export const FindingRow = memo(function FindingRow({ item, onClick }: FindingRow
         return cleaned.length > 110 ? cleaned.slice(0, 109) + '…' : cleaned;
       }
     }
-    return '(empty finding)';
-  }, [item.atom.content]);
+    return t('reports_empty_finding');
+  }, [item.atom.content, t]);
 
   return (
     <button
@@ -61,7 +63,7 @@ export const FindingRow = memo(function FindingRow({ item, onClick }: FindingRow
           inline-flex items-center gap-1 text-[11px] tabular-nums
           ${count && count > 0 ? 'text-[var(--color-text-secondary)]' : 'text-[var(--color-text-tertiary)]/50'}
         `}
-        title={count !== undefined ? `${count} citation${count === 1 ? '' : 's'}` : 'Loading citations…'}
+        title={count !== undefined ? (count === 1 ? t('reports_citation', { count }) : t('reports_citations', { count })) : t('reports_loading_citations')}
       >
         <Quote className="w-3 h-3" strokeWidth={2} />
         {count !== undefined ? count : '—'}

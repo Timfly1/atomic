@@ -1,26 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { Type, Lightbulb, Keyboard, Search, X, Check, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAtomsStore, SearchMode } from '../../stores/atoms';
 
-const SEARCH_MODE_CONFIG: Record<SearchMode, { label: string; placeholder: string; icon: React.ReactNode }> = {
-  keyword: {
-    label: 'Keyword',
-    placeholder: 'Search by keywords...',
-    icon: <Type className="w-4 h-4" strokeWidth={2} />,
-  },
-  semantic: {
-    label: 'Semantic',
-    placeholder: 'Search by meaning...',
-    icon: <Lightbulb className="w-4 h-4" strokeWidth={2} />,
-  },
-  hybrid: {
-    label: 'Hybrid',
-    placeholder: 'Search by keywords & meaning...',
-    icon: <Keyboard className="w-4 h-4" strokeWidth={2} />,
-  },
-};
-
 export function SemanticSearch() {
+  const { t } = useTranslation();
   const semanticSearchQuery = useAtomsStore(s => s.semanticSearchQuery);
   const search = useAtomsStore(s => s.search);
   const clearSemanticSearch = useAtomsStore(s => s.clearSemanticSearch);
@@ -32,6 +16,24 @@ export function SemanticSearch() {
   const [showModeDropdown, setShowModeDropdown] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const SEARCH_MODE_CONFIG: Record<SearchMode, { label: string; placeholder: string; icon: React.ReactNode }> = {
+    keyword: {
+      label: t('search_mode_keyword'),
+      placeholder: t('search_by_keywords'),
+      icon: <Type className="w-4 h-4" strokeWidth={2} />,
+    },
+    semantic: {
+      label: t('search_mode_semantic'),
+      placeholder: t('search_by_meaning'),
+      icon: <Lightbulb className="w-4 h-4" strokeWidth={2} />,
+    },
+    hybrid: {
+      label: t('search_mode_hybrid'),
+      placeholder: t('search_by_keywords_meaning'),
+      icon: <Keyboard className="w-4 h-4" strokeWidth={2} />,
+    },
+  };
 
   // Debounce search by 300ms
   useEffect(() => {
@@ -129,7 +131,7 @@ export function SemanticSearch() {
       {showModeDropdown && (
         <div className="absolute top-full left-0 mt-1 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md shadow-lg z-50 min-w-[160px]">
           <div className="px-3 py-1.5 text-xs text-[var(--color-text-secondary)] border-b border-[var(--color-border)]">
-            Search Mode
+            {t('search_mode')}
           </div>
           {(Object.keys(SEARCH_MODE_CONFIG) as SearchMode[]).map((mode) => {
             const config = SEARCH_MODE_CONFIG[mode];

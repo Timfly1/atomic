@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { toast } from 'sonner';
+import { toasti18n } from '../i18n/toast';
 import { getTransport } from '../lib/transport';
 
 // ----- Wire types (match crates/atomic-core/src/models.rs) -----
@@ -229,7 +229,7 @@ export const useFeaturedReportStore = create<FeaturedReportStore>(
       } catch (error) {
         // Revert + surface.
         set({ reportId: previous, error: String(error) });
-        toast.error('Failed to update featured report', {
+        toasti18n.error('featured:toast_update_failed', {
           description: String(error),
         });
       }

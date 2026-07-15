@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useChatStore } from '../../stores/chat';
 import { useUIStore } from '../../stores/ui';
 import { useDatabasesStore } from '../../stores/databases';
@@ -7,6 +8,7 @@ import { ConversationsList } from './ConversationsList';
 import { ChatView } from './ChatView';
 
 export function ChatViewer() {
+  const { t } = useTranslation();
   const view = useChatStore(s => s.view);
   const showList = useChatStore(s => s.showList);
   const openConversation = useChatStore(s => s.openConversation);
@@ -48,12 +50,12 @@ export function ChatViewer() {
       {/* Header */}
       <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
         <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
-          {view === 'list' ? 'Conversations' : 'Chat'}
+          {view === 'list' ? t('chat_conversations') : t('chat_title')}
         </h2>
         <button
           onClick={() => setChatSidebarOpen(false)}
           className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-          aria-label="Close"
+          aria-label={t('common_close')}
         >
           <X className="w-5 h-5" strokeWidth={2} />
         </button>

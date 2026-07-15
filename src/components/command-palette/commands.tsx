@@ -1,9 +1,12 @@
 import { Plus, Search, Tag, BookOpen, MessageCircle, LayoutGrid, List as ListIcon, Settings, RefreshCw, GitMerge, X } from 'lucide-react';
+import i18next from 'i18next';
 import { getTransport } from '../../lib/transport';
 import { Command, CommandCategory } from './types';
 import { useAtomsStore } from '../../stores/atoms';
 import { useUIStore } from '../../stores/ui';
 import { useTagsStore } from '../../stores/tags';
+
+const t = (key: string) => i18next.t(key, { ns: 'commands' });
 
 // Icon components as simple wrappers
 const PlusIcon = () => <Plus className="w-4 h-4" strokeWidth={2} />;
@@ -23,7 +26,7 @@ export const commands: Command[] = [
   // Navigation commands
   {
     id: 'open-wiki-list',
-    label: 'Open wiki list',
+    label: t('commands_open_wiki_list'),
     category: 'navigation',
     keywords: ['wiki', 'articles', 'list', 'browse', 'knowledge'],
     icon: BookOpenIcon,
@@ -31,7 +34,7 @@ export const commands: Command[] = [
   },
   {
     id: 'open-chat-list',
-    label: 'Open chat list',
+    label: t('commands_open_chat_list'),
     category: 'navigation',
     keywords: ['chat', 'conversations', 'messages', 'talk'],
     icon: MessageCircleIcon,
@@ -39,7 +42,7 @@ export const commands: Command[] = [
   },
   {
     id: 'create-new-chat',
-    label: 'Create new chat',
+    label: t('commands_create_new_chat'),
     category: 'navigation',
     keywords: ['chat', 'conversation', 'new', 'start'],
     icon: MessageCircleIcon,
@@ -47,7 +50,7 @@ export const commands: Command[] = [
   },
   {
     id: 'switch-to-grid',
-    label: 'Switch to grid layout',
+    label: t('commands_switch_to_grid'),
     category: 'navigation',
     keywords: ['view', 'grid', 'cards', 'tiles', 'atoms'],
     icon: LayoutGridIcon,
@@ -63,7 +66,7 @@ export const commands: Command[] = [
   },
   {
     id: 'switch-to-list',
-    label: 'Switch to list layout',
+    label: t('commands_switch_to_list'),
     category: 'navigation',
     keywords: ['view', 'list', 'rows', 'compact', 'atoms'],
     icon: ListIconWrapper,
@@ -79,7 +82,7 @@ export const commands: Command[] = [
   },
   {
     id: 'open-settings',
-    label: 'Open settings',
+    label: t('commands_open_settings'),
     category: 'navigation',
     keywords: ['settings', 'preferences', 'config', 'options', 'setup'],
     icon: SettingsIcon,
@@ -92,7 +95,7 @@ export const commands: Command[] = [
   // Atom commands
   {
     id: 'create-atom',
-    label: 'Create new atom',
+    label: t('commands_create_atom'),
     category: 'atoms',
     keywords: ['new', 'add', 'write', 'note', 'create', 'atom'],
     shortcut: '⌘N',
@@ -105,7 +108,7 @@ export const commands: Command[] = [
   },
   {
     id: 'search-atoms',
-    label: 'Open search',
+    label: t('commands_search_atoms'),
     category: 'atoms',
     keywords: ['search', 'find', 'query', 'semantic', 'lookup'],
     shortcut: '⌘P',
@@ -116,7 +119,7 @@ export const commands: Command[] = [
   // Tag commands
   {
     id: 'filter-by-tag',
-    label: 'Search tags...',
+    label: t('commands_filter_by_tag'),
     category: 'tags',
     keywords: ['tag', 'filter', 'category', 'label'],
     shortcut: '#',
@@ -125,12 +128,12 @@ export const commands: Command[] = [
   },
   {
     id: 'create-tag',
-    label: 'Create new tag',
+    label: t('commands_create_tag'),
     category: 'tags',
     keywords: ['tag', 'new', 'add', 'create', 'category'],
     icon: PlusIcon,
     action: async () => {
-      const name = window.prompt('Enter tag name:');
+      const name = window.prompt(t('commands_enter_tag_name'));
       if (name && name.trim()) {
         await useTagsStore.getState().createTag(name.trim());
       }
@@ -138,7 +141,7 @@ export const commands: Command[] = [
   },
   {
     id: 'compact-tags',
-    label: 'Compact tags (AI-assisted)',
+    label: t('commands_compact_tags'),
     category: 'tags',
     keywords: ['compact', 'merge', 'clean', 'organize', 'ai', 'llm'],
     icon: MergeIcon,
@@ -148,7 +151,7 @@ export const commands: Command[] = [
   },
   {
     id: 'clear-tag-filter',
-    label: 'Clear tag filter',
+    label: t('commands_clear_tag_filter'),
     category: 'tags',
     keywords: ['clear', 'reset', 'remove', 'filter'],
     icon: XIcon,
@@ -159,7 +162,7 @@ export const commands: Command[] = [
   // Utility commands
   {
     id: 'retry-failed-embeddings',
-    label: 'Retry failed embeddings',
+    label: t('commands_retry_failed_embeddings'),
     category: 'utility',
     keywords: ['retry', 'failed', 'embedding', 'process', 'fix'],
     icon: RefreshIcon,
@@ -178,11 +181,11 @@ export const commands: Command[] = [
 
 // Category labels for display
 export const categoryLabels: Record<CommandCategory, string> = {
-  navigation: 'Navigation',
-  atoms: 'Atoms',
-  tags: 'Tags',
-  wiki: 'Wiki',
-  utility: 'Utility',
+  navigation: t('commands_category_navigation'),
+  atoms: t('commands_category_atoms'),
+  tags: t('commands_category_tags'),
+  wiki: t('commands_category_wiki'),
+  utility: t('commands_category_utility'),
 };
 
 // Category order for display

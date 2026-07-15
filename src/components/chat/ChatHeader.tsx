@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { ConversationWithTags, useChatStore } from '../../stores/chat';
 import { ScopeEditor } from './ScopeEditor';
 
@@ -9,13 +10,14 @@ interface ChatHeaderProps {
 }
 
 export function ChatHeader({ conversation, onBack }: ChatHeaderProps) {
+  const { t } = useTranslation();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState(conversation.title || '');
   const updateConversationTitle = useChatStore(s => s.updateConversationTitle);
 
   const handleTitleSave = async () => {
     if (editedTitle.trim() !== conversation.title) {
-      await updateConversationTitle(conversation.id, editedTitle.trim() || 'Untitled');
+      await updateConversationTitle(conversation.id, editedTitle.trim() || t('chat_untitled'));
     }
     setIsEditingTitle(false);
   };
@@ -36,7 +38,7 @@ export function ChatHeader({ conversation, onBack }: ChatHeaderProps) {
         <button
           onClick={onBack}
           className="p-1.5 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] rounded transition-colors"
-          aria-label="Back to conversations"
+          aria-label={t('chat_back_to_conversations')}
         >
           <ChevronLeft className="w-5 h-5" strokeWidth={2} />
         </button>
@@ -62,9 +64,9 @@ export function ChatHeader({ conversation, onBack }: ChatHeaderProps) {
               setIsEditingTitle(true);
             }}
             className="flex-1 text-[var(--color-text-primary)] font-medium cursor-pointer hover:text-[var(--color-accent-light)] transition-colors truncate"
-            title="Click to edit title"
+            title={t('chat_click_to_edit_title')}
           >
-            {conversation.title || 'New Conversation'}
+            {conversation.title || t('chat_new_conversation')}
           </h2>
         )}
       </div>

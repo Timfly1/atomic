@@ -1,4 +1,5 @@
 import { memo, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { TagSelector } from '../tags/TagSelector';
 import { CustomSelect } from '../ui/CustomSelect';
 import { useTagsStore } from '../../stores/tags';
@@ -25,11 +26,11 @@ type WindowOption =
   | 'last_30d';
 
 const WINDOW_LABELS: Record<WindowOption, string> = {
-  since_last_run: 'Since last run',
-  all_time: 'All time',
-  last_24h: 'Last 24 hours',
-  last_7d: 'Last 7 days',
-  last_30d: 'Last 30 days',
+  since_last_run: 'reports_scope_since_last_run',
+  all_time: 'reports_scope_all_time',
+  last_24h: 'reports_scope_last_24h',
+  last_7d: 'reports_scope_last_7d',
+  last_30d: 'reports_scope_last_30d',
 };
 
 const WINDOW_TO_ISO: Record<Exclude<WindowOption, 'since_last_run' | 'all_time'>, string> = {
@@ -81,6 +82,7 @@ interface ScopeFieldProps {
 export const ScopeField = memo(function ScopeField({
   label, tagIds, window, onChange, hideSinceLastRun,
 }: ScopeFieldProps) {
+  const { t } = useTranslation();
   const tags = useTagsStore(s => s.tags);
 
   // Find the actual Tag objects for the currently-selected ids. The
@@ -114,7 +116,7 @@ export const ScopeField = memo(function ScopeField({
 
       <div>
         <span className="block mb-1 text-[10px] uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">
-          Tags{tagIds.length === 0 ? ' · all' : ''}
+          {t('reports_scope_tags')}{tagIds.length === 0 ? ` · ${t('reports_scope_all')}` : ''}
         </span>
         <TagSelector
           selectedTags={selectedTags}
@@ -125,13 +127,13 @@ export const ScopeField = memo(function ScopeField({
 
       <div>
         <span className="block mb-1 text-[10px] uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">
-          Window
+          {t('reports_scope_window')}
         </span>
         <div className="max-w-[220px]">
           <CustomSelect
             value={windowToOption(window)}
             onChange={(v) => onChange(tagIds, optionToWindow(v as WindowOption))}
-            options={windowOptions.map(o => ({ value: o, label: WINDOW_LABELS[o] }))}
+            options={windowOptions.map(o => ({ value: o, label: t(WINDOW_LABELS[o]) }))}
           />
         </div>
       </div>

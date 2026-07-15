@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Section } from '../Section';
 import { useWikiStore } from '../../../stores/wiki';
 import { useTagsStore, type TagWithCount } from '../../../stores/tags';
@@ -24,6 +25,7 @@ interface RevisionItem {
 }
 
 export function RevisionsWidget() {
+  const { t } = useTranslation();
   const articles = useWikiStore(s => s.articles);
   const tags = useTagsStore(s => s.tags);
   const openWikiReader = useUIStore(s => s.openWikiReader);
@@ -42,10 +44,10 @@ export function RevisionsWidget() {
   }, [articles, tags]);
 
   return (
-    <Section label="Revision suggestions">
+    <Section label={t('dashboard_revision_suggestions')}>
       {items.length === 0 ? (
         <div className="py-6 text-sm text-[var(--color-text-tertiary)]">
-          {articles.length > 0 ? 'All wikis are up to date.' : 'Generate a wiki to start tracking revisions.'}
+          {articles.length > 0 ? t('dashboard_all_wikis_up_to_date') : t('dashboard_generate_wiki_to_track')}
         </div>
       ) : (
         <ul className="-mx-2">

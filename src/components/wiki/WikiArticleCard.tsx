@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { BookOpen } from 'lucide-react';
 import { WikiArticleSummary } from '../../stores/wiki';
 import { formatRelativeDate } from '../../lib/date';
@@ -9,12 +10,13 @@ interface WikiArticleCardProps {
 }
 
 export function WikiArticleCard({ article, isActive, onClick }: WikiArticleCardProps) {
+  const { t } = useTranslation();
   const updatedAt = formatRelativeDate(article.updated_at);
 
   return (
     <div
       onClick={onClick}
-      className={`group px-4 py-3 cursor-pointer transition-colors ${
+      className={`group px-4 py-3 cursor-pointer transition-colors active:bg-[var(--color-accent)]/10 ${
         isActive
           ? 'bg-[var(--color-accent)]/10'
           : 'hover:bg-[var(--color-bg-card)]'
@@ -31,11 +33,11 @@ export function WikiArticleCard({ article, isActive, onClick }: WikiArticleCardP
           <div className="flex items-center gap-3 text-xs text-[var(--color-text-tertiary)]">
             <span>{updatedAt}</span>
             <span className="text-[var(--color-text-secondary)]">
-              {article.atom_count} {article.atom_count === 1 ? 'source' : 'sources'}
+              {article.atom_count} {article.atom_count === 1 ? t('wiki_source') : t('wiki_sources')}
             </span>
             {article.inbound_links > 0 && (
               <span className="text-[var(--color-accent-light)]">
-                {article.inbound_links} {article.inbound_links === 1 ? 'link' : 'links'}
+                {article.inbound_links} {article.inbound_links === 1 ? t('wiki_link') : t('wiki_links')}
               </span>
             )}
           </div>

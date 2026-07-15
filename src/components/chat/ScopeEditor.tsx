@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { X, Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { ConversationWithTags, useChatStore } from '../../stores/chat';
 import { useTagsStore } from '../../stores/tags';
 
@@ -80,6 +81,8 @@ interface FlatTag {
 }
 
 export function ScopeEditor({ conversation }: ScopeEditorProps) {
+  const { t } = useTranslation();
+
   const [isAdding, setIsAdding] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const addTagToScope = useChatStore(s => s.addTagToScope);
@@ -172,10 +175,10 @@ export function ScopeEditor({ conversation }: ScopeEditorProps) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-xs text-[var(--color-text-tertiary)] uppercase tracking-wide">Scope:</span>
+      <span className="text-xs text-[var(--color-text-tertiary)] uppercase tracking-wide">{t('chat_scope_label')}</span>
 
       {conversation.tags.length === 0 ? (
-        <span className="text-sm text-[var(--color-text-secondary)] italic">All atoms</span>
+        <span className="text-sm text-[var(--color-text-secondary)] italic">{t('chat_scope_all_atoms')}</span>
       ) : (
         conversation.tags.map((tag) => (
           <span
@@ -186,7 +189,7 @@ export function ScopeEditor({ conversation }: ScopeEditorProps) {
             <button
               onClick={() => handleRemoveTag(tag.id)}
               className="opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all"
-              aria-label={`Remove ${tag.name} from scope`}
+              aria-label={t('chat_scope_remove_tag', { name: tag.name })}
             >
               <X className="w-3 h-3" strokeWidth={2} />
             </button>
@@ -203,7 +206,7 @@ export function ScopeEditor({ conversation }: ScopeEditorProps) {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Search tags..."
+            placeholder={t('chat_scope_search_placeholder')}
             autoComplete="off"
             autoCorrect="off"
             autoCapitalize="off"
@@ -228,7 +231,7 @@ export function ScopeEditor({ conversation }: ScopeEditorProps) {
 
           {searchQuery && filteredTags.length === 0 && (
             <div className="absolute z-50 w-56 mt-1 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md shadow-lg px-3 py-2 text-sm text-[var(--color-text-secondary)]">
-              No matching tags
+              {t('chat_scope_no_matching')}
             </div>
           )}
         </div>
@@ -238,7 +241,7 @@ export function ScopeEditor({ conversation }: ScopeEditorProps) {
           className="inline-flex items-center gap-1 px-2 py-0.5 text-sm rounded border border-dashed border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent-light)] transition-colors"
         >
           <Plus className="w-3 h-3" strokeWidth={2} />
-          Add tag
+          {t('chat_scope_add_tag')}
         </button>
       )}
     </div>

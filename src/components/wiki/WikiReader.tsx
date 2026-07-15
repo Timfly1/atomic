@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Clock, RefreshCw } from 'lucide-react';
 import { useWikiStore } from '../../stores/wiki';
 import { useUIStore } from '../../stores/ui';
@@ -17,6 +18,7 @@ interface WikiReaderProps {
 }
 
 export function WikiReader({ tagId, tagName, highlightText }: WikiReaderProps) {
+  const { t } = useTranslation();
   const currentArticle = useWikiStore(s => s.currentArticle);
   const articleStatus = useWikiStore(s => s.articleStatus);
   const relatedTags = useWikiStore(s => s.relatedTags);
@@ -119,7 +121,7 @@ export function WikiReader({ tagId, tagName, highlightText }: WikiReaderProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full text-[var(--color-text-secondary)]">
-        Loading...
+        {t('common_loading')}
       </div>
     );
   }
@@ -129,7 +131,7 @@ export function WikiReader({ tagId, tagName, highlightText }: WikiReaderProps) {
       <div className="flex flex-col items-center justify-center h-full gap-4 p-4">
         <p className="text-red-400 text-sm">{error}</p>
         <button onClick={clearError} className="text-xs text-[var(--color-accent)] hover:underline">
-          Dismiss
+          {t('common_close')}
         </button>
       </div>
     );
@@ -162,9 +164,9 @@ export function WikiReader({ tagId, tagName, highlightText }: WikiReaderProps) {
       {/* Version viewing banner */}
       {selectedVersion && (
         <div className="flex items-center justify-between px-6 py-2 bg-amber-500/10 border-b border-amber-500/20 flex-shrink-0">
-          <span className="text-sm text-amber-400">Viewing previous version</span>
+          <span className="text-sm text-amber-400">{t('wiki_viewing_previous_version')}</span>
           <button onClick={clearSelectedVersion} className="text-sm text-amber-400 hover:text-amber-300 underline transition-colors">
-            Return to current
+            {t('wiki_return_to_current')}
           </button>
         </div>
       )}
@@ -173,12 +175,12 @@ export function WikiReader({ tagId, tagName, highlightText }: WikiReaderProps) {
       {!!proposal && !selectedVersion && (
         <div className="flex items-center justify-between px-6 py-2 bg-[var(--color-accent)]/15 border-b border-[var(--color-accent)]/30 flex-shrink-0">
           <span className="text-sm text-[var(--color-accent-light)]">
-            Suggested update ready
+            {t('wiki_suggested_update_ready')}
             {proposal.new_atom_count > 0 && (
-              <> — based on {proposal.new_atom_count} new atom{proposal.new_atom_count !== 1 ? 's' : ''}</>
+              <> — {t('wiki_new_atoms_count', { count: proposal.new_atom_count })}</>
             )}
           </span>
-          <Button variant="primary" size="sm" onClick={startReviewingProposal}>Review</Button>
+          <Button variant="primary" size="sm" onClick={startReviewingProposal}>{t('wiki_review')}</Button>
         </div>
       )}
 
@@ -186,10 +188,10 @@ export function WikiReader({ tagId, tagName, highlightText }: WikiReaderProps) {
       {!proposal && !selectedVersion && (articleStatus?.new_atoms_available || 0) > 0 && (
         <div className="flex items-center justify-between px-6 py-2 bg-[var(--color-accent)]/10 border-b border-[var(--color-accent)]/20 flex-shrink-0">
           <span className="text-sm text-[var(--color-accent-light)]">
-            {articleStatus!.new_atoms_available} new atom{articleStatus!.new_atoms_available !== 1 ? 's' : ''} available
+            {t('wiki_new_atoms_available', { count: articleStatus!.new_atoms_available })}
           </span>
           <Button variant="primary" size="sm" onClick={handleUpdate} disabled={isProposing || isUpdating}>
-            {isProposing ? 'Generating...' : 'Generate update'}
+            {isProposing ? t('wiki_generating') : t('wiki_generate_update')}
           </Button>
         </div>
       )}
@@ -234,7 +236,7 @@ export function WikiReader({ tagId, tagName, highlightText }: WikiReaderProps) {
                             onClick={() => { clearSelectedVersion(); setShowVersions(false); }}
                             className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--color-bg-hover)] transition-colors text-[var(--color-accent-light)] font-medium"
                           >
-                            Current version
+                            {t('wiki_current_version')}
                           </button>
                         )}
                         {versions.map((v) => (
@@ -243,9 +245,9 @@ export function WikiReader({ tagId, tagName, highlightText }: WikiReaderProps) {
                             onClick={() => { selectVersion(v.id); setShowVersions(false); }}
                             className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--color-bg-hover)] transition-colors"
                           >
-                            <div className="text-[var(--color-text-primary)]">Version {v.version_number}</div>
+                            <div className="text-[var(--color-text-primary)]">{t('wiki_version_number', { number: v.version_number })}</div>
                             <div className="text-xs text-[var(--color-text-secondary)]">
-                              {formatRelativeTime(v.created_at)} • {v.atom_count} source{v.atom_count !== 1 ? 's' : ''}
+                              {formatRelativeTime(v.created_at)} • {t('wiki_source_count', { count: v.atom_count })}
                             </div>
                           </button>
                         ))}
@@ -274,8 +276,8 @@ export function WikiReader({ tagId, tagName, highlightText }: WikiReaderProps) {
       <Modal
         isOpen={showRegenerateModal}
         onClose={() => setShowRegenerateModal(false)}
-        title="Regenerate Article"
-        confirmLabel="Regenerate"
+        title={t('wiki_regenerate_article')}
+        confirmLabel={t('wiki_regenerate')}
         confirmVariant="primary"
         onConfirm={() => {
           setShowRegenerateModal(false);
@@ -283,9 +285,7 @@ export function WikiReader({ tagId, tagName, highlightText }: WikiReaderProps) {
         }}
       >
         <p className="text-[var(--color-text-primary)]">
-          This will regenerate the article from scratch, replacing the current content.
-          The current version will be saved in the version history.
-          Are you sure you want to continue?
+          {t('wiki_regenerate_warning')}
         </p>
       </Modal>
     </div>

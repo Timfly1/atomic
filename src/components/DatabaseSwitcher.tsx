@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { Database, ChevronDown, Pencil, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useDatabasesStore, DatabaseInfo } from '../stores/databases';
 
 export function DatabaseSwitcher() {
+  const { t } = useTranslation();
   const { databases, activeId, fetchDatabases, switchDatabase, createDatabase, renameDatabase, deleteDatabase } = useDatabasesStore();
   const [isOpen, setIsOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -53,7 +55,7 @@ export function DatabaseSwitcher() {
 
   const handleDelete = async (db: DatabaseInfo) => {
     if (db.is_default) return;
-    if (!confirm(`Delete "${db.name}"? This cannot be undone.`)) return;
+    if (!confirm(t('database_delete_confirm', { name: db.name }))) return;
     await deleteDatabase(db.id);
   };
 
@@ -113,7 +115,7 @@ export function DatabaseSwitcher() {
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDelete(db); }}
                       className="opacity-0 group-hover:opacity-100 hover:text-red-400 text-[var(--color-text-tertiary)]"
-                      title="Delete"
+                      title={t('common_delete')}
                     >
                       <Trash2 className="w-2.5 h-2.5" strokeWidth={2} />
                     </button>

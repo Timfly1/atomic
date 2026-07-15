@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronLeft, Clock, RefreshCw, X, Loader2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
@@ -39,6 +40,7 @@ export function WikiHeader({
   proposalAtomCount,
   onReviewProposal,
 }: WikiHeaderProps) {
+  const { t } = useTranslation();
   const [showRegenerateModal, setShowRegenerateModal] = useState(false);
   const [showVersions, setShowVersions] = useState(false);
   const versionsRef = useRef<HTMLDivElement>(null);
@@ -66,13 +68,13 @@ export function WikiHeader({
       {isViewingVersion && (
         <div className="flex items-center justify-between px-6 py-2 bg-amber-500/10 border-b border-amber-500/20">
           <span className="text-sm text-amber-400">
-            Viewing previous version
+            {t('wiki_viewing_previous_version')}
           </span>
           <button
             onClick={onReturnToCurrent}
             className="text-sm text-amber-400 hover:text-amber-300 underline transition-colors"
           >
-            Return to current
+            {t('wiki_return_to_current')}
           </button>
         </div>
       )}
@@ -87,7 +89,7 @@ export function WikiHeader({
               onClick={onBack}
             >
               <ChevronLeft className="w-4 h-4 mr-1" strokeWidth={2} />
-              Back
+              {t('wiki_back')}
             </Button>
           )}
           {/* Version history button */}
@@ -99,7 +101,7 @@ export function WikiHeader({
                 onClick={() => setShowVersions(!showVersions)}
               >
                 <Clock className="w-4 h-4 mr-1" strokeWidth={2} />
-                History ({versions.length})
+                {t('wiki_history')} ({versions.length})
               </Button>
               {showVersions && (
                 <div className="absolute right-0 top-full mt-1 w-64 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg shadow-lg z-50 py-1 max-h-64 overflow-y-auto">
@@ -111,7 +113,7 @@ export function WikiHeader({
                       }}
                       className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--color-bg-hover)] transition-colors text-[var(--color-accent-light)] font-medium"
                     >
-                      Current version
+                      {t('wiki_current_version')}
                     </button>
                   )}
                   {versions.map((v) => (
@@ -124,10 +126,10 @@ export function WikiHeader({
                       className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--color-bg-hover)] transition-colors"
                     >
                       <div className="text-[var(--color-text-primary)]">
-                        Version {v.version_number}
+                        {t('wiki_version_number', { number: v.version_number })}
                       </div>
                       <div className="text-xs text-[var(--color-text-secondary)]">
-                        {formatRelativeTime(v.created_at)} • {v.atom_count} source{v.atom_count !== 1 ? 's' : ''}
+                        {formatRelativeTime(v.created_at)} • {t('wiki_source_count', { count: v.atom_count })}
                       </div>
                     </button>
                   ))}
@@ -142,7 +144,7 @@ export function WikiHeader({
             disabled={isUpdating || isViewingVersion}
           >
             <RefreshCw className="w-4 h-4 mr-1" strokeWidth={2} />
-            Regenerate
+            {t('wiki_regenerate')}
           </Button>
           <button
             onClick={onClose}
@@ -157,9 +159,9 @@ export function WikiHeader({
       {hasProposal && !isViewingVersion && (
         <div className="flex items-center justify-between px-6 py-2 bg-[var(--color-accent)]/15 border-t border-[var(--color-accent)]/30">
           <span className="text-sm text-[var(--color-accent-light)]">
-            Suggested update ready
+            {t('wiki_suggested_update_ready')}
             {proposalAtomCount > 0 && (
-              <> — based on {proposalAtomCount} new atom{proposalAtomCount !== 1 ? 's' : ''}</>
+              <> — {t('wiki_new_atoms_count', { count: proposalAtomCount })}</>
             )}
           </span>
           <Button
@@ -167,7 +169,7 @@ export function WikiHeader({
             size="sm"
             onClick={onReviewProposal}
           >
-            Review
+            {t('wiki_review')}
           </Button>
         </div>
       )}
@@ -176,7 +178,7 @@ export function WikiHeader({
       {!hasProposal && newAtomsAvailable > 0 && !isViewingVersion && (
         <div className="flex items-center justify-between px-6 py-2 bg-[var(--color-accent)]/10 border-t border-[var(--color-accent)]/20">
           <span className="text-sm text-[var(--color-accent-light)]">
-            {newAtomsAvailable} new atom{newAtomsAvailable !== 1 ? 's' : ''} available
+            {t('wiki_new_atoms_available', { count: newAtomsAvailable })}
           </span>
           <Button
             variant="primary"
@@ -187,10 +189,10 @@ export function WikiHeader({
             {isProposing ? (
               <>
                 <Loader2 className="w-3 h-3 mr-1 animate-spin" strokeWidth={2} />
-                Generating...
+                {t('wiki_generating')}
               </>
             ) : (
-              'Generate update'
+              t('wiki_generate_update')
             )}
           </Button>
         </div>
@@ -200,15 +202,13 @@ export function WikiHeader({
       <Modal
         isOpen={showRegenerateModal}
         onClose={() => setShowRegenerateModal(false)}
-        title="Regenerate Article"
-        confirmLabel="Regenerate"
+        title={t('wiki_regenerate_article')}
+        confirmLabel={t('wiki_regenerate')}
         confirmVariant="primary"
         onConfirm={handleRegenerate}
       >
         <p className="text-[var(--color-text-primary)]">
-          This will regenerate the article from scratch, replacing the current content.
-          The current version will be saved in the version history.
-          Are you sure you want to continue?
+          {t('wiki_regenerate_warning')}
         </p>
       </Modal>
     </div>

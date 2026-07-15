@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useUIStore } from '../../stores/ui';
 import { useDatabasesStore } from '../../stores/databases';
 import { getGlobalCanvas, type GlobalCanvasData } from '../../lib/api';
@@ -54,6 +55,7 @@ export function SigmaCanvas({
   filterAtomIds,
   onPreviewNodeClick,
 }: SigmaCanvasProps = {}) {
+  const { t } = useTranslation();
   const isPreview = mode === 'preview';
   const isInteractivePreview = isPreview && filterAtomIds !== undefined;
   // Stable key for filterAtomIds — array identity changes shouldn't rebuild.
@@ -939,10 +941,10 @@ export function SigmaCanvas({
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center text-[var(--color-text-secondary)]">
               {isPreview ? (
-                <p className="text-xs">Canvas unavailable</p>
+                <p className="text-xs">{t('canvas_unavailable')}</p>
               ) : (
                 <>
-                  <p className="text-lg mb-2">Error loading canvas</p>
+                  <p className="text-lg mb-2">{t('canvas_error_loading')}</p>
                   <p className="text-sm">{error}</p>
                 </>
               )}
@@ -954,11 +956,11 @@ export function SigmaCanvas({
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center text-[var(--color-text-secondary)]">
               {isPreview ? (
-                <p className="text-xs">No atoms with embeddings yet</p>
+                <p className="text-xs">{t('canvas_no_embeddings_preview')}</p>
               ) : (
                 <>
-                  <p className="text-lg mb-2">No atoms with embeddings</p>
-                  <p className="text-sm">Create some atoms and wait for embeddings to generate</p>
+                  <p className="text-lg mb-2">{t('canvas_no_embeddings')}</p>
+                  <p className="text-sm">{t('canvas_no_embeddings_hint')}</p>
                 </>
               )}
             </div>

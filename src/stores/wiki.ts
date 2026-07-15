@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { toast } from 'sonner';
+import { toasti18n } from '../i18n/toast';
 import { getTransport } from '../lib/transport';
 
 // Types matching the Rust structs
@@ -223,7 +223,7 @@ export const useWikiStore = create<WikiStore>((set, get) => ({
       set({ suggestedArticles: suggestions, isLoadingSuggestions: false });
     } catch (error) {
       console.error('Failed to fetch suggested articles:', error);
-      toast.error('Failed to load suggested articles', { id: 'wiki-suggestions-error', description: String(error) });
+      toasti18n.error('wiki:toast_load_suggested_failed', { id: 'wiki-suggestions-error', description: String(error) });
       set({ isLoadingSuggestions: false });
     }
   },
@@ -323,7 +323,7 @@ export const useWikiStore = create<WikiStore>((set, get) => ({
       set({ articleStatus: status });
     } catch (error) {
       console.error('Failed to fetch article status:', error);
-      toast.error('Failed to load article status', { id: 'wiki-status-error', description: String(error) });
+      toasti18n.error('wiki:toast_load_status_failed', { id: 'wiki-status-error', description: String(error) });
     }
   },
 
@@ -333,7 +333,7 @@ export const useWikiStore = create<WikiStore>((set, get) => ({
       set({ relatedTags: tags });
     } catch (error) {
       console.error('Failed to fetch related tags:', error);
-      toast.error('Failed to load related tags', { id: 'wiki-related-error', description: String(error) });
+      toasti18n.error('wiki:toast_load_related_failed', { id: 'wiki-related-error', description: String(error) });
     }
   },
 
@@ -343,7 +343,7 @@ export const useWikiStore = create<WikiStore>((set, get) => ({
       set({ wikiLinks: links });
     } catch (error) {
       console.error('Failed to fetch wiki links:', error);
-      toast.error('Failed to load wiki links', { id: 'wiki-links-error', description: String(error) });
+      toasti18n.error('wiki:toast_load_links_failed', { id: 'wiki-links-error', description: String(error) });
     }
   },
 
@@ -435,7 +435,7 @@ export const useWikiStore = create<WikiStore>((set, get) => ({
       );
       if ('status' in result && result.status === 'no_update_needed') {
         set({ isProposing: false, proposal: null });
-        toast.info('No update needed', {
+        toasti18n.info('wiki:toast_no_update_needed', {
           id: 'wiki-propose-noop',
           description: 'The new atoms don\'t warrant changes to the article.',
         });
@@ -443,14 +443,14 @@ export const useWikiStore = create<WikiStore>((set, get) => ({
         get().fetchArticleStatus(tagId);
       } else {
         set({ proposal: result as WikiProposal, isProposing: false });
-        toast.success('Suggested update ready', {
+        toasti18n.success('wiki:toast_update_ready', {
           id: 'wiki-proposal-ready',
           description: 'Click Review to see what would change.',
         });
       }
     } catch (error) {
       set({ error: String(error), isProposing: false });
-      toast.error('Failed to generate update', {
+      toasti18n.error('wiki:toast_generate_failed', {
         id: 'wiki-propose-error',
         description: String(error),
       });
@@ -476,14 +476,14 @@ export const useWikiStore = create<WikiStore>((set, get) => ({
       get().fetchWikiLinks(tagId);
       get().fetchVersions(tagId);
       get().fetchAllArticles();
-      toast.success('Update applied');
+      toasti18n.success('wiki:toast_update_applied');
     } catch (error) {
       const msg = String(error);
       set({ isAccepting: false });
       if (msg.includes('stale')) {
         // Proposal was superseded / live article updated out-of-band.
         set({ proposal: null, reviewingProposal: false });
-        toast.error('Proposal out of date', {
+        toasti18n.error('wiki:toast_proposal_out_of_date', {
           id: 'wiki-proposal-stale',
           description: 'The article was updated elsewhere. Regenerate the suggestion to review it.',
         });
@@ -491,7 +491,7 @@ export const useWikiStore = create<WikiStore>((set, get) => ({
         get().fetchArticleStatus(tagId);
       } else {
         set({ error: msg });
-        toast.error('Failed to apply update', {
+        toasti18n.error('wiki:toast_apply_failed', {
           id: 'wiki-accept-error',
           description: msg,
         });
@@ -507,7 +507,7 @@ export const useWikiStore = create<WikiStore>((set, get) => ({
       get().fetchArticleStatus(tagId);
     } catch (error) {
       set({ isDismissing: false });
-      toast.error('Failed to dismiss suggestion', {
+      toasti18n.error('wiki:toast_dismiss_failed', {
         id: 'wiki-dismiss-error',
         description: String(error),
       });
@@ -528,7 +528,7 @@ export const useWikiStore = create<WikiStore>((set, get) => ({
       set({ versions });
     } catch (error) {
       console.error('Failed to fetch wiki versions:', error);
-      toast.error('Failed to load version history', { id: 'wiki-versions-error', description: String(error) });
+      toasti18n.error('wiki:toast_load_versions_failed', { id: 'wiki-versions-error', description: String(error) });
     }
   },
 
@@ -538,7 +538,7 @@ export const useWikiStore = create<WikiStore>((set, get) => ({
       set({ selectedVersion: version });
     } catch (error) {
       console.error('Failed to fetch wiki version:', error);
-      toast.error('Failed to load version', { id: 'wiki-version-error', description: String(error) });
+      toasti18n.error('wiki:toast_load_version_failed', { id: 'wiki-version-error', description: String(error) });
     }
   },
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown } from 'lucide-react';
 import { Button } from '../../ui/Button';
 import { QRCode } from '../QRCode';
@@ -61,6 +62,7 @@ function Section({
   onToggle: () => void;
   children: React.ReactNode;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
       <button
@@ -84,6 +86,7 @@ function Section({
 // --- MCP content ---
 
 function McpLocalContent() {
+  const { t } = useTranslation();
   const [mcpConfig, setMcpConfig] = useState<McpConfig | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -91,9 +94,9 @@ function McpLocalContent() {
   useEffect(() => {
     getMcpBridgePath().then((path) => {
       if (path) setMcpConfig(getMcpStdioConfig(path));
-      else setError('Could not locate atomic-mcp-bridge. Ensure the app bundle is complete.');
+      else setError(t('onboarding_mcp_setup_bridge_not_found'));
     });
-  }, []);
+  }, [t]);
 
   const handleCopy = async () => {
     if (!mcpConfig) return;
@@ -107,29 +110,30 @@ function McpLocalContent() {
   return (
     <>
       <p className="text-sm text-[var(--color-text-secondary)]">
-        The Atomic MCP bridge is bundled with the desktop app. It connects to the local server automatically — no token configuration needed.
+        {t('onboarding_mcp_local_description')}
       </p>
       <ol className="space-y-1.5 text-sm text-[var(--color-text-secondary)] list-decimal list-inside">
-        <li>Open your MCP client settings (e.g. Claude Desktop &gt; <span className="text-[var(--color-text-primary)]">Developer &gt; Edit Config</span>)</li>
-        <li>Add the following to your configuration file:</li>
+        <li>{t('onboarding_mcp_step_1')}</li>
+        <li>{t('onboarding_mcp_step_2')}</li>
       </ol>
       <div className="relative">
         <pre className="p-3 bg-[var(--color-bg-main)] border border-[var(--color-border)] rounded-lg text-xs text-[var(--color-text-primary)] overflow-x-auto font-mono">
-          {configJson || (error ? '' : 'Loading...')}
+          {configJson || (error ? '' : t('onboarding_mcp_loading'))}
         </pre>
         <Button variant="secondary" size="sm" onClick={handleCopy} className="absolute top-2 right-2" disabled={!mcpConfig}>
-          {copied ? 'Copied!' : 'Copy'}
+          {copied ? t('onboarding_mcp_copied') : t('onboarding_mcp_copy')}
         </Button>
       </div>
       {error && <p className="text-xs text-red-500">{error}</p>}
       <p className="text-xs text-[var(--color-text-secondary)]">
-        After saving, restart your MCP client. Atomic will appear as an available MCP tool.
+        {t('onboarding_mcp_restart_note')}
       </p>
     </>
   );
 }
 
 function McpRemoteContent() {
+  const { t } = useTranslation();
   const [mcpConfig, setMcpConfig] = useState<McpConfig | null>(null);
   const [copied, setCopied] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -161,34 +165,34 @@ function McpRemoteContent() {
   return (
     <>
       <p className="text-sm text-[var(--color-text-secondary)]">
-        Connect your MCP client to this Atomic server's HTTP endpoint. A dedicated API token is required for authentication.
+        {t('onboarding_mcp_remote_description')}
       </p>
       {!mcpConfig ? (
         <div className="space-y-2">
           <Button variant="secondary" onClick={handleCreateToken} disabled={isCreating}>
-            {isCreating ? 'Creating...' : 'Create MCP Token'}
+            {isCreating ? t('onboarding_mcp_creating') : t('onboarding_mcp_create_token')}
           </Button>
           {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
       ) : (
         <>
           <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-md text-xs text-amber-400">
-            Save this config now — the token won't be shown again.
+            {t('onboarding_mcp_token_warning')}
           </div>
           <ol className="space-y-1.5 text-sm text-[var(--color-text-secondary)] list-decimal list-inside">
-            <li>Open your MCP client settings (e.g. Claude Desktop &gt; <span className="text-[var(--color-text-primary)]">Developer &gt; Edit Config</span>)</li>
-            <li>Add the following to your configuration file:</li>
+            <li>{t('onboarding_mcp_step_1')}</li>
+            <li>{t('onboarding_mcp_step_2')}</li>
           </ol>
           <div className="relative">
             <pre className="p-3 bg-[var(--color-bg-main)] border border-[var(--color-border)] rounded-lg text-xs text-[var(--color-text-primary)] overflow-x-auto font-mono">
               {configJson}
             </pre>
             <Button variant="secondary" size="sm" onClick={handleCopy} className="absolute top-2 right-2">
-              {copied ? 'Copied!' : 'Copy'}
+              {copied ? t('onboarding_mcp_copied') : t('onboarding_mcp_copy')}
             </Button>
           </div>
           <p className="text-xs text-[var(--color-text-secondary)]">
-            After saving, restart your MCP client. Atomic will appear as an available MCP tool.
+            {t('onboarding_mcp_restart_note')}
           </p>
         </>
       )}
@@ -212,6 +216,7 @@ function MobileContent({
   state: OnboardingState;
   dispatch: React.Dispatch<OnboardingAction>;
 }) {
+  const { t } = useTranslation();
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -246,10 +251,10 @@ function MobileContent({
     return (
       <>
         <p className="text-sm text-[var(--color-text-secondary)]">
-          Generate a QR code to connect the Atomic iOS app instantly.
+          {t('onboarding_mobile_setup_description')}
         </p>
         <Button variant="secondary" onClick={handleGenerateQR} disabled={isGenerating}>
-          {isGenerating ? 'Generating...' : 'Generate QR Code'}
+          {isGenerating ? t('onboarding_mobile_setup_generating') : t('onboarding_mobile_setup_generate_qr')}
         </Button>
         {error && <p className="text-sm text-red-500">{error}</p>}
       </>
@@ -263,7 +268,7 @@ function MobileContent({
           <QRCode value={qrPayload!} size={180} />
         </div>
         <p className="text-xs text-[var(--color-text-secondary)] text-center">
-          Open the Atomic iOS app and tap <strong className="text-[var(--color-text-primary)]">Scan QR Code</strong>
+          {t('onboarding_mobile_setup_scan_qr')}
         </p>
       </div>
       <div className="flex gap-2">
@@ -271,7 +276,7 @@ function MobileContent({
           {url}
         </code>
         <Button variant="secondary" size="sm" onClick={handleCopy}>
-          {copied ? 'Copied!' : 'Copy'}
+          {copied ? t('onboarding_mobile_setup_copied') : t('onboarding_mobile_setup_copy')}
         </Button>
       </div>
     </>
@@ -281,6 +286,7 @@ function MobileContent({
 // --- Extension content ---
 
 function ExtensionContent() {
+  const { t } = useTranslation();
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [copiedToken, setCopiedToken] = useState(false);
   const serverInfo = getServerInfo();
@@ -295,15 +301,15 @@ function ExtensionContent() {
             rel="noreferrer noopener"
             className="text-[var(--color-accent)] hover:underline"
           >
-            Install the Atomic Web Clipper for Chrome
+            {t('onboarding_extension_install')}
           </a>
         </li>
-        <li>Click the extension icon and open settings</li>
-        <li>Enter the server URL and auth token below</li>
+        <li>{t('onboarding_extension_click_icon')}</li>
+        <li>{t('onboarding_extension_enter_url_token')}</li>
       </ol>
       <div className="space-y-2">
         <div className="space-y-1">
-          <label className="block text-xs font-medium text-[var(--color-text-secondary)]">Server URL</label>
+          <label className="block text-xs font-medium text-[var(--color-text-secondary)]">{t('onboarding_extension_server_url_label')}</label>
           <div className="flex gap-2">
             <code className="flex-1 px-3 py-2 bg-[var(--color-bg-main)] border border-[var(--color-border)] rounded-md text-xs text-[var(--color-text-primary)] truncate">
               {serverInfo.url}
@@ -317,12 +323,12 @@ function ExtensionContent() {
                 setTimeout(() => setCopiedUrl(false), 2000);
               }}
             >
-              {copiedUrl ? 'Copied!' : 'Copy'}
+              {copiedUrl ? t('onboarding_extension_copied') : t('onboarding_extension_copy')}
             </Button>
           </div>
         </div>
         <div className="space-y-1">
-          <label className="block text-xs font-medium text-[var(--color-text-secondary)]">Auth Token</label>
+          <label className="block text-xs font-medium text-[var(--color-text-secondary)]">{t('onboarding_extension_auth_token_label')}</label>
           <div className="flex gap-2">
             <code className="flex-1 px-3 py-2 bg-[var(--color-bg-main)] border border-[var(--color-border)] rounded-md text-xs text-[var(--color-text-primary)] truncate">
               {serverInfo.token ? `${serverInfo.token.substring(0, 12)}...` : 'N/A'}
@@ -337,7 +343,7 @@ function ExtensionContent() {
                 setTimeout(() => setCopiedToken(false), 2000);
               }}
             >
-              {copiedToken ? 'Copied!' : 'Copy'}
+              {copiedToken ? t('onboarding_extension_copied') : t('onboarding_extension_copy')}
             </Button>
           </div>
         </div>
@@ -355,6 +361,7 @@ function DataLoadingContent({
   state: OnboardingState;
   dispatch: React.Dispatch<OnboardingAction>;
 }) {
+  const { t } = useTranslation();
   const isDesktop = isDesktopApp();
 
   const [addingFeed, setAddingFeed] = useState(false);
@@ -404,7 +411,7 @@ function DataLoadingContent({
     setImportResult(null);
     setImportError(null);
     try {
-      const selected = await pickDirectory('Select Obsidian Vault');
+      const selected = await pickDirectory(t('onboarding_data_select_vault'));
       if (!selected) return;
       setIsImporting(true);
       const result = await importObsidianVault(selected);
@@ -420,52 +427,52 @@ function DataLoadingContent({
     <>
       {/* RSS Feed */}
       <div>
-        <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5">RSS Feed</label>
+        <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5">{t('onboarding_data_rss_feed')}</label>
         <div className="flex gap-2">
           <input
             type="text"
             value={state.feedUrl}
             onChange={(e) => dispatch({ type: 'SET_FEED_URL', value: e.target.value })}
-            placeholder="https://example.com/feed.xml"
+            placeholder={t('onboarding_data_rss_feed_placeholder')}
             className="flex-1 px-3 py-2 bg-[var(--color-bg-main)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-sm"
           />
           <Button variant="secondary" onClick={handleAddFeed} disabled={!state.feedUrl.trim() || addingFeed}>
-            {addingFeed ? 'Adding...' : 'Add'}
+            {addingFeed ? t('onboarding_data_adding') : t('onboarding_data_add')}
           </Button>
         </div>
-        {feedAdded && <p className="text-xs text-green-500 mt-1">Feed added successfully</p>}
+        {feedAdded && <p className="text-xs text-green-500 mt-1">{t('onboarding_data_feed_added')}</p>}
         {feedError && <p className="text-xs text-red-500 mt-1">{feedError}</p>}
       </div>
 
       {/* URL Ingest */}
       <div>
-        <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5">Ingest URL</label>
+        <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5">{t('onboarding_data_ingest_url')}</label>
         <div className="flex gap-2">
           <input
             type="text"
             value={state.ingestUrl}
             onChange={(e) => dispatch({ type: 'SET_INGEST_URL', value: e.target.value })}
-            placeholder="https://example.com/article"
+            placeholder={t('onboarding_data_ingest_url_placeholder')}
             className="flex-1 px-3 py-2 bg-[var(--color-bg-main)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-sm"
           />
           <Button variant="secondary" onClick={handleIngestUrl} disabled={!state.ingestUrl.trim() || ingesting}>
-            {ingesting ? 'Ingesting...' : 'Ingest'}
+            {ingesting ? t('onboarding_data_ingesting') : t('onboarding_data_ingest')}
           </Button>
         </div>
-        {ingestResult && <p className="text-xs text-green-500 mt-1">Ingested: {ingestResult.title}</p>}
+        {ingestResult && <p className="text-xs text-green-500 mt-1">{t('onboarding_data_ingested')}: {ingestResult.title}</p>}
         {ingestError && <p className="text-xs text-red-500 mt-1">{ingestError}</p>}
       </div>
 
       {/* Obsidian Import (desktop only) */}
       {isDesktop && (
         <div>
-          <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5">Import from Obsidian</label>
+          <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5">{t('onboarding_data_import_obsidian')}</label>
           <Button variant="secondary" onClick={handleObsidianImport} disabled={isImporting}>
-            {isImporting ? 'Importing...' : 'Select Vault Folder'}
+            {isImporting ? t('onboarding_data_importing') : t('onboarding_data_select_vault')}
           </Button>
           {importResult && (
             <p className="text-xs text-green-500 mt-1">
-              Imported {importResult.imported} notes ({importResult.skipped} skipped)
+              {t('onboarding_data_imported_notes', { imported: importResult.imported, skipped: importResult.skipped })}
             </p>
           )}
           {importError && <p className="text-xs text-red-500 mt-1">{importError}</p>}
@@ -483,6 +490,7 @@ interface IntegrationsStepProps {
 }
 
 export function IntegrationsStep({ state, dispatch }: IntegrationsStepProps) {
+  const { t } = useTranslation();
   const [openSection, setOpenSection] = useState<string | null>(null);
 
   const toggle = (id: string) => setOpenSection(prev => (prev === id ? null : id));
@@ -490,15 +498,15 @@ export function IntegrationsStep({ state, dispatch }: IntegrationsStepProps) {
   return (
     <div className="space-y-3 px-2">
       <div className="text-center mb-4">
-        <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-1">Integrations & Data</h2>
+        <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-1">{t('onboarding_integrations_title')}</h2>
         <p className="text-sm text-[var(--color-text-secondary)]">
-          Set up optional integrations and import data. You can always configure these later in Settings.
+          {t('onboarding_integrations_subtitle')}
         </p>
       </div>
 
       <Section
-        title="MCP Integration"
-        description="Connect AI assistants to your knowledge base"
+        title={t('onboarding_integrations_mcp')}
+        description={t('onboarding_integrations_mcp_description')}
         isOpen={openSection === 'mcp'}
         onToggle={() => toggle('mcp')}
       >
@@ -506,8 +514,8 @@ export function IntegrationsStep({ state, dispatch }: IntegrationsStepProps) {
       </Section>
 
       <Section
-        title="Mobile App"
-        description="Connect the Atomic iOS app via QR code"
+        title={t('onboarding_integrations_mobile')}
+        description={t('onboarding_integrations_mobile_description')}
         isOpen={openSection === 'mobile'}
         onToggle={() => toggle('mobile')}
       >
@@ -515,8 +523,8 @@ export function IntegrationsStep({ state, dispatch }: IntegrationsStepProps) {
       </Section>
 
       <Section
-        title="Browser Extension"
-        description="Save web pages to your knowledge base"
+        title={t('onboarding_integrations_extension')}
+        description={t('onboarding_integrations_extension_description')}
         isOpen={openSection === 'extension'}
         onToggle={() => toggle('extension')}
       >
@@ -524,8 +532,8 @@ export function IntegrationsStep({ state, dispatch }: IntegrationsStepProps) {
       </Section>
 
       <Section
-        title="Import Data"
-        description="RSS feeds, URLs, or Obsidian vault"
+        title={t('onboarding_integrations_import_data')}
+        description={t('onboarding_integrations_import_data_description')}
         isOpen={openSection === 'data'}
         onToggle={() => toggle('data')}
       >

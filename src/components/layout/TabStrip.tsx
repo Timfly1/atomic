@@ -16,11 +16,13 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { motion } from 'motion/react';
 import { ChevronLeft, ChevronRight, X, BookOpen, Network, FileText, Telescope, Quote } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useUIStore, type Tab, type TabEntry } from '../../stores/ui';
 import { useAtomsStore } from '../../stores/atoms';
 import { useReportsStore } from '../../stores/reports';
 import { getTransport } from '../../lib/transport';
 import { formatRelativeDate } from '../../lib/date';
+import { useIsMobile } from '../../hooks';
 
 const PILL_WIDTH = 156;
 
@@ -150,6 +152,8 @@ interface SortablePillProps {
 }
 
 function SortablePill({ tab, isActive, onSwitch, onClose, onBack, onForward, onMouseDown }: SortablePillProps) {
+  const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tab.id });
 
   const entry = tab.stack[tab.stackIndex];
@@ -182,7 +186,7 @@ function SortablePill({ tab, isActive, onSwitch, onClose, onBack, onForward, onM
       onMouseDown={onMouseDown}
       onClick={onSwitch}
       className={`
-        group relative flex items-center h-7 rounded-md cursor-pointer select-none flex-shrink-0
+        group relative flex items-center h-8 rounded-md cursor-pointer select-none flex-shrink-0
         ${isActive
           ? 'text-white'
           : 'bg-[var(--color-bg-card)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-hover)] transition-colors'}
@@ -209,22 +213,26 @@ function SortablePill({ tab, isActive, onSwitch, onClose, onBack, onForward, onM
           }}
           onMouseDown={(e) => e.stopPropagation()}
           disabled={!canBack}
-          className={`relative z-[1] flex items-center justify-center w-5 h-5 ml-1 rounded transition-colors ${
-            canBack ? 'text-white/80 hover:text-white hover:bg-white/15' : 'text-white/30 cursor-default'
+          className={`relative z-[1] flex items-center justify-center w-7 h-7 ml-1 rounded-md transition-colors ${
+            canBack
+              ? isMobile
+                ? 'bg-black/20 text-white active:bg-black/30'
+                : 'text-white/80 hover:text-white hover:bg-white/15'
+              : 'text-white/30 cursor-default'
           }`}
-          title="Back"
-          aria-label="Back"
+          title={t('common_back')}
+          aria-label={t('common_back')}
         >
-          <ChevronLeft className="w-3.5 h-3.5" strokeWidth={2.5} />
+          <ChevronLeft className="w-4 h-4" strokeWidth={2.5} />
         </button>
       )}
 
       <div className={`relative z-[1] flex items-center gap-1.5 min-w-0 flex-1 px-2 ${isActive ? '' : 'pl-2.5'}`}>
         <Icon
-          className={`w-3 h-3 flex-shrink-0 ${isActive ? 'text-white/80' : 'text-[var(--color-text-tertiary)]'}`}
+          className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-white/80' : 'text-[var(--color-text-tertiary)]'}`}
           strokeWidth={2}
         />
-        <span className="text-xs font-medium truncate min-w-0">{label}</span>
+        <span className="text-sm font-medium truncate min-w-0">{label}</span>
       </div>
 
       {isActive && (
@@ -235,13 +243,17 @@ function SortablePill({ tab, isActive, onSwitch, onClose, onBack, onForward, onM
           }}
           onMouseDown={(e) => e.stopPropagation()}
           disabled={!canForward}
-          className={`relative z-[1] flex items-center justify-center w-5 h-5 rounded transition-colors ${
-            canForward ? 'text-white/80 hover:text-white hover:bg-white/15' : 'text-white/30 cursor-default'
+          className={`relative z-[1] flex items-center justify-center w-7 h-7 mr-1 rounded-md transition-colors ${
+            canForward
+              ? isMobile
+                ? 'bg-black/20 text-white active:bg-black/30'
+                : 'text-white/80 hover:text-white hover:bg-white/15'
+              : 'text-white/30 cursor-default'
           }`}
-          title="Forward"
-          aria-label="Forward"
+          title={t('common_forward')}
+          aria-label={t('common_forward')}
         >
-          <ChevronRight className="w-3.5 h-3.5" strokeWidth={2.5} />
+          <ChevronRight className="w-4 h-4" strokeWidth={2.5} />
         </button>
       )}
 
@@ -251,15 +263,19 @@ function SortablePill({ tab, isActive, onSwitch, onClose, onBack, onForward, onM
       <button
         onClick={onClose}
         onMouseDown={(e) => e.stopPropagation()}
-        className={`relative z-[1] flex items-center justify-center w-5 h-5 mr-1 rounded transition-all ${
+        className={`relative z-[1] flex items-center justify-center w-7 h-7 mr-1 rounded-md transition-all ${
           isActive
-            ? 'text-white/70 hover:text-white hover:bg-white/15 opacity-100'
-            : 'opacity-0 group-hover:opacity-100 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]'
+            ? isMobile
+              ? 'bg-black/20 text-white active:bg-black/30 opacity-100'
+              : 'text-white/70 hover:text-white hover:bg-white/15 opacity-100'
+            : isMobile
+              ? 'bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)] active:text-[var(--color-text-primary)] active:bg-[var(--color-border)] opacity-100'
+              : 'opacity-0 group-hover:opacity-100 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]'
         }`}
-        title="Close tab"
-        aria-label="Close tab"
+        title={t('common_close_tab')}
+        aria-label={t('common_close_tab')}
       >
-        <X className="w-3 h-3" strokeWidth={2.5} />
+        <X className="w-3.5 h-3.5" strokeWidth={2.5} />
       </button>
     </div>
   );

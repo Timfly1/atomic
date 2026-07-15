@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { X, Check } from 'lucide-react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { useAtomsStore, SourceFilterType, SortField, SortOrder } from '../../stores/atoms';
 import { useUIStore, ViewMode, AtomsLayout } from '../../stores/ui';
 
@@ -10,30 +11,32 @@ interface FilterSheetProps {
   displayCount: number;
 }
 
-const SORT_OPTIONS: { field: SortField; order: SortOrder; label: string }[] = [
-  { field: 'updated', order: 'desc', label: 'Updated (newest)' },
-  { field: 'updated', order: 'asc', label: 'Updated (oldest)' },
-  { field: 'created', order: 'desc', label: 'Created (newest)' },
-  { field: 'created', order: 'asc', label: 'Created (oldest)' },
-  { field: 'published', order: 'desc', label: 'Published (newest)' },
-  { field: 'published', order: 'asc', label: 'Published (oldest)' },
-  { field: 'title', order: 'asc', label: 'Title (A-Z)' },
-  { field: 'title', order: 'desc', label: 'Title (Z-A)' },
+const SORT_OPTIONS: { field: SortField; order: SortOrder; labelKey: string }[] = [
+  { field: 'updated', order: 'desc', labelKey: 'atoms_filter_updated_newest' },
+  { field: 'updated', order: 'asc', labelKey: 'atoms_filter_updated_oldest' },
+  { field: 'created', order: 'desc', labelKey: 'atoms_filter_created_newest' },
+  { field: 'created', order: 'asc', labelKey: 'atoms_filter_created_oldest' },
+  { field: 'published', order: 'desc', labelKey: 'atoms_filter_published_newest' },
+  { field: 'published', order: 'asc', labelKey: 'atoms_filter_published_oldest' },
+  { field: 'title', order: 'asc', labelKey: 'atoms_filter_title_az' },
+  { field: 'title', order: 'desc', labelKey: 'atoms_filter_title_za' },
 ];
 
-const VIEW_MODES: { id: ViewMode; label: string }[] = [
-  { id: 'dashboard', label: 'Dashboard' },
-  { id: 'atoms', label: 'Atoms' },
-  { id: 'canvas', label: 'Canvas' },
-  { id: 'wiki', label: 'Wiki' },
+const VIEW_MODES: { id: ViewMode; labelKey: string }[] = [
+  { id: 'dashboard', labelKey: 'atoms_view_dashboard' },
+  { id: 'atoms', labelKey: 'atoms_view_atoms' },
+  { id: 'canvas', labelKey: 'atoms_view_canvas' },
+  { id: 'wiki', labelKey: 'atoms_view_wiki' },
 ];
 
-const ATOM_LAYOUTS: { id: AtomsLayout; label: string }[] = [
-  { id: 'grid', label: 'Grid' },
-  { id: 'list', label: 'List' },
+const ATOM_LAYOUTS: { id: AtomsLayout; labelKey: string }[] = [
+  { id: 'grid', labelKey: 'atoms_layout_grid' },
+  { id: 'list', labelKey: 'atoms_layout_list' },
 ];
 
 export function FilterSheet({ isOpen, onClose, displayCount }: FilterSheetProps) {
+  const { t } = useTranslation();
+
   const viewMode = useUIStore(s => s.viewMode);
   const setViewMode = useUIStore(s => s.setViewMode);
   const atomsLayout = useUIStore(s => s.atomsLayout);
@@ -84,7 +87,7 @@ export function FilterSheet({ isOpen, onClose, displayCount }: FilterSheetProps)
         }`}
         role="dialog"
         aria-modal="true"
-        aria-label="Filter and sort"
+        aria-label={t('atoms_filter_and_sort_aria_label')}
       >
         {/* Drag handle */}
         <div className="flex justify-center pt-2 pb-1 shrink-0">
@@ -95,16 +98,16 @@ export function FilterSheet({ isOpen, onClose, displayCount }: FilterSheetProps)
         <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--color-border)] shrink-0">
           <div>
             <h2 className="text-base font-semibold text-[var(--color-text-primary)]">
-              View & filter
+              {t('atoms_filter_view_and_filter')}
             </h2>
             <p className="text-xs text-[var(--color-text-secondary)]">
-              {displayCount} atom{displayCount !== 1 ? 's' : ''}
+              {displayCount} {displayCount !== 1 ? t('atoms_filter_count_plural', { count: displayCount }) : t('atoms_filter_count_singular')}
             </p>
           </div>
           <button
             onClick={onClose}
             className="p-1.5 rounded-md text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors"
-            aria-label="Close"
+            aria-label={t('common_close')}
           >
             <X className="w-5 h-5" strokeWidth={2} />
           </button>
@@ -129,7 +132,7 @@ export function FilterSheet({ isOpen, onClose, displayCount }: FilterSheetProps)
                       : 'bg-[var(--color-bg-card)] text-[var(--color-text-primary)] border-[var(--color-border)] hover:bg-[var(--color-bg-hover)]'
                   }`}
                 >
-                  {vm.label}
+                  {t(vm.labelKey)}
                 </button>
               ))}
             </div>
@@ -150,7 +153,7 @@ export function FilterSheet({ isOpen, onClose, displayCount }: FilterSheetProps)
                           : 'bg-[var(--color-bg-card)] text-[var(--color-text-primary)] border-[var(--color-border)] hover:bg-[var(--color-bg-hover)]'
                       }`}
                     >
-                      {l.label}
+                      {t(l.labelKey)}
                     </button>
                   ))}
                 </div>
@@ -162,7 +165,7 @@ export function FilterSheet({ isOpen, onClose, displayCount }: FilterSheetProps)
           {/* Source filter */}
           <section>
             <h3 className="text-xs font-medium uppercase tracking-wider text-[var(--color-text-tertiary)] mb-2">
-              Source
+              {t('atoms_filter_source')}
             </h3>
             <div className="flex flex-wrap gap-2">
               {(['all', 'manual', 'external'] as SourceFilterType[]).map(f => (
@@ -175,7 +178,7 @@ export function FilterSheet({ isOpen, onClose, displayCount }: FilterSheetProps)
                       : 'bg-[var(--color-bg-card)] text-[var(--color-text-primary)] border-[var(--color-border)] hover:bg-[var(--color-bg-hover)]'
                   }`}
                 >
-                  {f === 'all' ? 'All' : f === 'manual' ? 'Manual' : 'External'}
+                  {f === 'all' ? t('atoms_filter_source_all') : f === 'manual' ? t('atoms_filter_source_manual') : t('atoms_filter_source_external')}
                 </button>
               ))}
             </div>
@@ -183,7 +186,7 @@ export function FilterSheet({ isOpen, onClose, displayCount }: FilterSheetProps)
             {availableSources.length > 0 && (
               <div className="mt-3">
                 <div className="text-xs text-[var(--color-text-tertiary)] mb-1.5">
-                  Specific source
+                  {t('atoms_filter_source_specific')}
                 </div>
                 <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
                   {availableSources.map(s => (
@@ -208,7 +211,7 @@ export function FilterSheet({ isOpen, onClose, displayCount }: FilterSheetProps)
           {/* Sort */}
           <section>
             <h3 className="text-xs font-medium uppercase tracking-wider text-[var(--color-text-tertiary)] mb-2">
-              Sort by
+              {t('atoms_filter_sort_by')}
             </h3>
             <div className="flex flex-col divide-y divide-[var(--color-border)] border border-[var(--color-border)] rounded-md overflow-hidden bg-[var(--color-bg-card)]">
               {SORT_OPTIONS.map(opt => {
@@ -223,7 +226,7 @@ export function FilterSheet({ isOpen, onClose, displayCount }: FilterSheetProps)
                         : 'text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]'
                     }`}
                   >
-                    <span>{opt.label}</span>
+                    <span>{t(opt.labelKey)}</span>
                     {isActive && (
                       <Check className="w-4 h-4" strokeWidth={2} />
                     )}

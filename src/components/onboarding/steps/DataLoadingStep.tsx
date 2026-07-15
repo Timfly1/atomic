@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../../ui/Button';
 import {
   createFeed,
@@ -17,6 +18,7 @@ interface DataLoadingStepProps {
 }
 
 export function DataLoadingStep({ state, dispatch }: DataLoadingStepProps) {
+  const { t } = useTranslation();
   const isDesktop = isDesktopApp();
 
   // Feed state
@@ -84,55 +86,55 @@ export function DataLoadingStep({ state, dispatch }: DataLoadingStepProps) {
   return (
     <div className="space-y-5 px-2">
       <div className="text-center mb-4">
-        <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-1">Load Data</h2>
+        <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-1">{t('onboarding_data_load_title')}</h2>
         <p className="text-sm text-[var(--color-text-secondary)]">
-          Add some initial content to your knowledge base
+          {t('onboarding_data_load_subtitle')}
         </p>
       </div>
 
       {/* RSS Feed */}
       <div className="p-4 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg space-y-3">
         <div>
-          <h3 className="text-sm font-medium text-[var(--color-text-primary)]">RSS Feed</h3>
-          <p className="text-xs text-[var(--color-text-secondary)]">Subscribe to an RSS feed to automatically import articles</p>
+          <h3 className="text-sm font-medium text-[var(--color-text-primary)]">{t('onboarding_data_rss_feed')}</h3>
+          <p className="text-xs text-[var(--color-text-secondary)]">{t('onboarding_data_rss_feed_description')}</p>
         </div>
         <div className="flex gap-2">
           <input
             type="text"
             value={state.feedUrl}
             onChange={(e) => dispatch({ type: 'SET_FEED_URL', value: e.target.value })}
-            placeholder="https://example.com/feed.xml"
+            placeholder={t('onboarding_data_rss_feed_placeholder')}
             className="flex-1 px-3 py-2 bg-[var(--color-bg-main)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-sm"
           />
           <Button variant="secondary" onClick={handleAddFeed} disabled={!state.feedUrl.trim() || addingFeed}>
-            {addingFeed ? 'Adding...' : 'Add'}
+            {addingFeed ? t('onboarding_data_adding') : t('onboarding_data_add')}
           </Button>
         </div>
-        {feedAdded && <p className="text-sm text-green-500">Feed added successfully</p>}
+        {feedAdded && <p className="text-sm text-green-500">{t('onboarding_data_feed_added')}</p>}
         {feedError && <p className="text-sm text-red-500">{feedError}</p>}
       </div>
 
       {/* URL Ingest */}
       <div className="p-4 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg space-y-3">
         <div>
-          <h3 className="text-sm font-medium text-[var(--color-text-primary)]">Ingest URL</h3>
-          <p className="text-xs text-[var(--color-text-secondary)]">Extract and save content from a web page</p>
+          <h3 className="text-sm font-medium text-[var(--color-text-primary)]">{t('onboarding_data_ingest_url')}</h3>
+          <p className="text-xs text-[var(--color-text-secondary)]">{t('onboarding_data_ingest_url_description')}</p>
         </div>
         <div className="flex gap-2">
           <input
             type="text"
             value={state.ingestUrl}
             onChange={(e) => dispatch({ type: 'SET_INGEST_URL', value: e.target.value })}
-            placeholder="https://example.com/article"
+            placeholder={t('onboarding_data_ingest_url_placeholder')}
             className="flex-1 px-3 py-2 bg-[var(--color-bg-main)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-sm"
           />
           <Button variant="secondary" onClick={handleIngestUrl} disabled={!state.ingestUrl.trim() || ingesting}>
-            {ingesting ? 'Ingesting...' : 'Ingest'}
+            {ingesting ? t('onboarding_data_ingesting') : t('onboarding_data_ingest')}
           </Button>
         </div>
         {ingestResult && (
           <p className="text-sm text-green-500">
-            Ingested: {ingestResult.title}
+            {t('onboarding_data_ingested')}: {ingestResult.title}
           </p>
         )}
         {ingestError && <p className="text-sm text-red-500">{ingestError}</p>}
@@ -142,15 +144,15 @@ export function DataLoadingStep({ state, dispatch }: DataLoadingStepProps) {
       {isDesktop && (
         <div className="p-4 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg space-y-3">
           <div>
-            <h3 className="text-sm font-medium text-[var(--color-text-primary)]">Import from Obsidian</h3>
-            <p className="text-xs text-[var(--color-text-secondary)]">Import markdown notes from an Obsidian vault</p>
+            <h3 className="text-sm font-medium text-[var(--color-text-primary)]">{t('onboarding_data_import_obsidian')}</h3>
+            <p className="text-xs text-[var(--color-text-secondary)]">{t('onboarding_data_import_obsidian_description')}</p>
           </div>
           <Button variant="secondary" onClick={handleObsidianImport} disabled={isImporting}>
-            {isImporting ? 'Importing...' : 'Select Vault Folder'}
+            {isImporting ? t('onboarding_data_importing') : t('onboarding_data_select_vault')}
           </Button>
           {importResult && (
             <p className="text-sm text-green-500">
-              Imported {importResult.imported} notes ({importResult.skipped} skipped)
+              {t('onboarding_data_imported_notes', { imported: importResult.imported, skipped: importResult.skipped })}
             </p>
           )}
           {importError && <p className="text-sm text-red-500">{importError}</p>}

@@ -76,23 +76,24 @@ const MACOS_FULL_DISK_ACCESS_URL =
 import { formatRelativeDate } from '../../lib/date';
 import { getBrowserTimeZone, getSupportedTimeZones } from '../../lib/tz';
 import { useTranslation } from 'react-i18next';
-import { languages } from '../../i18n';
+import { languages, toasti18n } from '../../i18n';
 import { useDatabasesStore, type DatabaseInfo, type DatabaseStats } from '../../stores/databases';
 import { OverrideControls } from './OverrideControls';
 
 export type SettingsTab = 'general' | 'ai' | 'tag-categories' | 'connection' | 'integrations' | 'databases' | 'prompts';
 
-const SETTINGS_TABS: { id: SettingsTab; label: string }[] = [
-  { id: 'general', label: 'General' },
-  { id: 'ai', label: 'AI Models' },
-  { id: 'prompts', label: 'Prompts' },
-  { id: 'tag-categories', label: 'Tags' },
-  { id: 'connection', label: 'Connection' },
-  { id: 'integrations', label: 'Integrations' },
-  { id: 'databases', label: 'Databases' },
+const SETTINGS_TABS: { id: SettingsTab; labelKey: string }[] = [
+  { id: 'general', labelKey: 'settings_tabs_general' },
+  { id: 'ai', labelKey: 'settings_tabs_ai_models' },
+  { id: 'prompts', labelKey: 'settings_tabs_prompts' },
+  { id: 'tag-categories', labelKey: 'settings_tabs_tags' },
+  { id: 'connection', labelKey: 'settings_tabs_connection' },
+  { id: 'integrations', labelKey: 'settings_tabs_integrations' },
+  { id: 'databases', labelKey: 'settings_tabs_databases' },
 ];
 
 function TagCategoriesTab() {
+  const { t } = useTranslation();
   const tags = useTagsStore(s => s.tags);
   const fetchTags = useTagsStore(s => s.fetchTags);
   const setTagAutotagTarget = useTagsStore(s => s.setTagAutotagTarget);
@@ -126,11 +127,11 @@ function TagCategoriesTab() {
     const trimmed = newName.trim();
     if (!trimmed) return;
     if (trimmed.includes('/')) {
-      setErrorMsg('Category names cannot contain "/".');
+      setErrorMsg(t('settings_tag_categories_error_slash'));
       return;
     }
     if (topLevel.some(t => t.name.toLowerCase() === trimmed.toLowerCase())) {
-      setErrorMsg(`A top-level tag named "${trimmed}" already exists.`);
+      setErrorMsg(t('settings_tag_categories_error_exists', { name: trimmed }));
       return;
     }
     setCreating(true);
@@ -169,22 +170,22 @@ function TagCategoriesTab() {
   return (
     <>
       <div className="space-y-1">
-        <h3 className="text-sm font-medium text-[var(--color-text-primary)]">Auto-Tag Categories</h3>
+        <h3 className="text-sm font-medium text-[var(--color-text-primary)]">{t('settings_tag_categories_title')}</h3>
         <p className="text-xs text-[var(--color-text-secondary)]">
-          The AI auto-tagger only creates new sub-tags under categories you mark as targets.
+          {t('settings_tag_categories_description')}
         </p>
       </div>
 
       {targets.length === 0 && (
         <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-200">
-          No auto-tag targets configured. Auto-tagging will be skipped for new atoms until you mark at least one category.
+          {t('settings_tag_categories_no_targets_warning')}
         </div>
       )}
 
       <div className="space-y-2">
-        <div className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-tertiary)]">Active targets</div>
+        <div className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-tertiary)]">{t('settings_tag_categories_active_targets')}</div>
         {targets.length === 0 ? (
-          <p className="text-xs text-[var(--color-text-secondary)] italic">None yet.</p>
+          <p className="text-xs text-[var(--color-text-secondary)] italic">{t('settings_tag_categories_none_yet')}</p>
         ) : (
           <div className="space-y-1">
             {targets.map(tag => {
@@ -202,7 +203,7 @@ function TagCategoriesTab() {
                     type="button"
                     onClick={() => setExpandedTagId(isExpanded ? null : tag.id)}
                     className="flex min-w-0 flex-1 items-center gap-2 text-left"
-                    title={isExpanded ? 'Hide AI description' : 'Edit AI description'}
+                    title={isExpanded ? t('settings_tag_categories_hide_description') : t('settings_tag_categories_edit_description')}
                   >
                     <ChevronRight
                       className={`h-4 w-4 flex-shrink-0 text-[var(--color-text-tertiary)] transition-transform ${isExpanded ? 'rotate-90' : ''}`}
@@ -210,11 +211,11 @@ function TagCategoriesTab() {
                     />
                     <span className="text-sm text-[var(--color-text-primary)] truncate">{tag.name}</span>
                     <span className="text-[10px] text-[var(--color-text-tertiary)]">
-                      {(tag as TagWithCount).atom_count} atoms
+                      {(tag as TagWithCount).atom_count} {t('settings_databases_atoms_count', { count: (tag as TagWithCount).atom_count }).split(' ').pop()}
                     </span>
                     {description.trim() && (
                       <span className="text-[10px] text-[var(--color-accent)]">
-                        Description
+                        {t('settings_tag_categories_description_label')}
                       </span>
                     )}
                   </button>
@@ -222,19 +223,19 @@ function TagCategoriesTab() {
                     onClick={() => handleToggle(tag.id, false)}
                     className="px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] rounded transition-colors"
                   >
-                    Unflag
+                    {t('settings_tag_categories_unflag')}
                   </button>
                 </div>
                 {isExpanded && (
                   <div className="border-t border-[var(--color-border)] px-3 pb-3 pt-2">
                     <label className="mb-1 block text-xs font-medium text-[var(--color-text-secondary)]">
-                      AI description
+                      {t('settings_tag_categories_description_label')}
                     </label>
                     <textarea
                       value={draft}
                       onChange={e => handleDescriptionChange(tag.id, e.target.value)}
                       onBlur={() => handleDescriptionSave(tag)}
-                      placeholder="Tell the auto-tagger when this category should be used."
+                      placeholder={t('settings_tag_categories_description_placeholder')}
                       rows={3}
                       className="w-full resize-y rounded border border-[var(--color-border)] bg-[var(--color-bg-panel)] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-secondary)]/50 focus:border-[var(--color-accent)]"
                     />
@@ -248,9 +249,9 @@ function TagCategoriesTab() {
       </div>
 
       <div className="space-y-2">
-        <div className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-tertiary)]">Available top-level tags</div>
+        <div className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-tertiary)]">{t('settings_tag_categories_available_tags')}</div>
         {available.length === 0 ? (
-          <p className="text-xs text-[var(--color-text-secondary)] italic">All your top-level tags are already targets.</p>
+          <p className="text-xs text-[var(--color-text-secondary)] italic">{t('settings_tag_categories_all_targets')}</p>
         ) : (
           <div className="space-y-1">
             {available.map(tag => (
@@ -261,14 +262,14 @@ function TagCategoriesTab() {
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="text-sm text-[var(--color-text-primary)] truncate">{tag.name}</span>
                   <span className="text-[10px] text-[var(--color-text-tertiary)]">
-                    {(tag as TagWithCount).atom_count} atoms
+                    {(tag as TagWithCount).atom_count} {t('settings_databases_atoms_count', { count: (tag as TagWithCount).atom_count }).split(' ').pop()}
                   </span>
                 </div>
                 <button
                   onClick={() => handleToggle(tag.id, true)}
                   className="px-2 py-1 text-xs text-[var(--color-accent)] hover:bg-[var(--color-bg-hover)] rounded transition-colors"
                 >
-                  Mark as target
+                  {t('settings_tag_categories_mark_as_target')}
                 </button>
               </div>
             ))}
@@ -277,19 +278,19 @@ function TagCategoriesTab() {
       </div>
 
       <div className="space-y-2">
-        <div className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-tertiary)]">Create new target</div>
+        <div className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-tertiary)]">{t('settings_tag_categories_create_new')}</div>
         <div className="flex gap-2">
           <input
             type="text"
             value={newName}
             onChange={e => setNewName(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') handleCreate(); }}
-            placeholder="e.g., Methodologies"
+            placeholder={t('settings_tag_categories_placeholder')}
             disabled={creating}
             className="flex-1 bg-[var(--color-bg-main)] border border-[var(--color-border)] rounded px-3 py-1.5 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]"
           />
           <Button onClick={handleCreate} disabled={creating || !newName.trim()}>
-            {creating ? 'Adding…' : 'Add'}
+            {creating ? t('settings_tag_categories_adding') : t('settings_tag_categories_add')}
           </Button>
         </div>
       </div>
@@ -301,12 +302,12 @@ function TagCategoriesTab() {
   );
 }
 
-function pipelineSummary(status?: DatabasePipelineStatus['status']) {
+function pipelineSummary(t: (key: string) => string, status?: DatabasePipelineStatus['status']) {
   if (!status) {
     return {
       tone: 'muted' as const,
-      label: 'Loading',
-      detail: 'Checking AI pipeline state...',
+      label: t('settings_pipeline_loading'),
+      detail: t('settings_pipeline_checking'),
     };
   }
 
@@ -316,36 +317,37 @@ function pipelineSummary(status?: DatabasePipelineStatus['status']) {
 
   if (failed > 0) {
     const parts = [
-      status.failed_count > 0 ? `${status.failed_count} embedding` : null,
-      status.tagging_failed_count > 0 ? `${status.tagging_failed_count} tagging` : null,
+      status.failed_count > 0 ? `${status.failed_count} ${t('settings_pipeline_embeddings').toLowerCase()}` : null,
+      status.tagging_failed_count > 0 ? `${status.tagging_failed_count} ${t('settings_pipeline_tagging').toLowerCase()}` : null,
     ].filter(Boolean);
     return {
       tone: 'error' as const,
-      label: 'Needs attention',
-      detail: `${parts.join(', ')} failed`,
+      label: t('settings_pipeline_needs_attention'),
+      detail: `${parts.join(', ')} ${t('settings_pipeline_failed').toLowerCase()}`,
     };
   }
 
   if (processing > 0 || pending > 0) {
     const parts = [
-      pending > 0 ? `${pending} pending` : null,
-      processing > 0 ? `${processing} processing` : null,
+      pending > 0 ? `${pending} ${t('settings_pipeline_pending').toLowerCase()}` : null,
+      processing > 0 ? `${processing} ${t('settings_pipeline_processing').toLowerCase()}` : null,
     ].filter(Boolean);
     return {
       tone: 'working' as const,
-      label: 'Working',
+      label: t('settings_pipeline_working'),
       detail: parts.join(', '),
     };
   }
 
   return {
     tone: 'healthy' as const,
-    label: 'Healthy',
-    detail: `${status.complete} embedded · ${status.tagging_complete} tagged${status.tagging_skipped > 0 ? ` · ${status.tagging_skipped} skipped` : ''}`,
+    label: t('settings_pipeline_healthy'),
+    detail: `${status.complete} ${t('settings_pipeline_embeddings').toLowerCase()} · ${status.tagging_complete} ${t('settings_pipeline_tagging').toLowerCase()}${status.tagging_skipped > 0 ? ` · ${status.tagging_skipped} ${t('settings_pipeline_skipped').toLowerCase()}` : ''}`,
   };
 }
 
 function PipelineDetailCounts({ status }: { status: DatabasePipelineStatus['status'] }) {
+  const { t } = useTranslation();
   const cellClass = 'px-2 py-1.5 text-right tabular-nums';
   const labelClass = 'px-2 py-1.5 text-left font-medium text-[var(--color-text-secondary)]';
 
@@ -354,17 +356,17 @@ function PipelineDetailCounts({ status }: { status: DatabasePipelineStatus['stat
       <table className="w-full min-w-[560px] text-xs">
         <thead className="text-[var(--color-text-tertiary)]">
           <tr className="border-b border-[var(--color-border)]">
-            <th className={labelClass}>Stage</th>
-            <th className={cellClass}>Pending</th>
-            <th className={cellClass}>Processing</th>
-            <th className={cellClass}>Complete</th>
-            <th className={cellClass}>Skipped</th>
-            <th className={cellClass}>Failed</th>
+            <th className={labelClass}>{t('settings_pipeline_stage')}</th>
+            <th className={cellClass}>{t('settings_pipeline_pending')}</th>
+            <th className={cellClass}>{t('settings_pipeline_processing')}</th>
+            <th className={cellClass}>{t('settings_pipeline_complete')}</th>
+            <th className={cellClass}>{t('settings_pipeline_skipped')}</th>
+            <th className={cellClass}>{t('settings_pipeline_failed')}</th>
           </tr>
         </thead>
         <tbody>
           <tr className="border-b border-[var(--color-border)]">
-            <td className={labelClass}>Embeddings</td>
+            <td className={labelClass}>{t('settings_pipeline_embeddings')}</td>
             <td className={cellClass}>{status.pending}</td>
             <td className={cellClass}>{status.processing}</td>
             <td className={cellClass}>{status.complete}</td>
@@ -372,7 +374,7 @@ function PipelineDetailCounts({ status }: { status: DatabasePipelineStatus['stat
             <td className={`${cellClass} ${status.failed_count > 0 ? 'text-red-300 font-medium' : ''}`}>{status.failed_count}</td>
           </tr>
           <tr>
-            <td className={labelClass}>Tagging</td>
+            <td className={labelClass}>{t('settings_pipeline_tagging')}</td>
             <td className={cellClass}>{status.tagging_pending}</td>
             <td className={cellClass}>{status.tagging_processing}</td>
             <td className={cellClass}>{status.tagging_complete}</td>
@@ -386,6 +388,7 @@ function PipelineDetailCounts({ status }: { status: DatabasePipelineStatus['stat
 }
 
 function DatabasesTab() {
+  const { t } = useTranslation();
   const { databases, activeId, fetchDatabases, renameDatabase, deleteDatabase, setDefaultDatabase, getDatabaseStats } = useDatabasesStore();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
@@ -503,9 +506,9 @@ function DatabasesTab() {
       const job = await exportDatabaseMarkdownArchive(db.id, progress => {
         setExportJobsByDb(current => ({ ...current, [db.id]: progress }));
       });
-      toast.success(`Exported ${job.total_atoms} ${job.total_atoms === 1 ? 'atom' : 'atoms'} as markdown`);
+      toasti18n.success('settings_databases_export_success', { values: { count: job.total_atoms, plural: job.total_atoms === 1 ? 'atom' : 'atoms' } });
     } catch (e) {
-      toast.error('Failed to export database', { description: String(e) });
+      toasti18n.error('settings_databases_export_failed', { description: String(e) });
     } finally {
       setExportingDb(null);
     }
@@ -519,7 +522,7 @@ function DatabasesTab() {
       const count = stage === 'embedding'
         ? await retryFailedEmbeddings(dbId)
         : await retryFailedTagging(dbId);
-      toast.success(`Queued ${count} failed ${stage === 'embedding' ? 'embedding' : 'tagging'} ${count === 1 ? 'job' : 'jobs'}`);
+      toasti18n.success('settings_databases_retry_queued', { values: { count, stage: stage === 'embedding' ? t('settings_pipeline_embeddings').toLowerCase() : t('settings_pipeline_tagging').toLowerCase(), plural: count === 1 ? 'job' : 'jobs' } });
       await loadPipelineStatuses();
     } catch (e) {
       setPipelineError(String(e));
@@ -535,7 +538,7 @@ function DatabasesTab() {
     setPipelineError(null);
     try {
       const count = await reembedAllAtoms(db.id);
-      toast.success(`Queued ${count} ${count === 1 ? 'atom' : 'atoms'} for re-embedding`);
+      toasti18n.success('settings_databases_reembed_queued', { values: { count, plural: count === 1 ? 'atom' : 'atoms' } });
       setConfirmReembedDb(null);
       await loadPipelineStatuses();
     } catch (e) {
@@ -552,7 +555,7 @@ function DatabasesTab() {
     setPipelineError(null);
     try {
       const count = await retagAllAtoms(db.id);
-      toast.success(`Queued ${count} ${count === 1 ? 'atom' : 'atoms'} for re-tagging`);
+      toasti18n.success('settings_databases_retag_queued', { values: { count, plural: count === 1 ? 'atom' : 'atoms' } });
       setConfirmRetagDb(null);
       await loadPipelineStatuses();
     } catch (e) {
@@ -565,16 +568,16 @@ function DatabasesTab() {
   return (
     <>
       <div className="space-y-1">
-        <h3 className="text-sm font-medium text-[var(--color-text-primary)]">Manage Databases</h3>
+        <h3 className="text-sm font-medium text-[var(--color-text-primary)]">{t('settings_databases_title')}</h3>
         <p className="text-xs text-[var(--color-text-secondary)]">
-          Rename, delete, or change the default database. The default database is used by integrations (MCP, API).
+          {t('settings_databases_description')}
         </p>
       </div>
 
       <div className="space-y-2">
         {databases.map(db => {
           const status = pipelineByDb.get(db.id);
-          const summary = pipelineSummary(status);
+          const summary = pipelineSummary(t, status);
           const embeddingRetryKey = `${db.id}:embedding`;
           const taggingRetryKey = `${db.id}:tagging`;
           const exportJob = exportJobsByDb[db.id];
@@ -611,7 +614,7 @@ function DatabasesTab() {
                       <span className="text-sm text-[var(--color-text-primary)] truncate font-medium">{db.name}</span>
                       {db.is_default && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-accent)]/20 text-[var(--color-accent)] font-medium">
-                          Default
+                          {t('settings_databases_default_badge')}
                         </span>
                       )}
                       {db.id === activeId && (
@@ -634,7 +637,7 @@ function DatabasesTab() {
                         onClick={() => retryFailed(db.id, 'embedding')}
                         disabled={retrying === embeddingRetryKey}
                         className="inline-flex items-center gap-1 rounded px-2 py-1 text-[11px] text-red-300 hover:bg-red-500/10 disabled:opacity-50"
-                        title="Retry failed embeddings"
+                        title={t('settings_databases_retry_failed_embeddings')}
                       >
                         {retrying === embeddingRetryKey ? <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={2} /> : <RefreshCw className="w-3.5 h-3.5" strokeWidth={2} />}
                         Emb
@@ -645,7 +648,7 @@ function DatabasesTab() {
                         onClick={() => retryFailed(db.id, 'tagging')}
                         disabled={retrying === taggingRetryKey}
                         className="inline-flex items-center gap-1 rounded px-2 py-1 text-[11px] text-red-300 hover:bg-red-500/10 disabled:opacity-50"
-                        title="Retry failed tagging"
+                        title={t('settings_databases_retry_failed_tagging')}
                       >
                         {retrying === taggingRetryKey ? <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={2} /> : <RefreshCw className="w-3.5 h-3.5" strokeWidth={2} />}
                         Tag
@@ -656,33 +659,33 @@ function DatabasesTab() {
                         onClick={() => setExpandedPipeline(isExpanded ? null : db.id)}
                         className="px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] rounded transition-colors"
                       >
-                        {isExpanded ? 'Hide' : 'Details'}
+                        {isExpanded ? t('settings_databases_hide') : t('settings_databases_details')}
                       </button>
                     )}
                     <button
                       onClick={() => handleExportMarkdown(db)}
                       disabled={!!exportingDb}
                       className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] disabled:opacity-50 disabled:hover:bg-transparent transition-colors"
-                      title="Export database as markdown archive"
+                      title={t('settings_databases_export_desc')}
                     >
                       {exportingDb === db.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={2} /> : <Download className="w-3.5 h-3.5" strokeWidth={2} />}
                       {exportingDb === db.id && exportJob?.total_atoms
                         ? `${Math.round((exportJob.processed_atoms / exportJob.total_atoms) * 100)}%`
-                        : 'Export'}
+                        : t('settings_databases_export')}
                     </button>
                     {!db.is_default && (
                       <button
                         onClick={() => handleSetDefault(db.id)}
                         className="px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] rounded transition-colors"
-                        title="Set as default"
+                        title={t('settings_databases_set_default')}
                       >
-                        Set default
+                        {t('settings_databases_set_default')}
                       </button>
                     )}
                     <button
                       onClick={() => { setEditingId(db.id); setEditName(db.name); }}
                       className="p-1.5 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] rounded transition-colors"
-                      title="Rename"
+                      title={t('settings_databases_rename')}
                     >
                       <Pencil width="14" height="14" strokeWidth={2} />
                     </button>
@@ -690,7 +693,7 @@ function DatabasesTab() {
                       <button
                         onClick={() => handleStartDelete(db)}
                         className="p-1.5 text-[var(--color-text-tertiary)] hover:text-red-400 hover:bg-[var(--color-bg-hover)] rounded transition-colors"
-                        title="Delete database"
+                        title={t('settings_databases_delete')}
                       >
                         <Trash2 width="14" height="14" strokeWidth={2} />
                       </button>
@@ -705,9 +708,9 @@ function DatabasesTab() {
                   {status.complete > 0 && (
                     <div className="flex items-center justify-between gap-3 rounded border border-[var(--color-border)] bg-[var(--color-bg-panel)] px-3 py-2">
                       <div className="min-w-0">
-                        <div className="text-xs font-medium text-[var(--color-text-primary)]">Recalculate embeddings</div>
+                        <div className="text-xs font-medium text-[var(--color-text-primary)]">{t('settings_databases_recalculate_embeddings')}</div>
                         <div className="text-[11px] text-[var(--color-text-secondary)]">
-                          Queues embed-only work for this database while preserving tags and chunk content.
+                          {t('settings_databases_recalculate_embeddings_desc')}
                         </div>
                       </div>
                       <Button
@@ -715,20 +718,20 @@ function DatabasesTab() {
                         size="sm"
                         onClick={() => setConfirmReembedDb(db)}
                         disabled={reembeddingDb === db.id}
-                        title="Re-embed all atoms in this database"
+                        title={t('settings_databases_recalculate_embeddings')}
                         className="flex-shrink-0 gap-1"
                       >
                         {reembeddingDb === db.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={2} /> : <RefreshCw className="w-3.5 h-3.5" strokeWidth={2} />}
-                        Re-embed
+                        {t('settings_databases_reembed_action')}
                       </Button>
                     </div>
                   )}
                   {status.complete > 0 && (
                     <div className="flex items-center justify-between gap-3 rounded border border-[var(--color-border)] bg-[var(--color-bg-panel)] px-3 py-2">
                       <div className="min-w-0">
-                        <div className="text-xs font-medium text-[var(--color-text-primary)]">Re-run auto-tagging</div>
+                        <div className="text-xs font-medium text-[var(--color-text-primary)]">{t('settings_databases_rerun_autotagging')}</div>
                         <div className="text-[11px] text-[var(--color-text-secondary)]">
-                          Removes auto-generated tags (except those whose tag has a wiki article) and re-extracts tags using your current tagging model. Manual tags are preserved.
+                          {t('settings_databases_rerun_autotagging_desc')}
                         </div>
                       </div>
                       <Button
@@ -736,11 +739,11 @@ function DatabasesTab() {
                         size="sm"
                         onClick={() => setConfirmRetagDb(db)}
                         disabled={retaggingDb === db.id}
-                        title="Re-run auto-tagging for all atoms in this database"
+                        title={t('settings_databases_rerun_autotagging')}
                         className="flex-shrink-0 gap-1"
                       >
                         {retaggingDb === db.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={2} /> : <RefreshCw className="w-3.5 h-3.5" strokeWidth={2} />}
-                        Re-tag
+                        {t('settings_databases_retag_action')}
                       </Button>
                     </div>
                   )}
@@ -752,7 +755,7 @@ function DatabasesTab() {
       </div>
 
       {databases.length === 0 && (
-        <p className="text-sm text-[var(--color-text-secondary)] text-center py-4">No databases found.</p>
+        <p className="text-sm text-[var(--color-text-secondary)] text-center py-4">{t('settings_databases_no_databases')}</p>
       )}
 
       {pipelineError && (
@@ -764,7 +767,7 @@ function DatabasesTab() {
       {pipelineLoading && databases.length > 0 && (
         <div className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
           <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={2} />
-          Checking AI pipeline status...
+          {t('settings_pipeline_checking')}
         </div>
       )}
 
@@ -774,20 +777,12 @@ function DatabasesTab() {
         onClose={() => {
           if (!isDeleting) setConfirmDeleteDb(null);
         }}
-        title="Delete database?"
+        title={t('settings_databases_delete_title')}
         showFooter={false}
       >
         <div className="space-y-4">
           <p className="text-xs text-[var(--color-text-secondary)]">
-            This will permanently delete <span className="font-medium text-[var(--color-text-primary)]">"{confirmDeleteDb?.name}"</span>
-            {isLoadingStats ? (
-              <span> and all its data.</span>
-            ) : deleteStats && deleteStats.atom_count >= 0 ? (
-              <span> and its <span className="font-medium text-[var(--color-text-primary)]">{deleteStats.atom_count} atom{deleteStats.atom_count !== 1 ? 's' : ''}</span>. </span>
-            ) : (
-              <span> and all its data. </span>
-            )}
-            This action cannot be undone.
+            {t('settings_databases_delete_confirm', { name: confirmDeleteDb?.name, count: deleteStats?.atom_count ?? 0 })}
           </p>
           <div className="flex gap-2 justify-end">
             <Button
@@ -796,7 +791,7 @@ function DatabasesTab() {
               onClick={() => setConfirmDeleteDb(null)}
               disabled={isDeleting}
             >
-              Cancel
+              {t('settings_databases_delete_cancel')}
             </Button>
             <Button
               variant="danger"
@@ -804,7 +799,7 @@ function DatabasesTab() {
               onClick={handleConfirmDelete}
               disabled={isDeleting || isLoadingStats}
             >
-              {isDeleting ? 'Deleting...' : 'Delete'}
+              {isDeleting ? t('settings_databases_deleting') : t('settings_databases_delete_action')}
             </Button>
           </div>
         </div>
@@ -815,13 +810,12 @@ function DatabasesTab() {
         onClose={() => {
           if (!reembeddingDb) setConfirmReembedDb(null);
         }}
-        title="Re-embed database?"
+        title={t('settings_databases_reembed_title')}
         showFooter={false}
       >
         <div className="space-y-4">
           <p className="text-xs text-[var(--color-text-secondary)]">
-            This clears embedding status for <span className="font-medium text-[var(--color-text-primary)]">"{confirmReembedDb?.name}"</span> and queues embed-only work for its atoms.
-            Existing tags and chunk content are preserved.
+            {t('settings_databases_reembed_desc', { name: confirmReembedDb?.name })}
           </p>
           <div className="flex gap-2 justify-end">
             <Button
@@ -830,14 +824,14 @@ function DatabasesTab() {
               onClick={() => setConfirmReembedDb(null)}
               disabled={!!reembeddingDb}
             >
-              Cancel
+              {t('settings_databases_reembed_cancel')}
             </Button>
             <Button
               size="sm"
               onClick={handleConfirmReembedAll}
               disabled={!!reembeddingDb}
             >
-              {reembeddingDb === confirmReembedDb?.id ? 'Queuing...' : 'Re-embed'}
+              {reembeddingDb === confirmReembedDb?.id ? t('settings_databases_reembed_queuing') : t('settings_databases_reembed_action')}
             </Button>
           </div>
         </div>
@@ -848,17 +842,17 @@ function DatabasesTab() {
         onClose={() => {
           if (!retaggingDb) setConfirmRetagDb(null);
         }}
-        title="Re-run auto-tagging?"
+        title={t('settings_databases_retag_title')}
         showFooter={false}
       >
         <div className="space-y-3">
           <p className="text-xs text-[var(--color-text-secondary)]">
-            This will remove auto-generated tag assignments from <span className="font-medium text-[var(--color-text-primary)]">"{confirmRetagDb?.name}"</span> and re-run auto-tagging across every atom using your current tagging model.
+            {t('settings_databases_retag_desc', { name: confirmRetagDb?.name })}
           </p>
           <ul className="text-xs text-[var(--color-text-secondary)] space-y-1 pl-4 list-disc">
-            <li>Manually-added tags are preserved.</li>
-            <li>Tags with a wiki article are preserved (across all their atoms).</li>
-            <li>All other auto-generated tag assignments are removed before re-tagging.</li>
+            <li>{t('settings_databases_retag_preserved_1')}</li>
+            <li>{t('settings_databases_retag_preserved_2')}</li>
+            <li>{t('settings_databases_retag_preserved_3')}</li>
           </ul>
           {(() => {
             const legacy = confirmRetagDb
@@ -867,7 +861,7 @@ function DatabasesTab() {
             if (legacy <= 0) return null;
             return (
               <p className="text-xs text-amber-300/90 bg-amber-500/10 border border-amber-500/30 rounded px-2 py-1.5">
-                Note: {legacy.toLocaleString()} tag assignment{legacy === 1 ? '' : 's'} from before this update will be treated as auto-generated and may be removed if the tag has no wiki article.
+                {t('settings_databases_retag_legacy_warning', { count: legacy.toLocaleString() })}
               </p>
             );
           })()}
@@ -878,14 +872,14 @@ function DatabasesTab() {
               onClick={() => setConfirmRetagDb(null)}
               disabled={!!retaggingDb}
             >
-              Cancel
+              {t('settings_databases_retag_cancel')}
             </Button>
             <Button
               size="sm"
               onClick={handleConfirmRetagAll}
               disabled={!!retaggingDb}
             >
-              {retaggingDb === confirmRetagDb?.id ? 'Queuing...' : 'Re-tag'}
+              {retaggingDb === confirmRetagDb?.id ? t('settings_databases_retag_queuing') : t('settings_databases_retag_action')}
             </Button>
           </div>
         </div>
@@ -1686,7 +1680,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
         {/* Header */}
         <div className="px-5 py-3 border-b border-[var(--color-border)] flex items-center justify-between">
           <h2 className="text-base font-semibold text-[var(--color-text-primary)]">
-            Settings
+            {t('settings_title')}
           </h2>
           <button
             onClick={onClose}
@@ -1710,7 +1704,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                       : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]/70'
                   }`}
                 >
-                  {tab.label}
+                  {t(tab.labelKey)}
                 </button>
               ))}
             </div>
@@ -1728,7 +1722,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                       : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]/70'
                   }`}
                 >
-                  {tab.label}
+                  {t(tab.labelKey)}
                 </button>
               ))}
             </div>
@@ -1758,7 +1752,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                   {/* Theme Selector */}
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                      Theme
+                      {t('settings_general_theme')}
                     </label>
                     <CustomSelect
                       value={theme}
@@ -1770,7 +1764,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                   {/* Font Selector */}
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                      Font
+                      {t('settings_general_font')}
                     </label>
                     <CustomSelect
                       value={font}
@@ -1782,7 +1776,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                   {/* Time Zone */}
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                      Time Zone
+                      {t('settings_general_timezone')}
                     </label>
                     <input
                       type="text"
@@ -1808,10 +1802,10 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                   {/* Troubleshooting */}
                   <div className="space-y-2 pt-4 border-t border-[var(--color-border)]">
                     <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                      Troubleshooting
+                      {t('settings_general_troubleshooting')}
                     </label>
                     <p className="text-xs text-[var(--color-text-secondary)]">
-                      Export recent server logs to help diagnose issues
+                      {t('settings_general_export_logs_desc')}
                     </p>
                     <Button
                       onClick={async () => {
@@ -1825,14 +1819,14 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                           a.download = `atomic-logs-${date}.txt`;
                           a.click();
                           URL.revokeObjectURL(url);
-                          toast.success('Logs exported');
+                          toasti18n.success('settings_general_logs_exported');
                         } catch (e) {
-                          toast.error('Failed to export logs', { description: String(e) });
+                          toasti18n.error('settings_general_logs_export_failed', { description: String(e) });
                         }
                       }}
                       variant="secondary"
                     >
-                      Export Logs
+                      {t('settings_general_export_logs_button')}
                     </Button>
                   </div>
                 </>
@@ -1844,10 +1838,10 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                   {/* Provider Selector */}
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                      AI Provider
+                      {t('settings_ai_provider')}
                     </label>
                     <p className="text-xs text-[var(--color-text-secondary)]">
-                      Choose your AI provider
+                      {t('settings_ai_choose_provider')}
                     </p>
                     <CustomSelect
                       value={provider}
@@ -1862,19 +1856,19 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                     {provider === 'openrouter' && isTesting && (
                       <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
                         <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2} />
-                        Testing connection...
+                        {t('settings_ai_testing_connection')}
                       </div>
                     )}
                     {provider === 'openrouter' && !isTesting && testResult === 'success' && (
                       <div className="flex items-center gap-2 text-sm text-green-500">
                         <div className="w-2 h-2 rounded-full bg-green-500" />
-                        Connected
+                        {t('settings_ai_connected')}
                       </div>
                     )}
                     {provider === 'openrouter' && !isTesting && testResult === 'error' && (
                       <div className="flex items-center gap-2 text-sm text-red-500">
                         <div className="w-2 h-2 rounded-full bg-red-500" />
-                        {testError || 'Connection failed'}
+                        {testError || t('settings_ai_connection_failed')}
                       </div>
                     )}
                     <OverrideControls settingKey="provider" />
@@ -1885,10 +1879,10 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                     <>
                       <div className="space-y-2">
                         <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                          OpenRouter API Key
+                          {t('settings_ai_openrouter_api_key')}
                         </label>
                         <p className="text-xs text-[var(--color-text-secondary)]">
-                          Required for AI features. Get your key at openrouter.ai
+                          {t('settings_ai_openrouter_api_key_desc')}
                         </p>
                         <div className="relative">
                           <input
@@ -1896,7 +1890,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                             value={apiKey}
                             onChange={(e) => handleApiKeyChange(e.target.value)}
                             onBlur={handleApiKeyBlur}
-                            placeholder="sk-or-..."
+                            placeholder={t('settings_ai_openrouter_api_key_placeholder')}
                             className="w-full px-3 py-2 pr-10 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors duration-150"
                           />
                           <button
@@ -1915,18 +1909,18 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
 
                       {/* Model Configuration for OpenRouter — always visible */}
                       <div className="space-y-4 pt-2">
-                        <div className="text-sm font-medium text-[var(--color-text-primary)]">Model Configuration</div>
+                        <div className="text-sm font-medium text-[var(--color-text-primary)]">{t('settings_ai_model_configuration')}</div>
                         <p className="text-xs text-[var(--color-text-secondary)]">
-                          Select models for different AI tasks.
+                          {t('settings_ai_select_models')}
                         </p>
 
                         {/* Embedding Model */}
                         <div className="space-y-1">
                           <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                            Embedding Model
+                            {t('settings_ai_embedding_model')}
                           </label>
                           <p className="text-xs text-[var(--color-text-secondary)]">
-                            Used for semantic search
+                            {t('settings_ai_embedding_model_desc')}
                           </p>
                           <SearchableSelect
                             value={embeddingModel}
@@ -1935,7 +1929,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                               id: m.id,
                               name: `${m.name} (${m.dimension})`,
                             }))}
-                            placeholder="Select embedding model..."
+                            placeholder={t('settings_ai_embedding_model_placeholder')}
                           />
                           <OverrideControls settingKey="embedding_model" />
                         </div>
@@ -1943,17 +1937,17 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                         {/* Tagging Model */}
                         <div className="space-y-1">
                           <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                            Tagging Model
+                            {t('settings_ai_tagging_model')}
                           </label>
                           <p className="text-xs text-[var(--color-text-secondary)]">
-                            Used for automatic tag extraction
+                            {t('settings_ai_tagging_model_desc')}
                           </p>
                           <SearchableSelect
                             value={taggingModel}
                             onChange={(v) => { setTaggingModel(v); autoSave('tagging_model', v); }}
                             options={availableModels}
                             isLoading={isLoadingModels}
-                            placeholder="Select tagging model..."
+                            placeholder={t('settings_ai_tagging_model_placeholder')}
                           />
                           <OverrideControls settingKey="tagging_model" />
                         </div>
@@ -1961,17 +1955,17 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                         {/* Wiki Model */}
                         <div className="space-y-1">
                           <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                            Wiki Model
+                            {t('settings_ai_wiki_model')}
                           </label>
                           <p className="text-xs text-[var(--color-text-secondary)]">
-                            Used for wiki article generation
+                            {t('settings_ai_wiki_model_desc')}
                           </p>
                           <SearchableSelect
                             value={wikiModel}
                             onChange={(v) => { setWikiModel(v); autoSave('wiki_model', v); }}
                             options={availableModels}
                             isLoading={isLoadingModels}
-                            placeholder="Select wiki model..."
+                            placeholder={t('settings_ai_wiki_model_placeholder')}
                           />
                           <OverrideControls settingKey="wiki_model" />
                         </div>
@@ -1979,17 +1973,17 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                         {/* Wiki Strategy */}
                         <div className="space-y-1">
                           <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                            Wiki Strategy
+                            {t('settings_ai_wiki_strategy')}
                           </label>
                           <p className="text-xs text-[var(--color-text-secondary)]">
-                            How source material is selected for wiki articles
+                            {t('settings_ai_wiki_strategy_desc')}
                           </p>
                           <CustomSelect
                             value={wikiStrategy}
                             onChange={(v) => { setWikiStrategy(v); autoSave('wiki_strategy', v); }}
                             options={[
-                              { value: 'centroid', label: 'Centroid — rank chunks by embedding similarity' },
-                              { value: 'agentic', label: 'Agentic — AI agent searches and curates sources' },
+                              { value: 'centroid', label: t('settings_ai_wiki_strategy_centroid') },
+                              { value: 'agentic', label: t('settings_ai_wiki_strategy_agentic') },
                             ]}
                           />
                           <OverrideControls settingKey="wiki_strategy" />
@@ -1998,17 +1992,17 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                         {/* Chat Model */}
                         <div className="space-y-1">
                           <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                            Chat Model
+                            {t('settings_ai_chat_model')}
                           </label>
                           <p className="text-xs text-[var(--color-text-secondary)]">
-                            Used for conversational AI assistant
+                            {t('settings_ai_chat_model_desc')}
                           </p>
                           <SearchableSelect
                             value={chatModel}
                             onChange={(v) => { setChatModel(v); autoSave('chat_model', v); }}
                             options={availableModels}
                             isLoading={isLoadingModels}
-                            placeholder="Select chat model..."
+                            placeholder={t('settings_ai_chat_model_placeholder')}
                           />
                           <OverrideControls settingKey="chat_model" />
                         </div>
@@ -2016,16 +2010,16 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                         {/* Context Length */}
                         <div className="space-y-1">
                           <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                            Context Length
+                            {t('settings_ai_context_length')}
                           </label>
                           <p className="text-xs text-[var(--color-text-secondary)]">
-                            Override context window limit (default: use model's max)
+                            {t('settings_ai_context_length_desc')}
                           </p>
                           <CustomSelect
                             value={openrouterContextLength}
                             onChange={(v) => { setOpenrouterContextLength(v); autoSave('openrouter_context_length', v); }}
                             options={[
-                              { value: '', label: 'Model default' },
+                              { value: '', label: t('settings_ai_context_length_default') },
                               { value: '8192', label: '8K' },
                               { value: '16384', label: '16K' },
                               { value: '32768', label: '32K' },
@@ -2046,17 +2040,17 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                     <>
                       <div className="space-y-2">
                         <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                          Ollama Server URL
+                          {t('settings_ai_ollama_server_url')}
                         </label>
                         <p className="text-xs text-[var(--color-text-secondary)]">
-                          URL of your local Ollama server (default: http://127.0.0.1:11434)
+                          {t('settings_ai_ollama_server_url_desc')}
                         </p>
                         <input
                           type="text"
                           value={ollamaHost}
                           onChange={(e) => setOllamaHost(e.target.value)}
                           onBlur={() => autoSave('ollama_host', ollamaHost)}
-                          placeholder="http://127.0.0.1:11434"
+                          placeholder={t('settings_ai_ollama_server_url_placeholder')}
                           className="w-full px-3 py-2 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors duration-150"
                         />
                         <ConnectionStatus status={ollamaStatus} error={ollamaError} />
@@ -2067,10 +2061,10 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                           {/* Ollama Embedding Model */}
                           <div className="space-y-1">
                             <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                              Embedding Model
+                              {t('settings_ai_ollama_embedding_model')}
                             </label>
                             <p className="text-xs text-[var(--color-text-secondary)]">
-                              Used for semantic search. Pull nomic-embed-text if not available.
+                              {t('settings_ai_ollama_embedding_model_desc')}
                             </p>
                             {ollamaEmbeddingModels.length > 0 ? (
                               <SearchableSelect
@@ -2078,11 +2072,11 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                                 onChange={handleOllamaEmbeddingModelChange}
                                 options={ollamaEmbeddingModels}
                                 isLoading={isLoadingOllamaModels}
-                                placeholder="Select embedding model..."
+                                placeholder={t('settings_ai_ollama_embedding_model_placeholder')}
                               />
                             ) : (
                               <div className="px-3 py-2 bg-[var(--color-bg-card)] border border-amber-500/50 rounded-md text-sm text-amber-400">
-                                No embedding models found. Run: ollama pull nomic-embed-text
+                                {t('settings_ai_ollama_embedding_model_not_found')}
                               </div>
                             )}
                             <OverrideControls settingKey="ollama_embedding_model" />
@@ -2091,10 +2085,10 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                           {/* Ollama LLM Model */}
                           <div className="space-y-1">
                             <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                              LLM Model
+                              {t('settings_ai_ollama_llm_model')}
                             </label>
                             <p className="text-xs text-[var(--color-text-secondary)]">
-                              Used for tagging, wiki generation, and chat
+                              {t('settings_ai_ollama_llm_model_desc')}
                             </p>
                             {ollamaLlmModels.length > 0 ? (
                               <SearchableSelect
@@ -2102,11 +2096,11 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                                 onChange={(v) => { setOllamaLlmModel(v); autoSave('ollama_llm_model', v); }}
                                 options={ollamaLlmModels}
                                 isLoading={isLoadingOllamaModels}
-                                placeholder="Select LLM model..."
+                                placeholder={t('settings_ai_ollama_llm_model_placeholder')}
                               />
                             ) : (
                               <div className="px-3 py-2 bg-[var(--color-bg-card)] border border-amber-500/50 rounded-md text-sm text-amber-400">
-                                No LLM models found. Run: ollama pull llama3.2
+                                {t('settings_ai_ollama_llm_model_not_found')}
                               </div>
                             )}
                             <OverrideControls settingKey="ollama_llm_model" />
@@ -2115,10 +2109,10 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                           {/* Context Length */}
                           <div className="space-y-1">
                             <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                              Context Length
+                              {t('settings_ai_ollama_context_length')}
                             </label>
                             <p className="text-xs text-[var(--color-text-secondary)]">
-                              Max context window of your LLM model (used to truncate prompts)
+                              {t('settings_ai_ollama_context_length_desc')}
                             </p>
                             <CustomSelect
                               value={ollamaContextLength}
@@ -2141,10 +2135,10 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                           {/* Timeout */}
                           <div className="space-y-1">
                             <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                              Request Timeout
+                              {t('settings_ai_ollama_request_timeout')}
                             </label>
                             <p className="text-xs text-[var(--color-text-secondary)]">
-                              Maximum time to wait for Ollama to respond
+                              {t('settings_ai_ollama_request_timeout_desc')}
                             </p>
                             <CustomSelect
                               value={ollamaTimeoutSecs}
@@ -2165,18 +2159,18 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
 
                       {ollamaStatus === 'disconnected' && (
                         <div className="p-4 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md space-y-2">
-                          <p className="text-sm text-[var(--color-text-primary)]">Make sure Ollama is running:</p>
+                          <p className="text-sm text-[var(--color-text-primary)]">{t('settings_ai_ollama_disconnected')}</p>
                           <ol className="text-xs text-[var(--color-text-secondary)] space-y-1 list-decimal list-inside">
-                            <li>Install Ollama from ollama.com</li>
-                            <li>Start Ollama (it runs in the background)</li>
-                            <li>Pull required models: ollama pull llama3.2 && ollama pull nomic-embed-text</li>
+                            <li>{t('settings_ai_ollama_disconnected_step1')}</li>
+                            <li>{t('settings_ai_ollama_disconnected_step2')}</li>
+                            <li>{t('settings_ai_ollama_disconnected_step3')}</li>
                           </ol>
                           <Button
                             variant="secondary"
                             onClick={() => checkOllamaConnection(ollamaHost)}
                             className="mt-2"
                           >
-                            Retry Connection
+                            {t('settings_ai_ollama_retry_connection')}
                           </Button>
                         </div>
                       )}
@@ -2189,10 +2183,10 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                       {/* Embedding Provider Override — use a different provider for embeddings */}
                       <div className="space-y-2">
                         <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                          Embedding Provider
+                          {t('settings_ai_embedding_provider')}
                         </label>
                         <p className="text-xs text-[var(--color-text-secondary)]">
-                          Use a different provider for semantic search embeddings
+                          {t('settings_ai_embedding_provider_desc')}
                         </p>
                         <CustomSelect
                           value={embeddingProvider}
@@ -2202,7 +2196,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                             autoSave('embedding_provider', val);
                           }}
                           options={[
-                            { value: '', label: 'Same as main provider' },
+                            { value: '', label: t('settings_ai_embedding_provider_same') },
                             { value: 'ollama', label: 'Ollama' },
                             { value: 'openai_compat', label: 'OpenAI Compatible' },
                           ]}
@@ -2213,17 +2207,17 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                       {embeddingProvider === 'ollama' && (
                         <div className="space-y-2">
                           <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                            Ollama Host (for Embedding)
+                            {t('settings_ai_ollama_host_embedding')}
                           </label>
                           <p className="text-xs text-[var(--color-text-secondary)]">
-                            Ollama server URL for embedding model (e.g. http://10.70.0.52:11434)
+                            {t('settings_ai_ollama_host_embedding_desc')}
                           </p>
                           <input
                             type="text"
                             value={ollamaHost}
                             onChange={(e) => setOllamaHost(e.target.value)}
                             onBlur={() => autoSave('ollama_host', ollamaHost)}
-                            placeholder="http://127.0.0.1:11434"
+                            placeholder={t('settings_ai_ollama_server_url_placeholder')}
                             className="w-full px-3 py-2 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors duration-150"
                           />
                         </div>
@@ -2233,17 +2227,17 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                       {embeddingProvider === 'openai_compat' && (
                         <div className="space-y-2">
                           <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                            Embedding Provider URL
+                            {t('settings_ai_embedding_provider_url')}
                           </label>
                           <p className="text-xs text-[var(--color-text-secondary)]">
-                            OpenAI-compatible endpoint for embeddings
+                            {t('settings_ai_embedding_provider_url_desc')}
                           </p>
                           <input
                             type="text"
                             value={embeddingProviderUrl}
                             onChange={(e) => setEmbeddingProviderUrl(e.target.value)}
                             onBlur={() => autoSave('embedding_provider_url', embeddingProviderUrl)}
-                            placeholder="http://localhost:11434/v1"
+                            placeholder={t('settings_ai_embedding_provider_url_placeholder')}
                             className="w-full px-3 py-2 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors duration-150"
                           />
                         </div>
@@ -2251,10 +2245,10 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
 
                       <div className="space-y-2">
                         <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                          Base URL
+                          {t('settings_ai_base_url')}
                         </label>
                         <p className="text-xs text-[var(--color-text-secondary)]">
-                          OpenAI-compatible API endpoint (e.g. http://localhost:8080/v1)
+                          {t('settings_ai_base_url_desc')}
                         </p>
                         <input
                           type="text"
@@ -2266,35 +2260,35 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                               checkOpenaiCompatConnection(openaiCompatBaseUrl, openaiCompatApiKey || undefined);
                             }
                           }}
-                          placeholder="http://localhost:8080/v1"
+                          placeholder={t('settings_ai_base_url_placeholder')}
                           className="w-full px-3 py-2 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors duration-150"
                         />
                         {openaiCompatStatus === 'checking' && (
                           <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
                             <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2} />
-                            Testing connection...
+                            {t('settings_ai_testing_connection')}
                           </div>
                         )}
                         {openaiCompatStatus === 'connected' && (
                           <div className="flex items-center gap-2 text-sm text-green-500">
                             <div className="w-2 h-2 rounded-full bg-green-500" />
-                            Connected
+                            {t('settings_ai_connected')}
                           </div>
                         )}
                         {openaiCompatStatus === 'error' && (
                           <div className="flex items-center gap-2 text-sm text-red-500">
                             <div className="w-2 h-2 rounded-full bg-red-500" />
-                            {openaiCompatError || 'Connection failed'}
+                            {openaiCompatError || t('settings_ai_connection_failed')}
                           </div>
                         )}
                       </div>
 
                       <div className="space-y-2">
                         <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                          API Key
+                          {t('settings_ai_api_key')}
                         </label>
                         <p className="text-xs text-[var(--color-text-secondary)]">
-                          Optional. Required if your server uses Bearer token auth.
+                          {t('settings_ai_api_key_desc')}
                         </p>
                         <div className="relative">
                           <input
@@ -2302,7 +2296,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                             value={openaiCompatApiKey}
                             onChange={(e) => setOpenaiCompatApiKey(e.target.value)}
                             onBlur={() => autoSave('openai_compat_api_key', openaiCompatApiKey)}
-                            placeholder="sk-..."
+                            placeholder={t('settings_ai_api_key_placeholder')}
                             className="w-full px-3 py-2 pr-10 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors duration-150"
                           />
                           <button
@@ -2320,15 +2314,15 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                       </div>
 
                       <div className="space-y-4 pt-2">
-                        <div className="text-sm font-medium text-[var(--color-text-primary)]">Model Configuration</div>
+                        <div className="text-sm font-medium text-[var(--color-text-primary)]">{t('settings_ai_model_configuration_openai')}</div>
                         <p className="text-xs text-[var(--color-text-secondary)]">
-                          Enter the exact model names your server expects.
+                          {t('settings_ai_model_configuration_openai_desc')}
                         </p>
 
                         {/* Embedding Model */}
                         <div className="space-y-1">
                           <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                            Embedding Model
+                            {t('settings_ai_embedding_model_openai')}
                           </label>
                           <input
                             type="text"
@@ -2339,7 +2333,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                                 handleOpenaiCompatEmbeddingModelChange(openaiCompatEmbeddingModel);
                               }
                             }}
-                            placeholder="text-embedding-3-small"
+                            placeholder={t('settings_ai_embedding_model_openai_placeholder')}
                             className="w-full px-3 py-2 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors duration-150"
                           />
                           <OverrideControls settingKey="openai_compat_embedding_model" />
@@ -2348,10 +2342,10 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                         {/* Embedding Dimension */}
                         <div className="space-y-1">
                           <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                            Embedding Dimension
+                            {t('settings_ai_embedding_dimension')}
                           </label>
                           <p className="text-xs text-[var(--color-text-secondary)]">
-                            Vector dimension of your embedding model (e.g. 1536 for text-embedding-3-small)
+                            {t('settings_ai_embedding_dimension_desc')}
                           </p>
                           <input
                             type="number"
@@ -2362,7 +2356,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                                 handleOpenaiCompatEmbeddingDimensionChange(openaiCompatEmbeddingDimension);
                               }
                             }}
-                            placeholder="1536"
+                            placeholder={t('settings_ai_embedding_dimension_placeholder')}
                             className="w-full px-3 py-2 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors duration-150"
                           />
                           <OverrideControls settingKey="openai_compat_embedding_dimension" />
@@ -2371,17 +2365,17 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                         {/* LLM Model */}
                         <div className="space-y-1">
                           <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                            LLM Model
+                            {t('settings_ai_llm_model_openai')}
                           </label>
                           <p className="text-xs text-[var(--color-text-secondary)]">
-                            Used for tagging, wiki generation, and chat
+                            {t('settings_ai_llm_model_openai_desc')}
                           </p>
                           <input
                             type="text"
                             value={openaiCompatLlmModel}
                             onChange={(e) => setOpenaiCompatLlmModel(e.target.value)}
                             onBlur={() => autoSave('openai_compat_llm_model', openaiCompatLlmModel)}
-                            placeholder="meta-llama/Llama-3.1-8B-Instruct"
+                            placeholder={t('settings_ai_llm_model_openai_placeholder')}
                             className="w-full px-3 py-2 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors duration-150"
                           />
                           <OverrideControls settingKey="openai_compat_llm_model" />
@@ -2390,10 +2384,10 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                         {/* Context Length */}
                         <div className="space-y-1">
                           <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                            Context Length
+                            {t('settings_ai_context_length_openai')}
                           </label>
                           <p className="text-xs text-[var(--color-text-secondary)]">
-                            Max context window of your LLM model (used to truncate prompts)
+                            {t('settings_ai_context_length_openai_desc')}
                           </p>
                           <CustomSelect
                             value={openaiCompatContextLength}
@@ -2416,10 +2410,10 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                         {/* Timeout */}
                         <div className="space-y-1">
                           <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                            Request Timeout
+                            {t('settings_ai_request_timeout_openai')}
                           </label>
                           <p className="text-xs text-[var(--color-text-secondary)]">
-                            Maximum time to wait for the server to respond
+                            {t('settings_ai_request_timeout_openai_desc')}
                           </p>
                           <CustomSelect
                             value={openaiCompatTimeoutSecs}
@@ -2449,10 +2443,10 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                   {/* Wiki Generation Prompt */}
                   <div className="space-y-1">
                     <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                      Wiki Generation Prompt
+                      {t('settings_prompts_wiki_generation_label')}
                     </label>
                     <p className="text-xs text-[var(--color-text-secondary)]">
-                      System prompt for generating new wiki articles. Leave empty to use the default.
+                      {t('settings_prompts_wiki_generation_desc')}
                     </p>
                     <textarea
                       value={wikiGenerationPrompt}
@@ -2467,7 +2461,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                         onClick={() => { setWikiGenerationPrompt(''); autoSave('wiki_generation_prompt', ''); }}
                         className="text-xs text-[var(--color-accent)] hover:underline"
                       >
-                        Reset to default
+                        {t('settings_prompts_wiki_generation_reset')}
                       </button>
                     )}
                     <OverrideControls settingKey="wiki_generation_prompt" />
@@ -2476,10 +2470,10 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                   {/* Wiki Update Prompt */}
                   <div className="space-y-1">
                     <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                      Wiki Update Prompt
+                      {t('settings_prompts_wiki_update_label')}
                     </label>
                     <p className="text-xs text-[var(--color-text-secondary)]">
-                      Custom instructions prepended to the update prompt. Controls tone, style, or focus. Leave empty to use the default.
+                      {t('settings_prompts_wiki_update_desc')}
                     </p>
                     <textarea
                       value={wikiUpdatePrompt}
@@ -2494,7 +2488,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                         onClick={() => { setWikiUpdatePrompt(''); autoSave('wiki_update_prompt', ''); }}
                         className="text-xs text-[var(--color-accent)] hover:underline"
                       >
-                        Reset to default
+                        {t('settings_prompts_wiki_update_reset')}
                       </button>
                     )}
                     <OverrideControls settingKey="wiki_update_prompt" />
@@ -2508,10 +2502,10 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                   {/* Chat Prompt */}
                   <div className="space-y-1">
                     <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                      Chat Prompt
+                      {t('settings_prompts_chat_label')}
                     </label>
                     <p className="text-xs text-[var(--color-text-secondary)]">
-                      Prepended to the chat assistant system prompt. Leave empty to use the default.
+                      {t('settings_prompts_chat_desc')}
                     </p>
                     <textarea
                       value={chatPrompt}
@@ -2526,7 +2520,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                         onClick={() => { setChatPrompt(''); autoSave('chat_prompt', ''); }}
                         className="text-xs text-[var(--color-accent)] hover:underline"
                       >
-                        Reset to default
+                        {t('settings_prompts_chat_reset')}
                       </button>
                     )}
                     <OverrideControls settingKey="chat_prompt" />
@@ -2535,10 +2529,10 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                   {/* Tagging Prompt */}
                   <div className="space-y-1">
                     <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                      Tagging Prompt
+                      {t('settings_prompts_tagging_label')}
                     </label>
                     <p className="text-xs text-[var(--color-text-secondary)]">
-                      System prompt for auto-tagging. Leave empty to use the default.
+                      {t('settings_prompts_tagging_desc')}
                     </p>
                     <textarea
                       value={taggingPrompt}
@@ -2553,7 +2547,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                         onClick={() => { setTaggingPrompt(''); autoSave('tagging_prompt', ''); }}
                         className="text-xs text-[var(--color-accent)] hover:underline"
                       >
-                        Reset to default
+                        {t('settings_prompts_tagging_reset')}
                       </button>
                     )}
                     <OverrideControls settingKey="tagging_prompt" />
@@ -2570,10 +2564,10 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
                         <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                          Automatic Tag Extraction
+                          {t('settings_automatic_tag_extraction')}
                         </label>
                         <p className="text-xs text-[var(--color-text-secondary)]">
-                          Automatically suggest tags when creating atoms
+                          {t('settings_automatic_tag_extraction_desc')}
                         </p>
                       </div>
                       <button
@@ -2608,35 +2602,35 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
                           <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                            Server
+                            {t('settings_connection_server')}
                           </label>
                           <p className="text-xs text-green-500 flex items-center gap-1.5">
                             <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
-                            Local
+                            {t('settings_connection_local')}
                           </p>
                         </div>
                         <Button variant="secondary" onClick={() => setShowChangeServer(!showChangeServer)}>
-                          {showChangeServer ? 'Cancel' : 'Connect to Custom Server'}
+                          {showChangeServer ? t('settings_connection_cancel') : t('settings_connection_connect_to_custom')}
                         </Button>
                       </div>
                       {localServerConfig && (
                         <div className="space-y-2 pt-2">
                           <div className="space-y-1">
                             <label className="block text-xs font-medium text-[var(--color-text-secondary)]">
-                              Local Server URL
+                              {t('settings_connection_local_server_url')}
                             </label>
                             <div className="flex gap-2">
                               <code className="flex-1 px-3 py-2 bg-[var(--color-bg-main)] border border-[var(--color-border)] rounded-md text-xs text-[var(--color-text-primary)] truncate">
                                 {localServerConfig.baseUrl}
                               </code>
                               <Button variant="secondary" size="sm" onClick={handleCopyLocalUrl}>
-                                {localUrlCopied ? 'Copied' : 'Copy'}
+                                {localUrlCopied ? t('common_success') : t('common_copy')}
                               </Button>
                             </div>
                           </div>
                           <div className="space-y-1">
                             <label className="block text-xs font-medium text-[var(--color-text-secondary)]">
-                              Local API Token
+                              {t('settings_connection_local_api_token')}
                             </label>
                             <div className="flex gap-2">
                               <code className="flex-1 px-3 py-2 bg-[var(--color-bg-main)] border border-[var(--color-border)] rounded-md text-xs text-[var(--color-text-primary)] truncate">
@@ -2648,44 +2642,44 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                                 onClick={handleCopyLocalToken}
                                 disabled={!localServerConfig.authToken}
                               >
-                                {localTokenCopied ? 'Copied' : 'Copy'}
+                                {localTokenCopied ? t('common_success') : t('common_copy')}
                               </Button>
                             </div>
                           </div>
                           <p className="text-xs text-[var(--color-text-secondary)]">
-                            Use these values for local integrations such as the Obsidian plugin.
+                            {t('settings_connection_obsidian_integration')}
                           </p>
                         </div>
                       )}
                       {showChangeServer && (
                         <div className="space-y-3 pt-2">
                           <p className="text-xs text-[var(--color-text-secondary)]">
-                            Connect to a remote atomic-server instance
+                            {t('settings_connection_connect_remote')}
                           </p>
                           <input
                             type="text"
                             value={serverUrl}
                             onChange={(e) => { setServerUrl(e.target.value); setServerTestResult(null); }}
-                            placeholder="http://localhost:8080"
+                            placeholder={t('settings_connection_url_placeholder')}
                             className="w-full px-3 py-2 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors duration-150 text-sm"
                           />
                           <input
                             type="password"
                             value={serverToken}
                             onChange={(e) => { setServerToken(e.target.value); setServerTestResult(null); }}
-                            placeholder="Auth token"
+                            placeholder={t('settings_connection_token_placeholder')}
                             className="w-full px-3 py-2 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors duration-150 text-sm"
                           />
                           <div className="flex gap-2">
                             <Button variant="secondary" onClick={handleTestServer} disabled={!serverUrl.trim() || !serverToken.trim() || isTestingServer}>
-                              {isTestingServer ? 'Testing...' : 'Test'}
+                              {isTestingServer ? t('settings_connection_testing') : t('settings_connection_test')}
                             </Button>
                             <Button onClick={handleConnectServer} disabled={serverTestResult !== 'success'}>
-                              Connect
+                              {t('settings_connection_connect')}
                             </Button>
                           </div>
                           {serverTestResult === 'success' && (
-                            <div className="text-sm text-green-500">Server reachable</div>
+                            <div className="text-sm text-green-500">{t('settings_connection_reachable')}</div>
                           )}
                           {serverTestResult === 'error' && (
                             <div className="text-sm text-red-500">{serverTestError}</div>
@@ -2701,27 +2695,27 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
                           <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                            Remote Server
+                            {t('settings_connection_remote_server')}
                           </label>
                           <p className="text-xs text-green-500 flex items-center gap-1.5">
                             <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
-                            Connected to {serverUrl}
+                            {t('settings_connection_connected_to', { url: serverUrl })}
                           </p>
                         </div>
                         <div className="flex gap-2">
                           <Button variant="secondary" onClick={() => setShowChangeServer(!showChangeServer)}>
-                            {showChangeServer ? 'Cancel' : 'Change'}
+                            {showChangeServer ? t('settings_connection_cancel') : t('settings_connection_change')}
                           </Button>
                           {isDesktopApp() ? (
                             <Button variant="secondary" onClick={handleDisconnectServer}>
-                              Switch to Local
+                              {t('settings_connection_switch_to_local')}
                             </Button>
                           ) : (
                             <Button variant="secondary" onClick={() => {
                               localStorage.removeItem('atomic-server-config');
                               window.location.reload();
                             }}>
-                              Log Out
+                              {t('settings_connection_log_out')}
                             </Button>
                           )}
                         </div>
@@ -2732,26 +2726,26 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                             type="text"
                             value={serverUrl}
                             onChange={(e) => { setServerUrl(e.target.value); setServerTestResult(null); }}
-                            placeholder="http://localhost:8080"
+                            placeholder={t('settings_connection_url_placeholder')}
                             className="w-full px-3 py-2 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors duration-150 text-sm"
                           />
                           <input
                             type="password"
                             value={serverToken}
                             onChange={(e) => { setServerToken(e.target.value); setServerTestResult(null); }}
-                            placeholder="Auth token"
+                            placeholder={t('settings_connection_token_placeholder')}
                             className="w-full px-3 py-2 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors duration-150 text-sm"
                           />
                           <div className="flex gap-2">
                             <Button variant="secondary" onClick={handleTestServer} disabled={!serverUrl.trim() || !serverToken.trim() || isTestingServer}>
-                              {isTestingServer ? 'Testing...' : 'Test'}
+                              {isTestingServer ? t('settings_connection_testing') : t('settings_connection_test')}
                             </Button>
                             <Button onClick={handleConnectServer} disabled={serverTestResult !== 'success'}>
-                              Reconnect
+                              {t('settings_connection_reconnect')}
                             </Button>
                           </div>
                           {serverTestResult === 'success' && (
-                            <div className="text-sm text-green-500">Server reachable</div>
+                            <div className="text-sm text-green-500">{t('settings_connection_reachable')}</div>
                           )}
                           {serverTestResult === 'error' && (
                             <div className="text-sm text-red-500">{serverTestError}</div>
@@ -2773,10 +2767,10 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                           className={`w-4 h-4 transition-transform ${showTokenSection ? 'rotate-90' : ''}`}
                           strokeWidth={2}
                         />
-                        API Tokens
+                        {t('settings_connection_api_tokens')}
                         {apiTokens.filter(t => !t.is_revoked).length > 0 && (
                           <span className="text-xs text-[var(--color-text-secondary)]">
-                            ({apiTokens.filter(t => !t.is_revoked).length} active)
+                            ({t('settings_connection_active_count', { count: apiTokens.filter(t => !t.is_revoked).length })})
                           </span>
                         )}
                       </button>
@@ -2784,17 +2778,17 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                       {showTokenSection && (
                         <div className="space-y-4 pl-6 border-l-2 border-[var(--color-border)]">
                           <p className="text-xs text-[var(--color-text-secondary)]">
-                            Manage API tokens for accessing this server. Each device or integration should use its own token.
+                            {t('settings_connection_manage_tokens')}
                           </p>
 
                           {/* Token list */}
                           {isLoadingTokens ? (
                             <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
                               <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2} />
-                              Loading tokens...
+                              {t('settings_connection_loading_tokens')}
                             </div>
                           ) : apiTokens.length === 0 ? (
-                            <div className="text-sm text-[var(--color-text-secondary)]">No tokens found.</div>
+                            <div className="text-sm text-[var(--color-text-secondary)]">{t('settings_connection_no_tokens')}</div>
                           ) : (
                             <div className="space-y-2">
                               {apiTokens.filter(t => !t.is_revoked).map((token) => {
@@ -2810,25 +2804,25 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                                       <div className="flex items-center gap-2">
                                         <span className="font-medium text-[var(--color-text-primary)]">{token.name}</span>
                                         {isCurrentToken && (
-                                          <span className="text-xs px-1.5 py-0.5 rounded bg-green-500/20 text-green-400">current</span>
+                                          <span className="text-xs px-1.5 py-0.5 rounded bg-green-500/20 text-green-400">{t('settings_connection_current')}</span>
                                         )}
                                       </div>
                                       {confirmRevokeId === token.id ? (
                                         <div className="flex items-center gap-2">
                                           <span className="text-xs text-amber-400">
-                                            {isCurrentToken ? 'This will log you out!' : 'Revoke?'}
+                                            {isCurrentToken ? t('settings_connection_this_will_log_out') : t('settings_connection_revoke_question')}
                                           </span>
                                           <button
                                             onClick={() => handleRevokeToken(token.id)}
                                             className="text-xs px-2 py-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
                                           >
-                                            Confirm
+                                            {t('settings_connection_confirm')}
                                           </button>
                                           <button
                                             onClick={() => setConfirmRevokeId(null)}
                                             className="text-xs px-2 py-1 rounded text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
                                           >
-                                            Cancel
+                                            {t('settings_connection_cancel')}
                                           </button>
                                         </div>
                                       ) : (
@@ -2836,15 +2830,15 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                                           onClick={() => setConfirmRevokeId(token.id)}
                                           className="text-xs text-red-400 hover:text-red-300 transition-colors"
                                         >
-                                          Revoke
+                                          {t('settings_connection_revoke')}
                                         </button>
                                       )}
                                     </div>
                                     <div className="flex items-center gap-3 mt-1 text-xs text-[var(--color-text-secondary)]">
                                       <span className="font-mono">{token.token_prefix}...</span>
-                                      <span>Created {new Date(token.created_at).toLocaleDateString()}</span>
+                                      <span>{t('settings_connection_created', { date: new Date(token.created_at).toLocaleDateString() })}</span>
                                       {token.last_used_at && (
-                                        <span>Last used {new Date(token.last_used_at).toLocaleDateString()}</span>
+                                        <span>{t('settings_connection_last_used', { date: new Date(token.last_used_at).toLocaleDateString() })}</span>
                                       )}
                                     </div>
                                   </div>
@@ -2857,7 +2851,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                           {createdToken && (
                             <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-md space-y-2">
                               <div className="text-sm font-medium text-amber-400">
-                                Token created — save it now, it won't be shown again
+                                {t('settings_connection_token_created_save')}
                               </div>
                               <div className="flex items-center gap-2">
                                 <code className="flex-1 text-xs font-mono bg-[var(--color-bg-main)] px-2 py-1.5 rounded border border-[var(--color-border)] text-[var(--color-text-primary)] break-all select-all">
@@ -2866,7 +2860,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                                 <button
                                   onClick={handleCopyToken}
                                   className="p-1.5 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors flex-shrink-0"
-                                  title="Copy to clipboard"
+                                  title={t('settings_connection_copy_clipboard')}
                                 >
                                   {tokenCopied ? (
                                     <Check className="w-4 h-4 text-green-500" strokeWidth={2} />
@@ -2885,7 +2879,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                               value={newTokenName}
                               onChange={(e) => setNewTokenName(e.target.value)}
                               onKeyDown={(e) => { if (e.key === 'Enter') handleCreateToken(); }}
-                              placeholder="Token name (e.g. laptop, phone)"
+                              placeholder={t('settings_connection_token_name_placeholder')}
                               className="flex-1 px-3 py-2 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors duration-150 text-sm"
                             />
                             <Button
@@ -2893,7 +2887,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                               onClick={handleCreateToken}
                               disabled={!newTokenName.trim() || isCreatingToken}
                             >
-                              {isCreatingToken ? 'Creating...' : 'Create'}
+                              {isCreatingToken ? t('settings_connection_creating') : t('settings_connection_create')}
                             </Button>
                           </div>
                         </div>
@@ -2911,10 +2905,10 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                   <div className="space-y-3">
                     <div className="space-y-1">
                       <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                        Ingest URL
+                        {t('settings_integrations_ingest_url')}
                       </label>
                       <p className="text-xs text-[var(--color-text-secondary)]">
-                        Extract and save an article from any web page
+                        {t('settings_integrations_ingest_url_desc')}
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -2923,29 +2917,29 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                         value={ingestUrlValue}
                         onChange={(e) => { setIngestUrlValue(e.target.value); setIngestResult(null); setIngestError(null); }}
                         onKeyDown={(e) => { if (e.key === 'Enter') handleIngestUrl(); }}
-                        placeholder="https://example.com/article"
+                        placeholder={t('settings_integrations_ingest_url_placeholder')}
                         className="flex-1 px-3 py-2 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors duration-150 text-sm"
                       />
                       <Button onClick={handleIngestUrl} disabled={!ingestUrlValue.trim() || ingesting}>
                         {ingesting ? (
                           <>
                             <Loader2 className="w-4 h-4 animate-spin mr-1" strokeWidth={2} />
-                            Ingesting...
+                            {t('settings_integrations_ingesting')}
                           </>
-                        ) : 'Ingest'}
+                        ) : t('settings_integrations_ingest')}
                       </Button>
                     </div>
 
                     {ingestResult && (
                       <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-md text-sm">
-                        <div className="text-green-400 font-medium mb-1">Added to knowledge base</div>
+                        <div className="text-green-400 font-medium mb-1">{t('settings_integrations_added_to_kb')}</div>
                         <div className="text-[var(--color-text-secondary)]">{ingestResult.title}</div>
                       </div>
                     )}
 
                     {ingestError && (
                       <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-md text-sm">
-                        <div className="text-red-400 font-medium mb-1">Ingestion failed</div>
+                        <div className="text-red-400 font-medium mb-1">{t('settings_integrations_ingestion_failed')}</div>
                         <div className="text-[var(--color-text-secondary)]">{ingestError}</div>
                       </div>
                     )}
@@ -2955,26 +2949,28 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                   <div className="space-y-3 pt-4 border-t border-[var(--color-border)]">
                     <div className="space-y-1">
                       <label className="block text-sm font-medium text-[var(--color-text-primary)]">
-                        RSS Feeds
+                        {t('settings_integrations_rss_feeds')}
                       </label>
                       <p className="text-xs text-[var(--color-text-secondary)]">
-                        Subscribe to RSS feeds to automatically ingest new articles
+                        {t('settings_integrations_rss_feeds_desc')}
                       </p>
                     </div>
 
                     {/* Poll result banner */}
                     {pollResult && (
                       <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-md text-sm">
-                        <div className="text-green-400 font-medium mb-1">Poll complete</div>
+                        <div className="text-green-400 font-medium mb-1">{t('settings_integrations_poll_complete')}</div>
                         <div className="text-[var(--color-text-secondary)]">
-                          {pollResult.new_items} new{pollResult.skipped > 0 && `, ${pollResult.skipped} skipped`}{pollResult.errors > 0 && `, ${pollResult.errors} errors`}
+                          {t('settings_integrations_new_items', { count: pollResult.new_items })}
+                          {pollResult.skipped > 0 && `, ${t('settings_integrations_skipped', { count: pollResult.skipped })}`}
+                          {pollResult.errors > 0 && `, ${t('settings_integrations_errors', { count: pollResult.errors })}`}
                         </div>
                       </div>
                     )}
 
                     {feedError && (
                       <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-md text-sm">
-                        <div className="text-red-400 font-medium mb-1">Error</div>
+                        <div className="text-red-400 font-medium mb-1">{t('settings_integrations_error')}</div>
                         <div className="text-[var(--color-text-secondary)]">{feedError}</div>
                       </div>
                     )}
@@ -2983,11 +2979,11 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                     {feedsLoading ? (
                       <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] py-4">
                         <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2} />
-                        Loading feeds...
+                        {t('settings_integrations_loading_feeds')}
                       </div>
                     ) : feeds.length === 0 ? (
                       <div className="text-sm text-[var(--color-text-secondary)] py-4">
-                        No feeds yet. Add an RSS feed URL below to get started.
+                        {t('settings_integrations_no_feeds')}
                       </div>
                     ) : (
                       <div className="space-y-2">
@@ -3004,7 +3000,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                                   </span>
                                   {feed.is_paused && (
                                     <span className="px-1.5 py-0.5 text-xs rounded bg-yellow-500/20 text-yellow-400">
-                                      Paused
+                                      {t('common_paused')}
                                     </span>
                                   )}
                                 </div>
@@ -3031,7 +3027,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                                   onClick={() => handlePollFeed(feed.id)}
                                   disabled={pollingFeedId === feed.id}
                                   className="p-1.5 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] rounded transition-colors disabled:opacity-50"
-                                  title="Poll now"
+                                  title={t('common_poll_now')}
                                 >
                                   {pollingFeedId === feed.id ? (
                                     <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2} />
@@ -3043,7 +3039,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                                   type="button"
                                   onClick={() => handleToggleFeedPause(feed)}
                                   className="p-1.5 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] rounded transition-colors"
-                                  title={feed.is_paused ? 'Resume' : 'Pause'}
+                                  title={feed.is_paused ? t('common_resume') : t('common_pause')}
                                 >
                                   {feed.is_paused ? (
                                     <Play className="w-4 h-4" strokeWidth={2} />
@@ -3056,7 +3052,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                                   onClick={() => handleDeleteFeed(feed.id)}
                                   disabled={deletingFeedId === feed.id}
                                   className="p-1.5 text-[var(--color-text-secondary)] hover:text-red-400 hover:bg-[var(--color-bg-hover)] rounded transition-colors disabled:opacity-50"
-                                  title="Delete feed"
+                                  title={t('common_delete')}
                                 >
                                   <Trash2 className="w-4 h-4" strokeWidth={2} />
                                 </button>
@@ -3074,16 +3070,16 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                         value={newFeedUrl}
                         onChange={(e) => { setNewFeedUrl(e.target.value); setFeedError(null); }}
                         onKeyDown={(e) => { if (e.key === 'Enter') handleAddFeed(); }}
-                        placeholder="https://example.com/feed.xml"
+                        placeholder={t('settings_integrations_add_feed_url')}
                         className="flex-1 px-3 py-2 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors duration-150 text-sm"
                       />
                       <Button variant="secondary" onClick={handleAddFeed} disabled={!newFeedUrl.trim() || addingFeed}>
                         {addingFeed ? (
                           <>
                             <Loader2 className="w-4 h-4 animate-spin mr-1" strokeWidth={2} />
-                            Adding...
+                            {t('common_adding')}
                           </>
-                        ) : 'Add Feed'}
+                        ) : t('common_add')}
                       </Button>
                     </div>
                   </div>
@@ -3093,24 +3089,24 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                     <div className="space-y-2">
                       {importResult && (
                         <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-md text-sm">
-                          <div className="text-green-400 font-medium mb-1">Import complete!</div>
+                          <div className="text-green-400 font-medium mb-1">{t('settings_integrations_import_complete')}</div>
                           <div className="text-[var(--color-text-secondary)] space-y-0.5">
-                            <div>Imported: {importResult.imported} notes</div>
+                            <div>{t('settings_integrations_imported_notes', { count: importResult.imported })}</div>
                             {importResult.tags_created > 0 && (
-                              <div>Tags created: {importResult.tags_created}</div>
+                              <div>{t('settings_integrations_tags_created', { count: importResult.tags_created })}</div>
                             )}
                             {importResult.errors > 0 && (
-                              <div>Errors: {importResult.errors} (failed to create)</div>
+                              <div>{t('settings_integrations_errors', { count: importResult.errors })}</div>
                             )}
                             {importResult.skipped > 0 && (
-                              <div>Skipped: {importResult.skipped} (duplicates/empty)</div>
+                              <div>{t('settings_integrations_skipped', { count: importResult.skipped })}</div>
                             )}
                           </div>
                         </div>
                       )}
                       {importError && (
                         <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-md text-sm">
-                          <div className="text-red-400 font-medium mb-1">Import failed</div>
+                          <div className="text-red-400 font-medium mb-1">{t('settings_integrations_import_failed')}</div>
                           <div className="text-[var(--color-text-secondary)]">{importError}</div>
                         </div>
                       )}
@@ -3129,14 +3125,13 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                           className={`w-4 h-4 transition-transform ${expandedIntegration === 'markdown' ? 'rotate-90' : ''}`}
                           strokeWidth={2}
                         />
-                        Markdown Folder
+                        {t('settings_integrations_markdown_folder')}
                       </button>
 
                       {expandedIntegration === 'markdown' && (
                         <div className="space-y-3 pl-6 border-l-2 border-[var(--color-border)]">
                           <p className="text-xs text-[var(--color-text-secondary)]">
-                            Import a folder of <code className="text-[var(--color-text-primary)]">.md</code> files
-                            (Obsidian vault, Bear export, etc.). Folder structure becomes hierarchical tags.
+                            {t('settings_integrations_markdown_folder_desc')}
                           </p>
 
                           <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
@@ -3147,7 +3142,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                               disabled={isImporting}
                               className="rounded border-[var(--color-border)]"
                             />
-                            Import tags from folders and frontmatter
+                            {t('settings_integrations_import_tags_folders')}
                           </label>
 
                           <Button
@@ -3160,13 +3155,13 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                               <>
                                 <Loader2 className="w-4 h-4 animate-spin mr-2" strokeWidth={2} />
                                 {importProgress
-                                  ? `Importing ${importProgress.current}/${importProgress.total}...`
-                                  : 'Importing...'}
+                                  ? t('settings_integrations_importing_progress', { current: importProgress.current, total: importProgress.total })
+                                  : t('settings_integrations_importing')}
                               </>
                             ) : (
                               <>
                                 <Upload className="w-4 h-4 mr-2" strokeWidth={2} />
-                                Choose Folder...
+                                {t('settings_integrations_choose_folder')}
                               </>
                             )}
                           </Button>
@@ -3187,13 +3182,13 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                           className={`w-4 h-4 transition-transform ${expandedIntegration === 'apple-notes' ? 'rotate-90' : ''}`}
                           strokeWidth={2}
                         />
-                        Apple Notes
+                        {t('settings_integrations_apple_notes')}
                       </button>
 
                       {expandedIntegration === 'apple-notes' && (
                         <div className="space-y-3 pl-6 border-l-2 border-[var(--color-border)]">
                           <p className="text-xs text-[var(--color-text-secondary)]">
-                            Import notes directly from the Apple Notes app. Folders become hierarchical tags.
+                            {t('settings_integrations_apple_notes_desc')}
                           </p>
 
                           <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
@@ -3204,7 +3199,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                               disabled={isImporting}
                               className="rounded border-[var(--color-border)]"
                             />
-                            Import tags from Apple Notes folders
+                            {t('settings_integrations_import_tags_apple_notes')}
                           </label>
 
                           <Button
@@ -3217,23 +3212,22 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                               <>
                                 <Loader2 className="w-4 h-4 animate-spin mr-2" strokeWidth={2} />
                                 {importProgress
-                                  ? `Importing ${importProgress.current}/${importProgress.total}...`
-                                  : 'Importing...'}
+                                  ? t('settings_integrations_importing_progress', { current: importProgress.current, total: importProgress.total })
+                                  : t('settings_integrations_importing')}
                               </>
                             ) : (
                               <>
                                 <Upload className="w-4 h-4 mr-2" strokeWidth={2} />
-                                Import from Apple Notes
+                                {t('settings_integrations_import_from_apple_notes')}
                               </>
                             )}
                           </Button>
 
                           {appleNotesNeedsFda && (
                             <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-md text-sm space-y-2">
-                              <div className="text-amber-400 font-medium">Full Disk Access required</div>
+                              <div className="text-amber-400 font-medium">{t('settings_integrations_full_disk_access_required')}</div>
                               <p className="text-xs text-[var(--color-text-secondary)]">
-                                Grant Atomic access to read your Apple Notes data, then try the import again.
-                                Atomic appears in the Full Disk Access list after you click the button below.
+                                {t('settings_integrations_grant_access')}
                               </p>
                               <div className="flex gap-2">
                                 <Button
@@ -3241,7 +3235,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                                   size="sm"
                                   onClick={() => openExternalUrl(MACOS_FULL_DISK_ACCESS_URL)}
                                 >
-                                  Open System Settings
+                                  {t('settings_integrations_open_system_settings')}
                                 </Button>
                                 <Button
                                   variant="secondary"
@@ -3249,7 +3243,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                                   onClick={handleAppleNotesImport}
                                   disabled={isImporting}
                                 >
-                                  Try again
+                                  {t('settings_integrations_try_again')}
                                 </Button>
                               </div>
                             </div>
@@ -3271,7 +3265,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                           className={`w-4 h-4 transition-transform ${showMcpSetup ? 'rotate-90' : ''}`}
                           strokeWidth={2}
                         />
-                        MCP Integration
+                        {t('settings_integrations_mcp_integration')}
                       </button>
 
                       {showMcpSetup && (
@@ -3279,27 +3273,27 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                           {isDesktopApp() && isLocalServer() ? (
                             <>
                               <p className="text-xs text-[var(--color-text-secondary)]">
-                                The Atomic MCP bridge is bundled with the desktop app. It connects to the local server automatically — no token configuration needed.
+                                {t('settings_integrations_mcp_bundled')}
                               </p>
 
                               <div className="space-y-2">
-                                <div className="text-sm font-medium text-[var(--color-text-primary)]">Setup Instructions</div>
+                                <div className="text-sm font-medium text-[var(--color-text-primary)]">{t('settings_integrations_setup_instructions')}</div>
                                 <ol className="text-xs text-[var(--color-text-secondary)] space-y-2 list-decimal list-inside">
-                                  <li>Open your MCP client settings (e.g. Claude Desktop &gt; <span className="text-[var(--color-text-primary)]">Developer &gt; Edit Config</span>)</li>
-                                  <li>Add the following configuration:</li>
+                                  <li>{t('settings_integrations_mcp_client_settings')}</li>
+                                  <li>{t('settings_integrations_mcp_add_config')}</li>
                                 </ol>
                               </div>
 
                               <div className="relative">
                                 <pre className="p-3 bg-[var(--color-bg-main)] border border-[var(--color-border)] rounded-md text-xs text-[var(--color-text-primary)] overflow-x-auto">
-                                  {mcpConfig ? JSON.stringify(mcpConfig, null, 2) : 'Loading...'}
+                                  {mcpConfig ? JSON.stringify(mcpConfig, null, 2) : t('common_loading')}
                                 </pre>
                                 <button
                                   type="button"
                                   onClick={handleCopyMcpConfig}
                                   disabled={!mcpConfig}
                                   className="absolute top-2 right-2 p-1.5 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors disabled:opacity-50"
-                                  title="Copy to clipboard"
+                                  title={t('common_copy_to_clipboard')}
                                 >
                                   {mcpConfigCopied ? (
                                     <Check className="w-4 h-4 text-green-500" strokeWidth={2} />
@@ -3310,37 +3304,37 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                               </div>
 
                               <ol start={3} className="text-xs text-[var(--color-text-secondary)] space-y-2 list-decimal list-inside">
-                                <li>Save the config file and restart your MCP client</li>
+                                <li>{t('settings_integrations_mcp_save_restart')}</li>
                               </ol>
 
                               <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-md text-xs text-green-400">
-                                <strong>Note:</strong> The Atomic desktop app must be running for the MCP bridge to connect.
+                                <strong>{t('common_note') || 'Note'}:</strong> {t('settings_integrations_mcp_desktop_note')}
                               </div>
                             </>
                           ) : (
                             <>
                               <p className="text-xs text-[var(--color-text-secondary)]">
-                                Connect your MCP client to this Atomic server's HTTP endpoint. A dedicated API token is required for authentication.
+                                {t('settings_integrations_mcp_http_endpoint')}
                               </p>
 
                               {!mcpConfig ? (
                                 <div className="space-y-2">
                                   <Button variant="secondary" size="sm" onClick={handleCreateMcpToken} disabled={isCreatingMcpToken}>
-                                    {isCreatingMcpToken ? 'Creating...' : 'Create MCP Token'}
+                                    {isCreatingMcpToken ? t('common_creating') : t('settings_integrations_mcp_create_token')}
                                   </Button>
                                   {mcpTokenError && <p className="text-xs text-red-500">{mcpTokenError}</p>}
                                 </div>
                               ) : (
                                 <>
                                   <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-md text-xs text-amber-400">
-                                    Save this config now — the token won't be shown again.
+                                    {t('settings_integrations_mcp_token_warning')}
                                   </div>
 
                                   <div className="space-y-2">
-                                    <div className="text-sm font-medium text-[var(--color-text-primary)]">Setup Instructions</div>
+                                    <div className="text-sm font-medium text-[var(--color-text-primary)]">{t('settings_integrations_setup_instructions')}</div>
                                     <ol className="text-xs text-[var(--color-text-secondary)] space-y-2 list-decimal list-inside">
-                                      <li>Open your MCP client settings (e.g. Claude Desktop &gt; <span className="text-[var(--color-text-primary)]">Developer &gt; Edit Config</span>)</li>
-                                      <li>Add the following configuration:</li>
+                                      <li>{t('settings_integrations_mcp_client_settings')}</li>
+                                      <li>{t('settings_integrations_mcp_add_config')}</li>
                                     </ol>
                                   </div>
 
@@ -3352,7 +3346,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                                       type="button"
                                       onClick={handleCopyMcpConfig}
                                       className="absolute top-2 right-2 p-1.5 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors"
-                                      title="Copy to clipboard"
+                                      title={t('common_copy_to_clipboard')}
                                     >
                                       {mcpConfigCopied ? (
                                         <Check className="w-4 h-4 text-green-500" strokeWidth={2} />
@@ -3363,11 +3357,11 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                                   </div>
 
                                   <ol start={3} className="text-xs text-[var(--color-text-secondary)] space-y-2 list-decimal list-inside">
-                                    <li>Save the config file and restart your MCP client</li>
+                                    <li>{t('settings_integrations_mcp_save_restart')}</li>
                                   </ol>
 
                                   <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-md text-xs text-green-400">
-                                    <strong>Note:</strong> The Atomic server must be running and reachable for MCP clients to connect.
+                                    <strong>{t('common_note') || 'Note'}:</strong> {t('settings_integrations_mcp_server_note')}
                                   </div>
                                 </>
                               )}
@@ -3399,13 +3393,12 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
         <Modal
           isOpen={!!pendingEmbeddingChange}
           onClose={cancelEmbeddingChange}
-          title="Re-embed all atoms?"
-          confirmLabel="Re-embed"
+          title={t('settings_ai_reembed_modal_title')}
+          confirmLabel={t('settings_ai_reembed_modal_confirm')}
           onConfirm={confirmEmbeddingChange}
         >
           <p className="text-sm text-[var(--color-text-secondary)]">
-            Changing the embedding model to <span className="font-medium text-[var(--color-text-primary)]">{pendingEmbeddingChange?.label}</span> will
-            re-embed all atoms. This may take a while and will use API credits.
+            {t('settings_ai_reembed_modal_desc', { model: pendingEmbeddingChange?.label })}
           </p>
         </Modal>
       </div>

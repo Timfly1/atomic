@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BookOpen, Plus } from 'lucide-react';
 import { useWikiStore } from '../../stores/wiki';
 import { WikiArticleCard } from './WikiArticleCard';
 import { NewWikiModal } from './NewWikiModal';
 
 export function WikiArticlesList() {
+  const { t } = useTranslation();
   const articles = useWikiStore(s => s.articles);
   const suggestedArticles = useWikiStore(s => s.suggestedArticles);
   const isLoadingList = useWikiStore(s => s.isLoadingList);
@@ -17,7 +19,7 @@ export function WikiArticlesList() {
   if (isLoadingList && articles.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-[var(--color-text-secondary)]">
-        Loading wiki articles...
+        {t('wiki_loading')}
       </div>
     );
   }
@@ -40,9 +42,9 @@ export function WikiArticlesList() {
               <BookOpen className="w-8 h-8 text-[var(--color-text-secondary)]" strokeWidth={2} />
             </div>
             <div>
-              <p className="text-[var(--color-text-primary)] font-medium mb-1">No wiki articles yet</p>
+              <p className="text-[var(--color-text-primary)] font-medium mb-1">{t('wiki_empty')}</p>
               <p className="text-[var(--color-text-secondary)] text-sm">
-                Generate a wiki article from your atoms to synthesize knowledge
+                {t('wiki_empty_description')}
               </p>
             </div>
           </div>
@@ -67,7 +69,7 @@ export function WikiArticlesList() {
               <div className="border-t border-[var(--color-border)]">
                 <div className="px-4 pt-3 pb-1">
                   <h3 className="text-[10px] font-medium text-[var(--color-text-tertiary)] uppercase tracking-wider">
-                    Suggested Articles
+                    {t('wiki_suggested_articles')}
                   </h3>
                 </div>
                 <div className="divide-y divide-[var(--color-border)]">
@@ -83,11 +85,11 @@ export function WikiArticlesList() {
                         </span>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="text-[11px] text-[var(--color-text-tertiary)]">
-                            {suggestion.atom_count} atom{suggestion.atom_count !== 1 ? 's' : ''}
+                            {t('wiki_atoms_count', { count: suggestion.atom_count })}
                           </span>
                           {suggestion.mention_count > 0 && (
                             <span className="text-[11px] text-[var(--color-text-tertiary)]">
-                              {suggestion.mention_count} mention{suggestion.mention_count !== 1 ? 's' : ''}
+                              {t('wiki_mentions_count', { count: suggestion.mention_count })}
                             </span>
                           )}
                         </div>
@@ -111,7 +113,7 @@ export function WikiArticlesList() {
           className="w-full flex items-center justify-start gap-1.5 px-2 py-1.5 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] rounded-md transition-colors"
         >
           <Plus className="w-3.5 h-3.5" strokeWidth={2} />
-          New Article
+          {t('wiki_new_article')}
         </button>
       </div>
 

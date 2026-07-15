@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import * as d3 from 'd3-force';
+import { useTranslation } from 'react-i18next';
 import { getAtomNeighborhood, type NeighborhoodGraph } from '../../lib/api';
 import { useUIStore } from '../../stores/ui';
 
@@ -15,6 +16,7 @@ interface MiniGraphPreviewProps {
 }
 
 export function MiniGraphPreview({ atomId, onExpand }: MiniGraphPreviewProps) {
+  const { t } = useTranslation();
   const openLocalGraph = useUIStore(s => s.openLocalGraph);
   const [graph, setGraph] = useState<NeighborhoodGraph | null>(null);
   const [nodes, setNodes] = useState<SimulationNode[]>([]);
@@ -133,7 +135,7 @@ export function MiniGraphPreview({ atomId, onExpand }: MiniGraphPreviewProps) {
   if (isLoading) {
     return (
       <div className="h-[120px] flex items-center justify-center text-sm text-[var(--color-text-tertiary)] bg-[var(--color-bg-panel)] rounded-md">
-        Loading graph...
+        {t('canvas_loading_graph')}
       </div>
     );
   }

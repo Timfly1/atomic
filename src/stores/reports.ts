@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { toast } from 'sonner';
+import { toasti18n } from '../i18n/toast';
 import { getTransport } from '../lib/transport';
 
 // =====================================================================
@@ -345,7 +345,7 @@ export const useReportsStore = create<ReportsStore>((set, get) => {
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         set({ isLoadingList: false, loadError: msg });
-        toast.error('Failed to load reports', { description: msg });
+        toasti18n.error('reports:toast_load_failed', { description: msg });
       }
     },
 
@@ -383,7 +383,7 @@ export const useReportsStore = create<ReportsStore>((set, get) => {
             const first = after.findingsByReport[id]?.[0];
             if (first && first.atom.id === newAtomId) {
               get().clearRunning(id);
-              toast.success('New finding', {
+              toasti18n.success('reports:toast_new_finding', {
                 description: after.byId[id]?.name,
               });
             }
@@ -507,7 +507,7 @@ export const useReportsStore = create<ReportsStore>((set, get) => {
         // Dispatch itself failed — revert.
         get().clearRunning(reportId);
         const msg = e instanceof Error ? e.message : String(e);
-        toast.error('Failed to dispatch report run', { description: msg });
+        toasti18n.error('reports:toast_dispatch_failed', { description: msg });
         throw e;
       }
     },
@@ -548,7 +548,7 @@ export const useReportsStore = create<ReportsStore>((set, get) => {
         if (/not found|404/i.test(msg)) {
           return null;
         }
-        toast.error('Failed to load report', { description: msg });
+        toasti18n.error('reports:toast_load_one_failed', { description: msg });
         return null;
       }
     },
@@ -571,7 +571,7 @@ export const useReportsStore = create<ReportsStore>((set, get) => {
         }));
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        toast.error('Failed to load findings', { description: msg });
+        toasti18n.error('reports:toast_load_findings_failed', { description: msg });
       }
     },
 
@@ -629,11 +629,11 @@ export const useReportsStore = create<ReportsStore>((set, get) => {
           reports: [created, ...state.reports.filter(r => r.id !== created.id)],
           byId: { ...state.byId, [created.id]: created },
         }));
-        toast.success('Report created', { description: created.name });
+        toasti18n.success('reports:toast_created', { description: created.name });
         return created;
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        toast.error('Failed to create report', { description: msg });
+        toasti18n.error('reports:toast_create_failed', { description: msg });
         throw e;
       }
     },
@@ -651,7 +651,7 @@ export const useReportsStore = create<ReportsStore>((set, get) => {
         return merged;
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        toast.error('Failed to update report', { description: msg });
+        toasti18n.error('reports:toast_update_failed', { description: msg });
         throw e;
       }
     },
@@ -683,7 +683,7 @@ export const useReportsStore = create<ReportsStore>((set, get) => {
           byId: { ...state.byId, [id]: prev },
         }));
         const msg = e instanceof Error ? e.message : String(e);
-        toast.error(enabled ? 'Failed to enable report' : 'Failed to pause report', {
+        toasti18n.error(enabled ? 'reports:toast_enable_failed' : 'reports:toast_pause_failed', {
           description: msg,
         });
       }
@@ -700,14 +700,14 @@ export const useReportsStore = create<ReportsStore>((set, get) => {
       }));
       try {
         await getTransport().invoke('delete_report', { report_id: id });
-        toast.success('Report deleted', {
+        toasti18n.success('reports:toast_deleted', {
           description: target ? `${target.name} — findings remain in your atoms` : undefined,
         });
       } catch (e) {
         // Restore on failure.
         set({ reports: prev, byId: prevById });
         const msg = e instanceof Error ? e.message : String(e);
-        toast.error('Failed to delete report', { description: msg });
+        toasti18n.error('reports:toast_delete_failed', { description: msg });
         throw e;
       }
     },

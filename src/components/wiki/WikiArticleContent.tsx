@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, Fragment, ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Plus } from 'lucide-react';
@@ -29,6 +30,7 @@ interface WikiArticleContentProps {
 }
 
 export function WikiArticleContent({ article, citations, wikiLinks, relatedTags, tagName, updatedAt, sourceCount, titleActions, highlightText, onViewAtom, onNavigateToArticle }: WikiArticleContentProps) {
+  const { t } = useTranslation();
   const [activeCitation, setActiveCitation] = useState<WikiCitation | null>(null);
   const [anchorRect, setAnchorRect] = useState<{ top: number; left: number; bottom: number; width: number } | null>(null);
 
@@ -130,7 +132,7 @@ export function WikiArticleContent({ article, citations, wikiLinks, relatedTags,
         }
         // Unknown wiki link — render as plain text with dimmed style
         return (
-          <span key={`wikilink-unknown-${i}`} className="text-[var(--color-text-tertiary)]" title="Unknown article">
+          <span key={`wikilink-unknown-${i}`} className="text-[var(--color-text-tertiary)]" title={t('wiki_unknown_article')}>
             {linkName}
           </span>
         );
@@ -252,7 +254,7 @@ export function WikiArticleContent({ article, citations, wikiLinks, relatedTags,
             <div className="min-w-0">
               <h1 className="text-2xl font-bold text-[var(--color-text-primary)] mb-1">{tagName}</h1>
               <p className="text-xs text-[var(--color-text-secondary)]">
-                Updated {formatRelativeTime(updatedAt)} • {sourceCount} source{sourceCount !== 1 ? 's' : ''}
+                {t('wiki_updated', { time: formatRelativeTime(updatedAt) })} • {t('wiki_sources_count', { count: sourceCount })}
               </p>
             </div>
             {titleActions && (
@@ -274,7 +276,7 @@ export function WikiArticleContent({ article, citations, wikiLinks, relatedTags,
         {relatedTags.some(t => t.has_article) && (
           <div className="max-w-3xl mx-auto border-t border-[var(--color-border)] mt-2 pt-4 px-8 pb-4">
             <h3 className="text-xs font-medium text-[var(--color-text-tertiary)] uppercase tracking-wider mb-3">
-              Related Articles
+              {t('wiki_related_articles')}
             </h3>
             <div className="flex flex-wrap gap-2">
               {relatedTags.filter(t => t.has_article).map(tag => (
@@ -282,7 +284,7 @@ export function WikiArticleContent({ article, citations, wikiLinks, relatedTags,
                   key={tag.tag_id}
                   onClick={() => onNavigateToArticle(tag.tag_id, tag.tag_name)}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-colors bg-[var(--color-accent)]/10 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20"
-                  title={`${tag.shared_atoms} shared atoms, ${tag.semantic_edges} semantic connections`}
+                  title={`${t('wiki_shared_atoms', { count: tag.shared_atoms })}, ${t('wiki_semantic_links', { count: tag.semantic_edges })}`}
                 >
                   {tag.tag_name}
                 </button>
@@ -295,7 +297,7 @@ export function WikiArticleContent({ article, citations, wikiLinks, relatedTags,
         {relatedTags.some(t => !t.has_article) && (
           <div className="max-w-3xl mx-auto border-t border-[var(--color-border)] pt-4 px-8 pb-6">
             <h3 className="text-xs font-medium text-[var(--color-text-tertiary)] uppercase tracking-wider mb-2">
-              Recommended
+              {t('wiki_recommended')}
             </h3>
             <div className="divide-y divide-[var(--color-border)] rounded-lg border border-[var(--color-border)] overflow-hidden">
               {relatedTags.filter(t => !t.has_article).map(tag => (
@@ -310,11 +312,11 @@ export function WikiArticleContent({ article, citations, wikiLinks, relatedTags,
                     </span>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-[11px] text-[var(--color-text-tertiary)]">
-                        {tag.shared_atoms} shared atom{tag.shared_atoms !== 1 ? 's' : ''}
+                        {t('wiki_shared_atoms', { count: tag.shared_atoms })}
                       </span>
                       {tag.semantic_edges > 0 && (
                         <span className="text-[11px] text-[var(--color-text-tertiary)]">
-                          {tag.semantic_edges} semantic link{tag.semantic_edges !== 1 ? 's' : ''}
+                          {t('wiki_semantic_links', { count: tag.semantic_edges })}
                         </span>
                       )}
                     </div>

@@ -1,4 +1,5 @@
 import { memo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Star } from 'lucide-react';
 import { getTransport } from '../../lib/transport';
 import { useFeaturedReportStore } from '../../stores/featuredReport';
@@ -13,6 +14,7 @@ interface FeaturedStarButtonProps {
 /// `dashboard-featured-changed` event triggers a refetch when another
 /// client toggles the pointer).
 export const FeaturedStarButton = memo(function FeaturedStarButton({ reportId }: FeaturedStarButtonProps) {
+  const { t } = useTranslation();
   const currentFeatured = useFeaturedReportStore(s => s.reportId);
   const fetchLatest = useFeaturedReportStore(s => s.fetchLatest);
   const setFeatured = useFeaturedReportStore(s => s.setFeatured);
@@ -48,8 +50,8 @@ export const FeaturedStarButton = memo(function FeaturedStarButton({ reportId }:
     <button
       type="button"
       onClick={handleClick}
-      title={isFeatured ? 'Featured on dashboard' : 'Feature on dashboard'}
-      aria-label={isFeatured ? 'Unfeature from dashboard' : 'Feature on dashboard'}
+      title={isFeatured ? t('reports_featured_on_dashboard') : t('reports_feature_on_dashboard')}
+      aria-label={isFeatured ? t('reports_unfeature_from_dashboard') : t('reports_feature_on_dashboard')}
       aria-pressed={isFeatured}
       className={`
         p-1 rounded-md transition-colors

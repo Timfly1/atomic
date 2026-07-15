@@ -1,4 +1,5 @@
 import { memo, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface ScheduleStripProps {
   /// 6-field cron expression: `SEC MIN HOUR DOM MONTH DOW`, Sun = 0.
@@ -86,6 +87,7 @@ function weekdayInTz(date: Date, tz: string | null): number {
 const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 export const ScheduleStrip = memo(function ScheduleStrip({ cron, tz, muted = false }: ScheduleStripProps) {
+  const { t } = useTranslation();
   const days = useMemo(() => computeNext7(cron, tz), [cron, tz]);
 
   // Letter labels show today on the left, then the next 6 days.
@@ -103,7 +105,7 @@ export const ScheduleStrip = memo(function ScheduleStrip({ cron, tz, muted = fal
     // muted dash so the row's layout grid doesn't reflow when a custom
     // schedule slides in (4b+).
     return (
-      <div className="flex items-center gap-px" title={`Schedule: ${cron}${tz ? ` (${tz})` : ''} — preview unavailable`}>
+      <div className="flex items-center gap-px" title={`${t('reports_schedule')}: ${cron}${tz ? ` (${tz})` : ''} — ${t('reports_schedule_preview_unavailable')}`}>
         {Array.from({ length: 7 }, (_, i) => (
           <div key={i} className="w-2 h-3 rounded-[1px] bg-[var(--color-border)]/40" />
         ))}
@@ -115,13 +117,13 @@ export const ScheduleStrip = memo(function ScheduleStrip({ cron, tz, muted = fal
   const fillOff = 'bg-[var(--color-border)]/40';
 
   return (
-    <div className="flex flex-col items-start gap-0.5" aria-label="Next 7 days schedule preview">
+    <div className="flex flex-col items-start gap-0.5" aria-label={t('reports_schedule_next_7_days_preview')}>
       <div className="flex items-center gap-px">
         {days.map((fires, i) => (
           <div
             key={i}
             className={`w-2 h-3 rounded-[1px] ${fires ? fillOn : fillOff}`}
-            title={fires ? 'Fires this day' : 'No fire'}
+            title={fires ? t('reports_schedule_fires_this_day') : t('reports_schedule_no_fire')}
           />
         ))}
       </div>

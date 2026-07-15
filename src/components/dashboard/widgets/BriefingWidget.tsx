@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus, RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { SigmaCanvas } from '../../canvas/SigmaCanvas';
 import { CitationPopover } from '../../wiki/CitationPopover';
 import { BriefingContent } from './BriefingContent';
@@ -17,12 +18,12 @@ import { FeaturedDropdown } from '../../reports/FeaturedDropdown';
 import { getTransport } from '../../../lib/transport';
 import { formatRelativeDate } from '../../../lib/date';
 
-function greeting(date: Date): string {
+function greeting(t: (key: string) => string, date: Date): string {
   const h = date.getHours();
-  if (h < 5) return 'Working late';
-  if (h < 12) return 'Good morning';
-  if (h < 18) return 'Good afternoon';
-  return 'Good evening';
+  if (h < 5) return t('dashboard_working_late');
+  if (h < 12) return t('dashboard_good_morning');
+  if (h < 18) return t('dashboard_good_afternoon');
+  return t('dashboard_good_evening');
 }
 
 function withinHours(iso: string, hours: number): boolean {
@@ -46,6 +47,7 @@ function formatToday(date: Date): string {
  * runNow path also schedules a fallback fetch in case the websocket missed.
  */
 export function BriefingWidget() {
+  const { t } = useTranslation();
   const atoms = useAtomsStore(s => s.atoms);
   const createAtom = useAtomsStore(s => s.createAtom);
   const suggestedArticles = useWikiStore(s => s.suggestedArticles);
@@ -146,20 +148,20 @@ export function BriefingWidget() {
   }, [atoms, articles]);
 
   const now = new Date();
-  const hello = greeting(now);
+  const hello = greeting(t, now);
 
   const chips: string[] = [
-    `${stats.newAtoms24h} new today`,
-    `${stats.newAtoms7d} this week`,
-    `${stats.wikiCount} wiki${stats.wikiCount === 1 ? '' : 's'}`,
-    `${suggestedArticles.length} suggested`,
+    `${stats.newAtoms24h} ${t('dashboard_new_today')}`,
+    `${stats.newAtoms7d} ${t('dashboard_this_week')}`,
+    `${stats.wikiCount} ${stats.wikiCount === 1 ? t('dashboard_wiki') : t('dashboard_wikis')}`,
+    `${suggestedArticles.length} ${t('dashboard_suggested')}`,
   ];
 
   const hasFinding = active !== null;
   const canGoNewer = activeIndex > 0;
   const canGoOlder = activeIndex < history.length - 1;
   const eyebrowLabel = hasFinding
-    ? `BRIEFING · ${formatRelativeDate(active!.finding.created_at).toUpperCase()}`
+    ? `${t('dashboard_briefing')} · ${formatRelativeDate(active!.finding.created_at).toUpperCase()}`
     : formatToday(now);
 
   // Run Now is gated on having a featured report; without one we still
@@ -174,7 +176,7 @@ export function BriefingWidget() {
             <button
               onClick={() => navigate(1)}
               disabled={!canGoOlder || isLoading}
-              title="Older briefing"
+              title={t('dashboard_older_briefing')}
               className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <ChevronLeft className="w-4 h-4" strokeWidth={2} />
@@ -182,7 +184,7 @@ export function BriefingWidget() {
             <button
               onClick={() => navigate(-1)}
               disabled={!canGoNewer || isLoading}
-              title="Newer briefing"
+              title={t('dashboard_newer_briefing')}
               className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <ChevronRight className="w-4 h-4" strokeWidth={2} />
@@ -194,7 +196,7 @@ export function BriefingWidget() {
           <button
             onClick={() => runNow()}
             disabled={isRunning}
-            title="Regenerate briefing now"
+            title={t('dashboard_regenerate_briefing')}
             className="ml-1 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors disabled:opacity-50 disabled:cursor-wait"
           >
             <RefreshCw className={`w-3 h-3 ${isRunning ? 'animate-spin' : ''}`} strokeWidth={2} />
@@ -238,7 +240,7 @@ export function BriefingWidget() {
           className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-[var(--color-accent)] text-white text-sm font-medium hover:bg-[var(--color-accent-hover)] transition-colors"
         >
           <Plus className="w-4 h-4" strokeWidth={2.5} />
-          Capture another atom
+          {t('dashboard_capture_another')}
         </button>
       )}
 

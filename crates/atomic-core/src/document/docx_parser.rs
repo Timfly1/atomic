@@ -241,6 +241,7 @@ fn extract_text_with_images(
     let mut in_cell = false;
     let mut cell_content = String::new();
     let mut table_cells: Vec<String> = Vec::new();
+    let mut row_cells: Vec<String> = Vec::new();
 
     // Formatting state
     let mut is_bold = false;
@@ -384,7 +385,7 @@ fn extract_text_with_images(
                     "w:tbl" => {
                         in_table = false;
                         if !table_cells.is_empty() {
-                            let max_cols = table_cells.iter().map(|row| row.matches('|').count()).max().unwrap_or(0).max(1);
+                            let max_cols = table_cells.iter().map(|row| row.matches('|').count()).max().unwrap_or(1).saturating_sub(1).max(1);
                             let separator = format!("|{}|", "---|".repeat(max_cols).trim_end_matches('|'));
                             let first_pipe = table_cells[0].find('|').unwrap_or(0);
                             let last_pipe = table_cells[0].rfind('|').unwrap_or(table_cells[0].len());
@@ -407,15 +408,18 @@ fn extract_text_with_images(
                     }
                     "w:tr" => {
                         if in_table {
-                            let row_text = cell_content.trim();
-                            if !row_text.is_empty() || table_cells.is_empty() {
-                                let row_str = format!("|{}|", row_text.replace('\n', " "));
+                            if !row_cells.is_empty() {
+                                let row_str = format!("|{}|", row_cells.join("|").replace('\n', " "));
                                 table_cells.push(row_str);
+                                row_cells.clear();
                             }
                         }
                     }
                     "w:tc" => {
                         in_cell = false;
+                        if in_table {
+                            row_cells.push(std::mem::take(&mut cell_content));
+                        }
                     }
                     _ => {}
                 }
@@ -462,30 +466,8 @@ fn extract_text_with_images(
 }
 
 /// Apply HTML inline formatting to text
-fn apply_formatting(text: &str, bold: bool, italic: bool, underline: bool, font_size: Option<u32>, color: Option<&str>) -> String {
-    let mut styled = text.to_string();
-
-    if let Some(c) = color {
-        styled = format!("<span style=\"color:{};\">{}</span>", c, styled);
-    }
-
-    if let Some(size) = font_size {
-        styled = format!("<span style=\"font-size:{}pt;\">{}</span>", size, styled);
-    }
-
-    if underline {
-        styled = format!("<u>{}</u>", styled);
-    }
-
-    if italic {
-        styled = format!("<i>{}</i>", styled);
-    }
-
-    if bold {
-        styled = format!("<b>{}</b>", styled);
-    }
-
-    styled
+fn apply_formatting(text: &str, _bold: bool, _italic: bool, _underline: bool, _font_size: Option<u32>, _color: Option<&str>) -> String {
+    text.to_string()
 }
 
 /// Extract metadata from docProps/core.xml

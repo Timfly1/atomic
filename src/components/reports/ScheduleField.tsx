@@ -1,4 +1,5 @@
 import { memo, useMemo, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CustomSelect } from '../ui/CustomSelect';
 import { getBrowserTimeZone, getSupportedTimeZones } from '../../lib/tz';
 
@@ -194,6 +195,8 @@ export const ScheduleField = memo(function ScheduleField({
   onChange,
   embedded = false,
 }: ScheduleFieldProps) {
+  const { t } = useTranslation();
+
   const initial = useMemo(() => detectPreset(cron), [cron]);
   const [preset, setPreset] = useState<Preset>(initial.preset);
   const [hour, setHour] = useState(initial.hour);
@@ -251,7 +254,7 @@ export const ScheduleField = memo(function ScheduleField({
     <div className={embedded ? '' : 'flex flex-col gap-3'}>
       {!embedded && (
         <label className="text-xs font-medium uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">
-          Schedule
+          {t('reports_schedule')}
         </label>
       )}
 
@@ -261,7 +264,7 @@ export const ScheduleField = memo(function ScheduleField({
             value={preset}
             onChange={(v) => setPreset(v as Preset)}
             options={(['daily', 'weekdays', 'weekly', 'hourly', 'custom'] as Preset[]).map(p => ({
-              value: p, label: PRESET_LABELS[p],
+              value: p, label: t('reports_schedule_' + p),
             }))}
           />
         </div>
@@ -276,7 +279,7 @@ export const ScheduleField = memo(function ScheduleField({
               <CustomSelect
                 value={String(weekday)}
                 onChange={(v) => setWeekday(Number(v))}
-                options={WEEKDAY_LABELS.map((label, i) => ({ value: String(i), label }))}
+                options={([0, 1, 2, 3, 4, 5, 6]).map(i => ({ value: String(i), label: t('reports_schedule_' + ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][i]) }))}
               />
             </div>
             <TimeOfDayInput hour={hour} minute={minute} onChange={(h, m) => { setHour(h); setMinute(m); }} />
@@ -284,7 +287,7 @@ export const ScheduleField = memo(function ScheduleField({
         )}
 
         {preset === 'hourly' && (
-          <span className="text-xs text-[var(--color-text-tertiary)]">at the top of every hour</span>
+          <span className="text-xs text-[var(--color-text-tertiary)]">{t('reports_schedule_at_top_of_every_hour')}</span>
         )}
 
         {preset === 'custom' && (
@@ -307,7 +310,7 @@ export const ScheduleField = memo(function ScheduleField({
 
       <div className="flex flex-wrap items-center gap-2">
         <label className="text-[10px] uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">
-          Timezone
+          {t('reports_schedule_timezone')}
         </label>
         <input
           type="text"
@@ -330,18 +333,18 @@ export const ScheduleField = memo(function ScheduleField({
       {/* Always-visible canonical cron, mono, beneath the picker. Doubles
           as a "what-am-I-emitting" tell when debugging schedules. */}
       <div className="flex items-baseline gap-2">
-        <span className="text-[10px] uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">Cron</span>
+        <span className="text-[10px] uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">{t('reports_schedule_cron')}</span>
         <code className="font-mono text-[12px] text-[var(--color-text-secondary)] tabular-nums">
-          {previewCron || <span className="opacity-50">(empty)</span>}
+          {previewCron || <span className="opacity-50">{t('reports_schedule_empty')}</span>}
         </code>
         {!previewValid && customCron && (
-          <span className="text-[11px] text-red-400">Invalid cron format</span>
+          <span className="text-[11px] text-red-400">{t('reports_schedule_invalid_cron')}</span>
         )}
       </div>
 
       {previewFires && previewFires.length > 0 && (
         <div className="flex flex-col gap-0.5">
-          <span className="text-[10px] uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">Next 3 fires</span>
+          <span className="text-[10px] uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">{t('reports_schedule_next_fires')}</span>
           {previewFires.map((d, i) => (
             <span key={i} className="font-mono text-[11px] text-[var(--color-text-secondary)] tabular-nums">
               {formatFire(d, resolvedTz)}
@@ -351,7 +354,7 @@ export const ScheduleField = memo(function ScheduleField({
       )}
 
       {previewValid && previewFires !== null && previewFires.length === 0 && (
-        <span className="text-[11px] text-[var(--color-text-tertiary)]">No fires in the next 7 days.</span>
+        <span className="text-[11px] text-[var(--color-text-tertiary)]">{t('reports_schedule_no_fires')}</span>
       )}
     </div>
   );

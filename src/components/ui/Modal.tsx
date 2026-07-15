@@ -1,6 +1,7 @@
 import { ReactNode, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from './Button';
 
 interface ModalProps {
@@ -31,14 +32,17 @@ export function Modal({
   onClose,
   title,
   children,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   onConfirm,
   confirmVariant = 'primary',
   confirmDisabled = false,
   showFooter = true,
   width = 'md',
 }: ModalProps) {
+  const { t } = useTranslation();
+  const defaultConfirmLabel = t('common_confirm');
+  const defaultCancelLabel = t('common_cancel');
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -90,11 +94,11 @@ export function Modal({
         {showFooter && (
           <div className="flex justify-end gap-3 px-6 py-4 border-t border-[var(--color-border)] flex-shrink-0">
             <Button variant="secondary" onClick={onClose}>
-              {cancelLabel}
+              {cancelLabel ?? defaultCancelLabel}
             </Button>
             {onConfirm && (
               <Button variant={confirmVariant} onClick={onConfirm} disabled={confirmDisabled}>
-                {confirmLabel}
+                {confirmLabel ?? defaultConfirmLabel}
               </Button>
             )}
           </div>

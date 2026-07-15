@@ -763,8 +763,12 @@ async fn backfill_setup_claimed_at(
 
 fn build_cors(public_url: Option<&str>) -> Cors {
     let public_origin = public_url.and_then(origin_from_url);
+    let allow_all = std::env::var("ALLOW_ALL_CORS").is_ok();
     Cors::default()
         .allowed_origin_fn(move |origin, _req_head| {
+            if allow_all {
+                return true;
+            }
             let Ok(origin) = origin.to_str() else {
                 return false;
             };

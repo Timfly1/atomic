@@ -1,6 +1,7 @@
 import { useState, useRef, useMemo, useEffect, MouseEvent } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Pencil, Plus, Trash2, Inbox, Search, FileText } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { TagNode } from './TagNode';
 import { ContextMenu } from '../ui/ContextMenu';
 import { Modal } from '../ui/Modal';
@@ -50,6 +51,8 @@ interface TagTreeProps {
 }
 
 export function TagTree({ onOpenTagSettings }: TagTreeProps = {}) {
+  const { t } = useTranslation();
+
   const tags = useTagsStore(s => s.tags);
   const isLoading = useTagsStore(s => s.isLoading);
   const createTag = useTagsStore(s => s.createTag);
@@ -183,7 +186,7 @@ export function TagTree({ onOpenTagSettings }: TagTreeProps = {}) {
   const contextMenuItems = contextMenu.tag
     ? [
         {
-          label: 'New Atom Here',
+          label: t('tags_context_new_atom'),
           onClick: async () => {
             const createAtom = useAtomsStore.getState().createAtom;
             const openReaderEditing = useUIStore.getState().openReaderEditing;
@@ -195,7 +198,7 @@ export function TagTree({ onOpenTagSettings }: TagTreeProps = {}) {
           ),
         },
         {
-          label: 'Rename',
+          label: t('tags_context_rename'),
           onClick: () => {
             setRenameModal({
               isOpen: true,
@@ -208,7 +211,7 @@ export function TagTree({ onOpenTagSettings }: TagTreeProps = {}) {
           ),
         },
         {
-          label: 'Add Child Tag',
+          label: t('tags_context_add_child'),
           onClick: () => {
             setNewTagModal({
               isOpen: true,
@@ -221,7 +224,7 @@ export function TagTree({ onOpenTagSettings }: TagTreeProps = {}) {
           ),
         },
         {
-          label: 'Delete',
+          label: t('tags_context_delete'),
           onClick: () => {
             setDeleteModal({
               isOpen: true,
@@ -249,13 +252,13 @@ export function TagTree({ onOpenTagSettings }: TagTreeProps = {}) {
         onClick={() => handleSelectTag(null)}
       >
         <Inbox className="w-4 h-4" strokeWidth={2} />
-        <span className="flex-1 text-sm font-medium">All Atoms</span>
+        <span className="flex-1 text-sm font-medium">{t('tags_all_atoms')}</span>
       </div>
 
       {/* Tags header with search button */}
       <div className="flex items-center justify-between px-3 py-2 shrink-0">
         <span className="text-xs font-semibold text-[var(--color-text-tertiary)] uppercase tracking-wider">
-          Tags
+          {t('tags_title')}
         </span>
         <button
           onClick={(e) => {
@@ -263,7 +266,7 @@ export function TagTree({ onOpenTagSettings }: TagTreeProps = {}) {
             openSearchPalette('#');
           }}
           className="p-1 rounded hover:bg-[var(--color-bg-hover)] text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
-          title="Search tags"
+          title={t('tags_search_title')}
         >
           <Search className="w-4 h-4" strokeWidth={2} />
         </button>
@@ -283,14 +286,14 @@ export function TagTree({ onOpenTagSettings }: TagTreeProps = {}) {
         ) : tags.length === 0 ? (
           <div className="px-3 py-4 space-y-3">
             <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-              No tag categories are configured for this database, so auto-tagging is off. Set up categories to let Atomic tag your atoms automatically.
+              {t('tags_empty_no_categories')}
             </p>
             {onOpenTagSettings && (
               <button
                 onClick={onOpenTagSettings}
                 className="w-full px-3 py-1.5 text-xs font-medium rounded bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] transition-colors"
               >
-                Configure categories
+                {t('tags_configure_categories')}
               </button>
             )}
           </div>
@@ -304,6 +307,7 @@ export function TagTree({ onOpenTagSettings }: TagTreeProps = {}) {
               return (
                 <div
                   key={loadMoreParentId ? `load-more-${loadMoreParentId}` : tag.id}
+                  className="tag-node-item"
                   style={{
                     position: 'absolute',
                     top: 0,
@@ -320,7 +324,7 @@ export function TagTree({ onOpenTagSettings }: TagTreeProps = {}) {
                       onClick={() => fetchMoreTagChildren(loadMoreParentId)}
                     >
                       <span className="w-4" />
-                      <span>{loadMoreRemaining?.toLocaleString()} more tags...</span>
+                      <span>{loadMoreRemaining?.toLocaleString()} {t('tags_more_tags')}</span>
                     </div>
                   ) : (
                     <TagNode
@@ -329,6 +333,7 @@ export function TagTree({ onOpenTagSettings }: TagTreeProps = {}) {
                       selectedTagId={selectedTagId}
                       onSelect={handleSelectTag}
                       onContextMenu={handleContextMenu}
+                      onDelete={deleteTag}
                     />
                   )}
                 </div>
@@ -345,7 +350,7 @@ export function TagTree({ onOpenTagSettings }: TagTreeProps = {}) {
           onClick={() => setNewTagModal({ isOpen: true, parentId: null, name: '' })}
         >
           <Plus className="w-3.5 h-3.5" strokeWidth={2} />
-          New Tag
+          {t('tags_new_tag')}
         </button>
       </div>
 
@@ -360,15 +365,15 @@ export function TagTree({ onOpenTagSettings }: TagTreeProps = {}) {
       <Modal
         isOpen={renameModal.isOpen}
         onClose={() => setRenameModal({ isOpen: false, tag: null, name: '' })}
-        title="Rename Tag"
-        confirmLabel="Rename"
+        title={t('tags_rename_title')}
+        confirmLabel={t('tags_rename_confirm')}
         onConfirm={handleRename}
       >
         <Input
-          label="Tag Name"
+          label={t('tags_name_label')}
           value={renameModal.name}
           onChange={(e) => setRenameModal((prev) => ({ ...prev, name: e.target.value }))}
-          placeholder="Enter tag name"
+          placeholder={t('tags_name_placeholder')}
           autoFocus
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
@@ -382,13 +387,13 @@ export function TagTree({ onOpenTagSettings }: TagTreeProps = {}) {
       <Modal
         isOpen={deleteModal.isOpen}
         onClose={() => setDeleteModal({ isOpen: false, tag: null, recursive: false })}
-        title="Delete Tag"
-        confirmLabel="Delete"
+        title={t('tags_delete_title')}
+        confirmLabel={t('tags_delete_confirm')}
         confirmVariant="danger"
         onConfirm={handleDelete}
       >
         <p>
-          Are you sure you want to delete the tag "{deleteModal.tag?.name}"?
+          {t('tags_delete_message', { name: deleteModal.tag?.name })}
         </p>
         {deleteModal.tag && deleteModal.tag.children.length > 0 && (
           <div className="mt-3 space-y-2">
@@ -401,7 +406,7 @@ export function TagTree({ onOpenTagSettings }: TagTreeProps = {}) {
                 className="accent-[var(--color-accent)]"
               />
               <span className="text-sm text-[var(--color-text-primary)]">
-                Delete only this tag (children move to root)
+                {t('tags_delete_only_this')}
               </span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
@@ -413,7 +418,7 @@ export function TagTree({ onOpenTagSettings }: TagTreeProps = {}) {
                 className="accent-[var(--color-accent)]"
               />
               <span className="text-sm text-[var(--color-text-primary)]">
-                Delete this tag and all {deleteModal.tag.children_total} descendant{deleteModal.tag.children_total !== 1 ? 's' : ''}
+                {t('tags_delete_with_descendants', { count: deleteModal.tag.children_total })}
               </span>
             </label>
           </div>
@@ -424,15 +429,15 @@ export function TagTree({ onOpenTagSettings }: TagTreeProps = {}) {
       <Modal
         isOpen={newTagModal.isOpen}
         onClose={() => setNewTagModal({ isOpen: false, parentId: null, name: '' })}
-        title={newTagModal.parentId ? 'New Child Tag' : 'New Tag'}
-        confirmLabel="Create"
+        title={newTagModal.parentId ? t('tags_new_child_title') : t('tags_new_tag_title')}
+        confirmLabel={t('tags_create_confirm')}
         onConfirm={handleCreateTag}
       >
         <Input
-          label="Tag Name"
+          label={t('tags_name_label')}
           value={newTagModal.name}
           onChange={(e) => setNewTagModal((prev) => ({ ...prev, name: e.target.value }))}
-          placeholder="Enter tag name"
+          placeholder={t('tags_name_placeholder')}
           autoFocus
           onKeyDown={(e) => {
             if (e.key === 'Enter') {

@@ -9,6 +9,7 @@ import {
   Plug,
   Rss,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/Button';
 import {
   createApiToken,
@@ -43,7 +44,43 @@ interface OptionMeta {
   subtitle: string;
 }
 
+function getMeta(t: (key: string) => string): Record<OptionId, OptionMeta> {
+  return {
+    url: {
+      id: 'url',
+      Icon: Link2,
+      title: t('dashboard_capture_url_title'),
+      subtitle: t('dashboard_capture_url_subtitle'),
+    },
+    feed: {
+      id: 'feed',
+      Icon: Rss,
+      title: t('dashboard_subscribe_feed_title'),
+      subtitle: t('dashboard_subscribe_feed_subtitle'),
+    },
+    markdown: {
+      id: 'markdown',
+      Icon: FolderOpen,
+      title: t('dashboard_import_markdown_title'),
+      subtitle: t('dashboard_import_markdown_subtitle'),
+    },
+    'apple-notes': {
+      id: 'apple-notes',
+      Icon: NotebookPen,
+      title: t('dashboard_import_apple_notes_title'),
+      subtitle: t('dashboard_import_apple_notes_subtitle'),
+    },
+    mcp: {
+      id: 'mcp',
+      Icon: Plug,
+      title: t('dashboard_connect_mcp_title'),
+      subtitle: t('dashboard_connect_mcp_subtitle'),
+    },
+  };
+}
+
 export function CaptureOptions() {
+  const { t } = useTranslation();
   const [openId, setOpenId] = useState<OptionId | null>(null);
 
   const ids: OptionId[] = ['url', 'feed'];
@@ -51,44 +88,13 @@ export function CaptureOptions() {
   if (isDesktopApp() && isMacOS()) ids.push('apple-notes');
   ids.push('mcp');
 
-  const META: Record<OptionId, OptionMeta> = {
-    url: {
-      id: 'url',
-      Icon: Link2,
-      title: 'Capture a URL',
-      subtitle: 'Save any web page as an atom',
-    },
-    feed: {
-      id: 'feed',
-      Icon: Rss,
-      title: 'Subscribe to an RSS feed',
-      subtitle: 'Poll a feed and capture new items in the background',
-    },
-    markdown: {
-      id: 'markdown',
-      Icon: FolderOpen,
-      title: 'Import a markdown folder',
-      subtitle: 'Load a folder of .md files as atoms',
-    },
-    'apple-notes': {
-      id: 'apple-notes',
-      Icon: NotebookPen,
-      title: 'Import from Apple Notes',
-      subtitle: 'Bring your Apple Notes library into Atomic',
-    },
-    mcp: {
-      id: 'mcp',
-      Icon: Plug,
-      title: 'Connect an MCP client',
-      subtitle: 'Use Atomic from Claude Desktop or any MCP client',
-    },
-  };
+  const META = getMeta(t);
 
   return (
     <section className="mt-12">
       <header className="flex items-center gap-3 mb-1 h-5">
         <h3 className="text-[11px] leading-none font-medium uppercase tracking-[0.14em] text-[var(--color-text-tertiary)] whitespace-nowrap">
-          More ways to capture
+          {t('dashboard_more_ways_to_capture')}
         </h3>
         <div className="flex-1 h-px bg-[var(--color-border)]" />
       </header>
@@ -154,6 +160,7 @@ function OptionBody({ id }: { id: OptionId }) {
 // ---------------------------------------------------------------- URL ----
 
 function UrlBody() {
+  const { t } = useTranslation();
   const [url, setUrl] = useState('');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ ok: true; title: string } | { ok: false; error: string } | null>(null);
@@ -183,16 +190,16 @@ function UrlBody() {
           value={url}
           onChange={e => setUrl(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') submit(); }}
-          placeholder="https://..."
+          placeholder={t('dashboard_url_placeholder')}
           className="flex-1 bg-[var(--color-bg-main)] border border-[var(--color-border)] rounded px-3 py-1.5 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]"
           autoFocus
         />
         <Button size="sm" onClick={submit} disabled={busy || !url.trim()}>
-          {busy ? 'Saving…' : 'Capture'}
+          {busy ? t('dashboard_saving') : t('dashboard_capture_button')}
         </Button>
       </div>
       {result?.ok && (
-        <div className="text-[12px] text-emerald-400">Saved: {result.title || 'Untitled'}</div>
+        <div className="text-[12px] text-emerald-400">{t('dashboard_saved')} {result.title || t('dashboard_untitled')}</div>
       )}
       {result && !result.ok && (
         <div className="text-[12px] text-red-400">{result.error}</div>
@@ -204,6 +211,7 @@ function UrlBody() {
 // --------------------------------------------------------------- Feed ----
 
 function FeedBody() {
+  const { t } = useTranslation();
   const [url, setUrl] = useState('');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ ok: true; title: string | null } | { ok: false; error: string } | null>(null);
@@ -231,19 +239,19 @@ function FeedBody() {
           value={url}
           onChange={e => setUrl(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') submit(); }}
-          placeholder="https://example.com/feed.xml"
+          placeholder={t('dashboard_feed_placeholder')}
           className="flex-1 bg-[var(--color-bg-main)] border border-[var(--color-border)] rounded px-3 py-1.5 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]"
           autoFocus
         />
         <Button size="sm" onClick={submit} disabled={busy || !url.trim()}>
-          {busy ? 'Adding…' : 'Subscribe'}
+          {busy ? t('dashboard_adding') : t('dashboard_subscribe_button')}
         </Button>
       </div>
       <p className="text-[12px] text-[var(--color-text-tertiary)]">
-        Polls hourly by default. Tune intervals and tags in Settings&nbsp;→&nbsp;Feeds.
+        {t('dashboard_feed_poll_hint')}
       </p>
       {result?.ok && (
-        <div className="text-[12px] text-emerald-400">Subscribed{result.title ? `: ${result.title}` : ''}.</div>
+        <div className="text-[12px] text-emerald-400">{t('dashboard_subscribed')}{result.title ? `: ${result.title}` : ''}.</div>
       )}
       {result && !result.ok && (
         <div className="text-[12px] text-red-400">{result.error}</div>
@@ -255,6 +263,7 @@ function FeedBody() {
 // ------------------------------------------------------------ Markdown ----
 
 function MarkdownBody() {
+  const { t } = useTranslation();
   const [importTags, setImportTags] = useState(true);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<{ processed: number; total: number } | null>(null);
@@ -293,11 +302,11 @@ function MarkdownBody() {
           onChange={e => setImportTags(e.target.checked)}
           className="accent-[var(--color-accent)]"
         />
-        Turn folders and frontmatter into tags
+        {t('dashboard_turn_folders_into_tags')}
       </label>
       <div>
         <Button size="sm" variant="secondary" onClick={choose} disabled={busy}>
-          {busy ? 'Importing…' : 'Choose folder…'}
+          {busy ? t('dashboard_importing') : t('dashboard_choose_folder')}
         </Button>
       </div>
       {progress && progress.total > 0 && (
@@ -307,8 +316,8 @@ function MarkdownBody() {
       )}
       {result && (
         <div className="text-[12px] text-emerald-400">
-          Imported {result.imported} atom{result.imported === 1 ? '' : 's'}
-          {result.skipped ? ` · skipped ${result.skipped}` : ''}.
+          {t('dashboard_imported')} {result.imported} atom{result.imported === 1 ? '' : 's'}
+          {result.skipped ? ` · ${t('dashboard_skipped')} ${result.skipped}` : ''}.
         </div>
       )}
       {error && <div className="text-[12px] text-red-400">{error}</div>}
@@ -319,6 +328,7 @@ function MarkdownBody() {
 // ---------------------------------------------------------- Apple Notes ----
 
 function AppleNotesBody() {
+  const { t } = useTranslation();
   const [importTags, setImportTags] = useState(true);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<{ processed: number; total: number } | null>(null);
@@ -359,13 +369,13 @@ function AppleNotesBody() {
     <div className="space-y-3">
       {error?.kind === 'permissionDenied' ? (
         <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-[12px] text-amber-200 space-y-2">
-          <div>Atomic needs <strong>Full Disk Access</strong> to read the Apple Notes database.</div>
+          <div>{t('dashboard_apple_notes_permission_title')}</div>
           <div className="flex gap-2">
             <Button size="sm" variant="secondary" onClick={openPrivacyPrefs}>
-              Open System Settings
+              {t('dashboard_open_system_settings')}
             </Button>
             <Button size="sm" onClick={run} disabled={busy}>
-              Try again
+              {t('dashboard_try_again')}
             </Button>
           </div>
         </div>
@@ -378,11 +388,11 @@ function AppleNotesBody() {
               onChange={e => setImportTags(e.target.checked)}
               className="accent-[var(--color-accent)]"
             />
-            Turn Apple Notes folders into tags
+            {t('dashboard_turn_apple_notes_folders_into_tags')}
           </label>
           <div>
             <Button size="sm" variant="secondary" onClick={run} disabled={busy}>
-              {busy ? 'Importing…' : 'Import notes'}
+              {busy ? t('dashboard_importing') : t('dashboard_import_notes')}
             </Button>
           </div>
         </>
@@ -394,8 +404,8 @@ function AppleNotesBody() {
       )}
       {result && (
         <div className="text-[12px] text-emerald-400">
-          Imported {result.imported} note{result.imported === 1 ? '' : 's'}
-          {result.skipped ? ` · skipped ${result.skipped}` : ''}.
+          {t('dashboard_imported')} {result.imported} note{result.imported === 1 ? '' : 's'}
+          {result.skipped ? ` · ${t('dashboard_skipped')} ${result.skipped}` : ''}.
         </div>
       )}
       {error && error.kind !== 'permissionDenied' && (
@@ -410,6 +420,7 @@ function AppleNotesBody() {
 type McpConfigShape = McpStdioConfig | McpHttpConfig;
 
 function McpBody() {
+  const { t } = useTranslation();
   const local = isDesktopApp() && isLocalServer();
   const [config, setConfig] = useState<McpConfigShape | null>(null);
   const [busy, setBusy] = useState(false);
@@ -464,11 +475,11 @@ function McpBody() {
         <>
           <p className="text-[12px] text-[var(--color-text-tertiary)]">
             {local
-              ? 'The MCP bridge is bundled with the desktop app — no token required.'
-              : 'Generate an API token so your MCP client can authenticate to this server.'}
+              ? t('dashboard_mcp_local_description')
+              : t('dashboard_mcp_remote_description')}
           </p>
           <Button size="sm" variant="secondary" onClick={local ? loadLocal : loadRemote} disabled={busy}>
-            {busy ? 'Preparing…' : local ? 'Show config' : 'Generate config'}
+            {busy ? t('dashboard_preparing') : local ? t('dashboard_show_config') : t('dashboard_generate_config')}
           </Button>
           {error && <div className="text-[12px] text-red-400">{error}</div>}
         </>
@@ -476,7 +487,7 @@ function McpBody() {
         <div className="space-y-2">
           {!local && (
             <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-[11px] text-amber-200">
-              Copy this now — the token won&apos;t be shown again.
+              {t('dashboard_copy_token_warning')}
             </div>
           )}
           <div className="relative">
@@ -486,7 +497,7 @@ function McpBody() {
             <button
               onClick={copy}
               className="absolute top-2 right-2 p-1.5 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors"
-              title="Copy to clipboard"
+              title={t('dashboard_copy_to_clipboard')}
             >
               {copied ? (
                 <Check className="w-3.5 h-3.5 text-emerald-400" strokeWidth={2} />
@@ -496,7 +507,7 @@ function McpBody() {
             </button>
           </div>
           <p className="text-[11px] text-[var(--color-text-tertiary)]">
-            Paste into your MCP client config (e.g. Claude Desktop&nbsp;→&nbsp;Developer&nbsp;→&nbsp;Edit Config), then restart the client.
+            {t('dashboard_mcp_config_hint')}
           </p>
         </div>
       )}

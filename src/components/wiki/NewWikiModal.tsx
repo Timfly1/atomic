@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { AlertTriangle, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Modal } from '../ui/Modal';
 import { useTagsStore, TagWithCount } from '../../stores/tags';
 import { useWikiStore } from '../../stores/wiki';
@@ -83,6 +84,7 @@ interface FlatTag {
 }
 
 export function NewWikiModal({ isOpen, onClose }: NewWikiModalProps) {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<FlatTag | null>(null);
   const allTags = useTagsStore(s => s.tags);
@@ -186,14 +188,14 @@ export function NewWikiModal({ isOpen, onClose }: NewWikiModalProps) {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="New Wiki Page"
+      title={t('wiki_new_page_title')}
       showFooter={false}
     >
       <div className="space-y-4">
         {/* Search input */}
         <div>
           <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
-            Select a tag
+            {t('wiki_select_tag')}
           </label>
           <input
             ref={inputRef}
@@ -204,7 +206,7 @@ export function NewWikiModal({ isOpen, onClose }: NewWikiModalProps) {
               setSelectedTag(null); // Clear selection when typing
             }}
             onKeyDown={handleKeyDown}
-            placeholder="Search tags..."
+            placeholder={t('wiki_search_tags_placeholder')}
             autoComplete="off"
             autoCorrect="off"
             autoCapitalize="off"
@@ -231,17 +233,17 @@ export function NewWikiModal({ isOpen, onClose }: NewWikiModalProps) {
                     <span className="flex items-center gap-2 text-xs text-[var(--color-text-tertiary)]">
                       {hasArticle && (
                         <span className="px-1.5 py-0.5 rounded bg-[var(--color-accent)]/20 text-[var(--color-accent-light)]">
-                          Has article
+                          {t('wiki_has_article')}
                         </span>
                       )}
-                      <span>{tag.atomCount} atoms</span>
+                      <span>{t('wiki_atoms_count', { count: tag.atomCount })}</span>
                     </span>
                   </button>
                 );
               })
             ) : (
               <div className="px-3 py-4 text-sm text-[var(--color-text-secondary)] text-center">
-                No matching tags with atoms found
+                {t('wiki_no_matching_tags')}
               </div>
             )}
           </div>
@@ -252,17 +254,17 @@ export function NewWikiModal({ isOpen, onClose }: NewWikiModalProps) {
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-amber-500">
                   <AlertTriangle className="w-5 h-5" strokeWidth={2} />
-                  <span className="font-medium">Article already exists</span>
+                  <span className="font-medium">{t('wiki_article_already_exists')}</span>
                 </div>
                 <p className="text-sm text-[var(--color-text-secondary)]">
-                  A wiki article for "{selectedTag.name}" has already been generated. You can view it or choose a different tag.
+                  {t('wiki_article_exists_description', { tagName: selectedTag.name })}
                 </p>
                 <div className="flex gap-2">
                   <button
                     onClick={handleViewExisting}
                     className="flex-1 px-4 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-lg transition-colors"
                   >
-                    View Article
+                    {t('wiki_view_article')}
                   </button>
                   <button
                     onClick={() => {
@@ -271,7 +273,7 @@ export function NewWikiModal({ isOpen, onClose }: NewWikiModalProps) {
                     }}
                     className="px-4 py-2 border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-lg hover:bg-[var(--color-bg-hover)] transition-colors"
                   >
-                    Choose Different Tag
+                    {t('wiki_choose_different_tag')}
                   </button>
                 </div>
               </div>
@@ -280,10 +282,10 @@ export function NewWikiModal({ isOpen, onClose }: NewWikiModalProps) {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-[var(--color-text-primary)]">{selectedTag.name}</span>
-                  <span className="text-xs text-[var(--color-text-tertiary)]">{selectedTag.atomCount} atoms</span>
+                  <span className="text-xs text-[var(--color-text-tertiary)]">{t('wiki_atoms_count', { count: selectedTag.atomCount })}</span>
                 </div>
                 <p className="text-sm text-[var(--color-text-secondary)]">
-                  Generate a wiki article synthesizing knowledge from atoms tagged with "{selectedTag.name}".
+                  {t('wiki_generate_description', { tagName: selectedTag.name })}
                 </p>
                 <div className="flex gap-2">
                   <button
@@ -294,10 +296,10 @@ export function NewWikiModal({ isOpen, onClose }: NewWikiModalProps) {
                     {isGenerating ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2} />
-                        Generating...
+                        {t('wiki_generating')}
                       </>
                     ) : (
-                      'Generate Article'
+                      t('wiki_generate_article')
                     )}
                   </button>
                   <button
@@ -308,7 +310,7 @@ export function NewWikiModal({ isOpen, onClose }: NewWikiModalProps) {
                     disabled={isGenerating}
                     className="px-4 py-2 border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-lg hover:bg-[var(--color-bg-hover)] transition-colors disabled:opacity-50"
                   >
-                    Back
+                    {t('wiki_back')}
                   </button>
                 </div>
               </div>

@@ -1289,11 +1289,17 @@ fn get_document_extension(content_type: &str) -> &'static str {
     }
 }
 
+#[derive(Deserialize)]
+pub struct DocumentUploadQuery {
+    pub filename: Option<String>,
+}
+
 #[utoipa::path(
     post,
     path = "/api/atoms/{id}/document",
     params(
         ("id" = String, Path, description = "Atom ID"),
+        ("filename" = Option<String>, Query, description = "Original filename"),
     ),
     request_body = String,
     responses(
@@ -1308,7 +1314,7 @@ pub async fn upload_atom_document(
     db: Db,
     path: web::Path<String>,
     body: web::Bytes,
-    filename: Option<String>,
+    query: web::Query<DocumentUploadQuery>,
 ) -> HttpResponse {
     let atom_id = path.into_inner();
 
@@ -1328,8 +1334,8 @@ pub async fn upload_atom_document(
     };
     let existing_content = existing_atom.atom.content.clone();
 
-    // Get filename from header or use default
-    let fname = filename.unwrap_or_else(|| "document".to_string());
+    // Get filename from query or use default
+    let fname = query.filename.clone().unwrap_or_else(|| "document".to_string());
 
     // Detect content type
     let content_type = match detect_document_content_type(&body, &fname) {

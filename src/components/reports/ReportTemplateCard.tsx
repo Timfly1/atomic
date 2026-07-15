@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FilePlus, LucideIcon } from 'lucide-react';
 import { ReportTemplate } from '../../lib/reportTemplates';
 
@@ -16,10 +17,11 @@ interface ReportTemplateCardProps {
 export const ReportTemplateCard = memo(function ReportTemplateCard({
   template, onClick,
 }: ReportTemplateCardProps) {
+  const { t } = useTranslation();
   const isBlank = !template;
   const Icon: LucideIcon = template?.icon ?? FilePlus;
-  const name = template?.body.name ?? 'Start blank';
-  const description = template?.description ?? 'Build a report from scratch with no presets.';
+  const name = template?.body.name ?? t('reports_template_start_blank');
+  const description = template?.description ?? t('reports_template_start_blank_description');
 
   return (
     <button

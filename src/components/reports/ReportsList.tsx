@@ -1,6 +1,8 @@
-import { memo, useRef } from 'react';
+import { memo, useRef, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Report, ReportFindingWithAtom } from '../../stores/reports';
+import { useUIStore } from '../../stores/ui';
 import { ReportRow } from './ReportRow';
 import { ReportTemplateGallery } from './ReportTemplateGallery';
 import { ReportTemplate } from '../../lib/reportTemplates';
@@ -35,7 +37,28 @@ export const ReportsList = memo(function ReportsList({
   onDelete,
   onPickTemplate,
 }: ReportsListProps) {
+  const { t } = useTranslation();
   const parentRef = useRef<HTMLDivElement>(null);
+  const savedScrollPosition = useUIStore((s) => s.reportsListScrollPosition);
+  const setReportsListScrollPosition = useUIStore((s) => s.setReportsListScrollPosition);
+
+  // Save scroll position on scroll
+  const handleScroll = useCallback(() => {
+    if (parentRef.current) {
+      setReportsListScrollPosition(parentRef.current.scrollTop);
+    }
+  }, [setReportsListScrollPosition]);
+
+  // Restore scroll position when component mounts
+  useEffect(() => {
+    if (parentRef.current && savedScrollPosition > 0) {
+      requestAnimationFrame(() => {
+        if (parentRef.current) {
+          parentRef.current.scrollTop = savedScrollPosition;
+        }
+      });
+    }
+  }, [savedScrollPosition]);
 
   const virtualizer = useVirtualizer({
     count: reports.length,
@@ -75,16 +98,16 @@ export const ReportsList = memo(function ReportsList({
     }
     return (
       <div className="flex flex-col items-center justify-center h-full text-center px-8">
-        <h3 className="text-lg font-medium text-[var(--color-text-primary)] mb-2">No reports yet</h3>
+        <h3 className="text-lg font-medium text-[var(--color-text-primary)] mb-2">{t('reports_empty')}</h3>
         <p className="text-sm text-[var(--color-text-secondary)] max-w-sm leading-relaxed">
-          Reports run on a schedule and produce findings that join your atoms.
+          {t('reports_empty_hint')}
         </p>
       </div>
     );
   }
 
   return (
-    <div ref={parentRef} className="h-full overflow-y-auto scrollbar-auto-hide">
+    <div ref={parentRef} className="h-full overflow-y-auto scrollbar-auto-hide" onScroll={handleScroll}>
       <div
         className="relative w-full"
         style={{ height: `${virtualizer.getTotalSize()}px` }}
@@ -94,7 +117,7 @@ export const ReportsList = memo(function ReportsList({
           return (
             <div
               key={report.id}
-              className="absolute left-0 right-0"
+              className="report-row-item absolute left-0 right-0"
               style={{
                 top: `${virtualRow.start}px`,
                 height: `${virtualRow.size}px`,

@@ -1,4 +1,5 @@
 import { useEffect, useCallback, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../../ui/Button';
 import { CustomSelect } from '../../ui/CustomSelect';
 import { SearchableSelect } from '../../ui/SearchableSelect';
@@ -23,6 +24,7 @@ interface AIProviderStepProps {
 }
 
 export function AIProviderStep({ state, dispatch }: AIProviderStepProps) {
+  const { t } = useTranslation();
   const testOpenRouterConnection = useSettingsStore(s => s.testOpenRouterConnection);
   const isDesktop = isDesktopApp();
   const [oauthLoading, setOauthLoading] = useState(false);
@@ -175,22 +177,22 @@ export function AIProviderStep({ state, dispatch }: AIProviderStepProps) {
   return (
     <div className="space-y-5 px-2">
       <div className="text-center mb-4">
-        <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-1">AI Provider</h2>
+        <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-1">{t('onboarding_ai_title')}</h2>
         <p className="text-sm text-[var(--color-text-secondary)]">
-          Choose your AI provider
+          {t('onboarding_ai_subtitle')}
         </p>
       </div>
 
       {/* Provider selector */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-[var(--color-text-primary)]">Provider</label>
+        <label className="block text-sm font-medium text-[var(--color-text-primary)]">{t('onboarding_ai_provider_label')}</label>
         <CustomSelect
           value={state.provider}
           onChange={(v) => dispatch({ type: 'SET_PROVIDER', value: v as 'openrouter' | 'ollama' | 'openai_compat' })}
           options={[
-            { value: 'openrouter', label: 'OpenRouter' },
-            { value: 'ollama', label: 'Ollama' },
-            { value: 'openai_compat', label: 'OpenAI Compatible' },
+            { value: 'openrouter', label: t('onboarding_ai_provider_openrouter') },
+            { value: 'ollama', label: t('onboarding_ai_provider_ollama') },
+            { value: 'openai_compat', label: t('onboarding_ai_provider_openai_compat') },
           ]}
         />
       </div>
@@ -205,7 +207,7 @@ export function AIProviderStep({ state, dispatch }: AIProviderStepProps) {
                 disabled={oauthLoading || state.testResult === 'success'}
                 className="w-full"
               >
-                {oauthLoading ? 'Waiting for OpenRouter...' : 'Sign in with OpenRouter'}
+                {oauthLoading ? t('onboarding_ai_sign_in_waiting') : t('onboarding_ai_sign_in_button')}
               </Button>
               {oauthError && (
                 <p className="text-sm text-red-500">{oauthError}</p>
@@ -215,7 +217,7 @@ export function AIProviderStep({ state, dispatch }: AIProviderStepProps) {
                   <div className="w-full border-t border-[var(--color-border)]" />
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="px-2 bg-[var(--color-bg-panel)] text-[var(--color-text-secondary)]">or enter key manually</span>
+                  <span className="px-2 bg-[var(--color-bg-panel)] text-[var(--color-text-secondary)]">{t('onboarding_ai_or_enter_manually')}</span>
                 </div>
               </div>
             </div>
@@ -223,37 +225,37 @@ export function AIProviderStep({ state, dispatch }: AIProviderStepProps) {
 
           {/* API Key */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-[var(--color-text-primary)]">API Key</label>
+            <label className="block text-sm font-medium text-[var(--color-text-primary)]">{t('onboarding_ai_api_key_label')}</label>
             <div className="flex gap-2">
               <input
                 type="password"
                 value={state.apiKey}
                 onChange={(e) => dispatch({ type: 'SET_API_KEY', value: e.target.value })}
-                placeholder="sk-or-..."
+                placeholder={t('onboarding_ai_api_key_placeholder')}
                 className="flex-1 px-3 py-2 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors duration-150 text-sm"
               />
               <Button variant="secondary" onClick={handleTestConnection} disabled={!state.apiKey.trim() || state.isTesting}>
-                {state.isTesting ? 'Testing...' : 'Test'}
+                {state.isTesting ? t('onboarding_ai_testing') : t('onboarding_ai_test_button')}
               </Button>
             </div>
             {state.testResult === 'success' && (
-              <p className="text-sm text-green-500">Connected successfully</p>
+              <p className="text-sm text-green-500">{t('onboarding_ai_connected_success')}</p>
             )}
             {state.testResult === 'error' && (
               <p className="text-sm text-red-500">{state.testError}</p>
             )}
             <p className="text-xs text-[var(--color-text-secondary)]">
-              Get an API key from <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="text-[var(--color-accent)] hover:underline">openrouter.ai/keys</a>
+              {t('onboarding_ai_get_key_link')} <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="text-[var(--color-accent)] hover:underline">openrouter.ai/keys</a>
             </p>
           </div>
 
           {/* Model configuration - only show after successful test */}
           {state.testResult === 'success' && (
             <div className="space-y-3 p-4 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg">
-              <h3 className="text-sm font-medium text-[var(--color-text-primary)]">Model Configuration</h3>
+              <h3 className="text-sm font-medium text-[var(--color-text-primary)]">{t('onboarding_ai_model_config')}</h3>
 
               <div className="space-y-2">
-                <label className="block text-xs text-[var(--color-text-secondary)]">Embedding Model</label>
+                <label className="block text-xs text-[var(--color-text-secondary)]">{t('onboarding_ai_embedding_model_label')}</label>
                 <SearchableSelect
                   value={state.embeddingModel}
                   onChange={(v) => dispatch({ type: 'SET_EMBEDDING_MODEL', value: v })}
@@ -261,40 +263,40 @@ export function AIProviderStep({ state, dispatch }: AIProviderStepProps) {
                     id: m.id,
                     name: `${m.name} (${m.dimension})`,
                   }))}
-                  placeholder="Select embedding model..."
+                  placeholder={t('onboarding_ai_embedding_model_placeholder')}
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="block text-xs text-[var(--color-text-secondary)]">Tagging Model</label>
+                <label className="block text-xs text-[var(--color-text-secondary)]">{t('onboarding_ai_tagging_model_label')}</label>
                 <SearchableSelect
                   value={state.taggingModel}
                   onChange={(v) => dispatch({ type: 'SET_TAGGING_MODEL', value: v })}
                   options={state.availableModels}
                   isLoading={state.isLoadingModels}
-                  placeholder="Select tagging model..."
+                  placeholder={t('onboarding_ai_tagging_model_placeholder')}
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="block text-xs text-[var(--color-text-secondary)]">Wiki Model</label>
+                <label className="block text-xs text-[var(--color-text-secondary)]">{t('onboarding_ai_wiki_model_label')}</label>
                 <SearchableSelect
                   value={state.wikiModel}
                   onChange={(v) => dispatch({ type: 'SET_WIKI_MODEL', value: v })}
                   options={state.availableModels}
                   isLoading={state.isLoadingModels}
-                  placeholder="Select wiki model..."
+                  placeholder={t('onboarding_ai_wiki_model_placeholder')}
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="block text-xs text-[var(--color-text-secondary)]">Chat Model</label>
+                <label className="block text-xs text-[var(--color-text-secondary)]">{t('onboarding_ai_chat_model_label')}</label>
                 <SearchableSelect
                   value={state.chatModel}
                   onChange={(v) => dispatch({ type: 'SET_CHAT_MODEL', value: v })}
                   options={state.availableModels}
                   isLoading={state.isLoadingModels}
-                  placeholder="Select chat model..."
+                  placeholder={t('onboarding_ai_chat_model_placeholder')}
                 />
               </div>
             </div>
@@ -306,12 +308,12 @@ export function AIProviderStep({ state, dispatch }: AIProviderStepProps) {
         <>
           {/* Ollama configuration */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-[var(--color-text-primary)]">Ollama Server URL</label>
+            <label className="block text-sm font-medium text-[var(--color-text-primary)]">{t('onboarding_ai_ollama_server_url_label')}</label>
             <input
               type="text"
               value={state.ollamaHost}
               onChange={(e) => dispatch({ type: 'SET_OLLAMA_HOST', value: e.target.value })}
-              placeholder="http://127.0.0.1:11434"
+              placeholder={t('onboarding_ai_ollama_server_url_placeholder')}
               className="w-full px-3 py-2 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors duration-150 text-sm"
             />
             <ConnectionStatus status={state.ollamaStatus} error={state.ollamaError} />
@@ -319,21 +321,21 @@ export function AIProviderStep({ state, dispatch }: AIProviderStepProps) {
 
           {state.ollamaStatus === 'connected' && (
             <div className="space-y-3 p-4 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg">
-              <h3 className="text-sm font-medium text-[var(--color-text-primary)]">Model Configuration</h3>
+              <h3 className="text-sm font-medium text-[var(--color-text-primary)]">{t('onboarding_ai_model_config')}</h3>
 
               <div className="space-y-2">
-                <label className="block text-xs text-[var(--color-text-secondary)]">Embedding Model</label>
+                <label className="block text-xs text-[var(--color-text-secondary)]">{t('onboarding_ai_embedding_model_label')}</label>
                 <SearchableSelect
                   value={state.embeddingModel}
                   onChange={(v) => dispatch({ type: 'SET_EMBEDDING_MODEL', value: v })}
                   options={ollamaEmbeddingModels}
                   isLoading={state.isLoadingOllamaModels}
-                  placeholder="Select embedding model..."
+                  placeholder={t('onboarding_ai_embedding_model_placeholder')}
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="block text-xs text-[var(--color-text-secondary)]">LLM Model (tagging, wiki, chat)</label>
+                <label className="block text-xs text-[var(--color-text-secondary)]">{t('onboarding_ai_llm_model_label')}</label>
                 <SearchableSelect
                   value={state.taggingModel}
                   onChange={(v) => {
@@ -343,12 +345,12 @@ export function AIProviderStep({ state, dispatch }: AIProviderStepProps) {
                   }}
                   options={ollamaLlmModels}
                   isLoading={state.isLoadingOllamaModels}
-                  placeholder="Select LLM model..."
+                  placeholder={t('onboarding_ai_ollama_llm_model_placeholder')}
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="block text-xs text-[var(--color-text-secondary)]">Context Length</label>
+                <label className="block text-xs text-[var(--color-text-secondary)]">{t('onboarding_ai_ollama_context_length_label')}</label>
                 <CustomSelect
                   value={state.ollamaContextLength}
                   onChange={(v) => dispatch({ type: 'SET_OLLAMA_CONTEXT_LENGTH', value: v })}
@@ -367,7 +369,7 @@ export function AIProviderStep({ state, dispatch }: AIProviderStepProps) {
               </div>
 
               <div className="space-y-2">
-                <label className="block text-xs text-[var(--color-text-secondary)]">Request Timeout (seconds)</label>
+                <label className="block text-xs text-[var(--color-text-secondary)]">{t('onboarding_ai_ollama_timeout_label')}</label>
                 <CustomSelect
                   value={state.ollamaTimeoutSecs}
                   onChange={(v) => dispatch({ type: 'SET_OLLAMA_TIMEOUT_SECS', value: v })}
@@ -381,7 +383,7 @@ export function AIProviderStep({ state, dispatch }: AIProviderStepProps) {
                   ]}
                 />
                 <p className="text-[10px] text-[var(--color-text-tertiary)]">
-                  Maximum time to wait for Ollama to respond. Increase for slow models or large contexts.
+                  {t('onboarding_ai_ollama_timeout_description')}
                 </p>
               </div>
             </div>
@@ -393,16 +395,16 @@ export function AIProviderStep({ state, dispatch }: AIProviderStepProps) {
         <>
           {/* Base URL */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-[var(--color-text-primary)]">Base URL</label>
+            <label className="block text-sm font-medium text-[var(--color-text-primary)]">{t('onboarding_ai_openai_base_url_label')}</label>
             <p className="text-xs text-[var(--color-text-secondary)]">
-              OpenAI-compatible API endpoint (e.g. http://localhost:8080/v1)
+              {t('onboarding_ai_openai_base_url_description')}
             </p>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={state.openaiCompatBaseUrl}
                 onChange={(e) => dispatch({ type: 'SET_OPENAI_COMPAT_BASE_URL', value: e.target.value })}
-                placeholder="http://localhost:8080/v1"
+                placeholder={t('onboarding_ai_openai_base_url_placeholder')}
                 className="flex-1 px-3 py-2 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors duration-150 text-sm"
               />
               <Button
@@ -410,11 +412,11 @@ export function AIProviderStep({ state, dispatch }: AIProviderStepProps) {
                 onClick={() => checkOpenaiCompatConnection(state.openaiCompatBaseUrl, state.openaiCompatApiKey || undefined)}
                 disabled={!state.openaiCompatBaseUrl.trim() || state.openaiCompatStatus === 'checking'}
               >
-                {state.openaiCompatStatus === 'checking' ? 'Testing...' : 'Test'}
+                {state.openaiCompatStatus === 'checking' ? t('onboarding_ai_testing') : t('onboarding_ai_test_button')}
               </Button>
             </div>
             {state.openaiCompatStatus === 'connected' && (
-              <p className="text-sm text-green-500">Connected successfully</p>
+              <p className="text-sm text-green-500">{t('onboarding_ai_connected_success')}</p>
             )}
             {state.openaiCompatStatus === 'error' && (
               <p className="text-sm text-red-500">{state.openaiCompatError}</p>
@@ -423,56 +425,56 @@ export function AIProviderStep({ state, dispatch }: AIProviderStepProps) {
 
           {/* API Key */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-[var(--color-text-primary)]">API Key (optional)</label>
+            <label className="block text-sm font-medium text-[var(--color-text-primary)]">{t('onboarding_ai_openai_api_key_label')}</label>
             <input
               type="password"
               value={state.openaiCompatApiKey}
               onChange={(e) => dispatch({ type: 'SET_OPENAI_COMPAT_API_KEY', value: e.target.value })}
-              placeholder="sk-..."
+              placeholder={t('onboarding_ai_openai_api_key_placeholder')}
               className="w-full px-3 py-2 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors duration-150 text-sm"
             />
           </div>
 
           {/* Model Configuration */}
           <div className="space-y-3 p-4 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg">
-            <h3 className="text-sm font-medium text-[var(--color-text-primary)]">Model Configuration</h3>
-            <p className="text-xs text-[var(--color-text-secondary)]">Enter the exact model names your server expects.</p>
+            <h3 className="text-sm font-medium text-[var(--color-text-primary)]">{t('onboarding_ai_model_config')}</h3>
+            <p className="text-xs text-[var(--color-text-secondary)]">{t('onboarding_ai_openai_model_config_description')}</p>
 
             <div className="space-y-2">
-              <label className="block text-xs text-[var(--color-text-secondary)]">Embedding Model</label>
+              <label className="block text-xs text-[var(--color-text-secondary)]">{t('onboarding_ai_openai_embedding_model_label')}</label>
               <input
                 type="text"
                 value={state.openaiCompatEmbeddingModel}
                 onChange={(e) => dispatch({ type: 'SET_OPENAI_COMPAT_EMBEDDING_MODEL', value: e.target.value })}
-                placeholder="text-embedding-3-small"
+                placeholder={t('onboarding_ai_openai_embedding_model_placeholder')}
                 className="w-full px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors duration-150 text-sm"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="block text-xs text-[var(--color-text-secondary)]">Embedding Dimension</label>
+              <label className="block text-xs text-[var(--color-text-secondary)]">{t('onboarding_ai_openai_embedding_dimension_label')}</label>
               <input
                 type="number"
                 value={state.openaiCompatEmbeddingDimension}
                 onChange={(e) => dispatch({ type: 'SET_OPENAI_COMPAT_EMBEDDING_DIMENSION', value: e.target.value })}
-                placeholder="1536"
+                placeholder={t('onboarding_ai_openai_embedding_dimension_placeholder')}
                 className="w-full px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors duration-150 text-sm"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="block text-xs text-[var(--color-text-secondary)]">LLM Model (tagging, wiki, chat)</label>
+              <label className="block text-xs text-[var(--color-text-secondary)]">{t('onboarding_ai_llm_model_label')}</label>
               <input
                 type="text"
                 value={state.openaiCompatLlmModel}
                 onChange={(e) => dispatch({ type: 'SET_OPENAI_COMPAT_LLM_MODEL', value: e.target.value })}
-                placeholder="meta-llama/Llama-3.1-8B-Instruct"
+                placeholder={t('onboarding_ai_openai_llm_model_placeholder')}
                 className="w-full px-3 py-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors duration-150 text-sm"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="block text-xs text-[var(--color-text-secondary)]">Context Length</label>
+              <label className="block text-xs text-[var(--color-text-secondary)]">{t('onboarding_ai_openai_context_length_label')}</label>
               <CustomSelect
                 value={state.openaiCompatContextLength}
                 onChange={(v) => dispatch({ type: 'SET_OPENAI_COMPAT_CONTEXT_LENGTH', value: v })}
@@ -491,8 +493,8 @@ export function AIProviderStep({ state, dispatch }: AIProviderStepProps) {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-xs text-[var(--color-text-secondary)]">Request Timeout</label>
-              <p className="text-xs text-[var(--color-text-secondary)]">Maximum time to wait for the server to respond</p>
+              <label className="block text-xs text-[var(--color-text-secondary)]">{t('onboarding_ai_openai_timeout_label')}</label>
+              <p className="text-xs text-[var(--color-text-secondary)]">{t('onboarding_ai_openai_timeout_description')}</p>
               <CustomSelect
                 value={state.openaiCompatTimeoutSecs}
                 onChange={(v) => dispatch({ type: 'SET_OPENAI_COMPAT_TIMEOUT_SECS', value: v })}
@@ -513,8 +515,8 @@ export function AIProviderStep({ state, dispatch }: AIProviderStepProps) {
       {/* Auto-tagging toggle */}
       <div className="flex items-center justify-between p-3 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg">
         <div>
-          <p className="text-sm font-medium text-[var(--color-text-primary)]">Automatic Tag Extraction</p>
-          <p className="text-xs text-[var(--color-text-secondary)]">Use AI to automatically extract and assign tags to new atoms</p>
+          <p className="text-sm font-medium text-[var(--color-text-primary)]">{t('onboarding_ai_auto_tagging_label')}</p>
+          <p className="text-xs text-[var(--color-text-secondary)]">{t('onboarding_ai_auto_tagging_description')}</p>
         </div>
         <button
           type="button"

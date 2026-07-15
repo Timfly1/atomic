@@ -96,7 +96,7 @@ export function SearchBar({
     <div className="sticky left-0 right-0 top-0 z-20 px-4 py-2 bg-[var(--color-bg-card)] border-b border-[var(--color-border)] shadow-lg">
       <div className="flex items-center gap-2">
         {/* Search icon */}
-        <Search className="w-4 h-4 text-[var(--color-text-secondary)] flex-shrink-0" strokeWidth={2} />
+        <Search className="w-5 h-5 text-[var(--color-text-secondary)] flex-shrink-0" strokeWidth={2} />
 
         {/* Search input */}
         <input
@@ -128,7 +128,7 @@ export function SearchBar({
             className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             title="Previous match (Shift+Enter)"
           >
-            <ChevronUp className="w-4 h-4" strokeWidth={2} />
+            <ChevronUp className="w-5 h-5" strokeWidth={2} />
           </button>
           <button
             onClick={onNext}
@@ -136,7 +136,7 @@ export function SearchBar({
             className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             title="Next match (Enter)"
           >
-            <ChevronDown className="w-4 h-4" strokeWidth={2} />
+            <ChevronDown className="w-5 h-5" strokeWidth={2} />
           </button>
         </div>
 
@@ -146,7 +146,7 @@ export function SearchBar({
           className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
           title="Close (Escape)"
         >
-          <X className="w-4 h-4" strokeWidth={2} />
+          <X className="w-5 h-5" strokeWidth={2} />
         </button>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { useMemo, useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 import {
   PanelLeft,
@@ -35,6 +36,7 @@ import { useIsMobile } from '../../hooks';
 import { readerEditorActions } from '../../lib/reader-editor-bridge';
 
 export function MainView() {
+  const { t } = useTranslation();
   const atoms = useAtomsStore(s => s.atoms);
   const totalCount = useAtomsStore(s => s.totalCount);
   const hasMore = useAtomsStore(s => s.hasMore);
@@ -45,6 +47,7 @@ export function MainView() {
   const semanticSearchQuery = useAtomsStore(s => s.semanticSearchQuery);
   const retryEmbedding = useAtomsStore(s => s.retryEmbedding);
   const retryTagging = useAtomsStore(s => s.retryTagging);
+  const deleteAtom = useAtomsStore(s => s.deleteAtom);
   // const sourceFilter = useAtomsStore(s => s.sourceFilter); // TEMPORARILY DISABLED
   // const sourceValue = useAtomsStore(s => s.sourceValue); // TEMPORARILY DISABLED
   // const sortBy = useAtomsStore(s => s.sortBy); // TEMPORARILY DISABLED
@@ -242,14 +245,14 @@ export function MainView() {
 
   return (
     <>
-    <main className="relative flex-1 flex flex-col h-full bg-[var(--color-bg-main)] overflow-hidden pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0">
-      {/* Titlebar row — the row itself is a Tauri drag region; interactive
+    <main className="relative flex-1 flex flex-col h-full bg-[var(--color-bg-main)] overflow-hidden pb-[calc(48px+env(safe-area-inset-bottom))] md:pb-0">
+      {/* Titlebar row 鈥?the row itself is a Tauri drag region; interactive
           elements inside it (buttons, tabs) receive their own events normally. */}
       <div
         data-tauri-drag-region
-        className={`h-[52px] flex items-center gap-3 px-4 flex-shrink-0 drag-region ${!leftPanelOpen && isTauri() ? 'pl-[78px]' : ''}`}
+        className={`h-11 flex items-center gap-2 px-3 shrink-0 drag-region ${!leftPanelOpen && isTauri() ? 'pl-18' : ''}`}
       >
-        {/* Left sidebar toggle — always visible */}
+        {/* Left sidebar toggle 鈥?always visible */}
         <button
           onClick={toggleLeftPanel}
           className={`p-1.5 rounded-md transition-colors ${
@@ -259,7 +262,7 @@ export function MainView() {
           }`}
           title={leftPanelOpen ? "Hide sidebar" : "Show sidebar"}
         >
-          <PanelLeft className="w-4 h-4" strokeWidth={2} />
+          <PanelLeft className="w-5 h-5" strokeWidth={2} />
         </button>
 
         {/* Main nav + tabs share a single LayoutGroup so the accent blob
@@ -268,16 +271,17 @@ export function MainView() {
             a continuous slide instead of a fade-swap when the user
             changes views. */}
         <LayoutGroup>
-          {/* Desktop nav — hidden on mobile, bottom nav handles that */}
+          {/* Desktop nav 鈥?hidden on mobile, bottom nav handles that */}
           <div className="hidden md:flex items-center gap-1 shrink-0">
             {([
-              ['dashboard', LayoutDashboard, 'Dashboard'],
-              ['atoms', Library, 'Atoms'],
-              ['canvas', Network, 'Canvas view'],
-              ['wiki', BookOpen, 'Wiki view'],
-              ['reports', Telescope, 'Reports'],
-            ] as const).map(([mode, IconCmp, label]) => {
+              ['dashboard', LayoutDashboard, 'nav_dashboard'],
+              ['atoms', Library, 'nav_atoms'],
+              ['canvas', Network, 'nav_canvas'],
+              ['wiki', BookOpen, 'nav_wiki'],
+              ['reports', Telescope, 'nav_reports'],
+            ] as const).map(([mode, IconCmp, labelKey]) => {
               const isActiveNav = onBaseView && viewMode === mode;
+              const label = t(labelKey);
               return (
                 <button
                   key={mode}
@@ -297,41 +301,41 @@ export function MainView() {
                       transition={{ type: 'spring', stiffness: 520, damping: 32, mass: 0.9 }}
                     />
                   )}
-                  <IconCmp className="relative z-[1] w-4 h-4" strokeWidth={2} />
+                  <IconCmp className="relative z-[1] w-5 h-5" strokeWidth={2} />
                 </button>
               );
             })}
           </div>
 
-          {/* Search button — find-in-note when an atom tab is active, else palette. */}
+          {/* Search button 鈥?find-in-note when an atom tab is active, else palette. */}
           <button
             onClick={handleOpenSearch}
             className="p-1.5 rounded-md text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors shrink-0"
             title={readerState.atomId ? 'Find in note' : 'Search atoms'}
           >
-            <Search className="w-4 h-4" strokeWidth={2} />
+            <Search className="w-5 h-5" strokeWidth={2} />
           </button>
 
-          {/* Tab strip — pills sit immediately to the right of search and
+          {/* Tab strip 鈥?pills sit immediately to the right of search and
               consume any unused horizontal space. */}
           <div className="flex-1 min-w-0 flex items-center">
             <TabStrip />
           </div>
         </LayoutGroup>
 
-        {/* Save status — visible whenever an atom tab is active and saving */}
+        {/* Save status 鈥?visible whenever an atom tab is active and saving */}
         {readerState.atomId && readerState.saveStatus !== 'idle' && (
           <span className={`text-xs shrink-0 ${
             readerState.saveStatus === 'saving' ? 'text-[var(--color-text-tertiary)]' :
             readerState.saveStatus === 'saved' ? 'text-green-500' :
             'text-red-500'
           }`}>
-            {readerState.saveStatus === 'saving' ? 'Saving...' :
-             readerState.saveStatus === 'saved' ? 'Saved' : 'Save failed'}
+            {readerState.saveStatus === 'saving' ? t('common_saving') :
+             readerState.saveStatus === 'saved' ? t('common_saved') : t('common_save_failed')}
           </span>
         )}
 
-        {/* Filter toggle + atom count — base view + atoms only. */}
+        {/* Filter toggle + atom count 鈥?base view + atoms only. */}
         {/*
         {onBaseView && (isMobile || viewMode === 'atoms') && (
           <div className="flex items-center gap-2 shrink-0">
@@ -361,7 +365,7 @@ export function MainView() {
         {/* Atoms layout sub-toggle — sits right-aligned next to the chat
             button so the cluster of left-side nav stays stable when
             switching views. Desktop atoms-base-view only. */}
-        {!isMobile && onBaseView && viewMode === 'atoms' && (
+        {onBaseView && viewMode === 'atoms' && (
           <div className="flex items-center bg-[var(--color-bg-card)] rounded-md border border-[var(--color-border)] shrink-0">
             <button
               onClick={() => setAtomsLayout('grid')}
@@ -372,7 +376,7 @@ export function MainView() {
               }`}
               title="Grid layout"
             >
-              <LayoutGrid className="w-4 h-4" strokeWidth={2} />
+              <LayoutGrid className="w-5 h-5" strokeWidth={2} />
             </button>
             <button
               onClick={() => setAtomsLayout('list')}
@@ -383,7 +387,7 @@ export function MainView() {
               }`}
               title="List layout"
             >
-              <ListIcon className="w-4 h-4" strokeWidth={2} />
+              <ListIcon className="w-5 h-5" strokeWidth={2} />
             </button>
           </div>
         )}
@@ -398,7 +402,7 @@ export function MainView() {
           }`}
           title={chatSidebarOpen ? "Hide chat" : "Show chat"}
         >
-          <MessageCircle className="w-4 h-4" strokeWidth={2} />
+          <MessageCircle className="w-5 h-5" strokeWidth={2} />
         </button>
       </div>
 
@@ -407,20 +411,20 @@ export function MainView() {
         <div className="px-4 py-2 text-sm text-[var(--color-text-secondary)] border-b border-[var(--color-border)]">
           {semanticSearchResults.length > 0 ? (
             <span>
-              {semanticSearchResults.length} results for "{semanticSearchQuery}"
+              {t('common_search_results_count', { count: semanticSearchResults.length, query: semanticSearchQuery })}
             </span>
           ) : (
-            <span>No atoms match your search</span>
+            <span>{t('common_no_atoms_match_search')}</span>
           )}
         </div>
       )}
 
-      {/* Filter bar — desktop inline strip, atoms view only */}
+      {/* Filter bar 鈥?desktop inline strip, atoms view only */}
       {/*
       {!isMobile && !isSemanticSearch && viewMode === 'atoms' && filterBarOpen && <FilterBar />}
       */}
 
-      {/* Filter sheet — mobile bottom sheet hosts view mode + filter + sort */}
+      {/* Filter sheet 鈥?mobile bottom sheet hosts view mode + filter + sort */}
       {/*
       {isMobile && (
         <FilterSheet
@@ -473,6 +477,7 @@ export function MainView() {
             getMatchingChunkContent={isSemanticSearch ? getMatchingChunkContent : undefined}
             onRetryEmbedding={handleRetryEmbedding}
             onRetryTagging={handleRetryTagging}
+            onDelete={deleteAtom}
             onLoadMore={handleLoadMore}
             isLoading={isLoadingInitial}
             isLoadingMore={isLoadingMore}
@@ -480,14 +485,14 @@ export function MainView() {
         )}
       </div>
 
-      {/* FAB — on atoms + dashboard base views only (no active tab) */}
-      {onBaseView && (viewMode === 'atoms' || viewMode === 'dashboard') && <FAB onClick={handleNewAtom} title="Create new atom" />}
+      {/* FAB -- always visible, creates new atom */}
+      {<FAB onClick={handleNewAtom} title="Create new atom" />}
 
-      {/* Bottom nav — mobile only */}
+      {/* Bottom nav 鈥?mobile only */}
       <BottomNav />
     </main>
 
-    {/* Chat sidebar backdrop — mobile only */}
+    {/* Chat sidebar backdrop 鈥?mobile only */}
     <div
       className={`fixed inset-0 bg-black/40 z-30 md:hidden transition-opacity duration-200 ${
         chatSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -495,7 +500,7 @@ export function MainView() {
       onClick={() => chatSidebarOpen && toggleChatSidebar()}
     />
 
-    {/* Chat sidebar — available in all views.
+    {/* Chat sidebar 鈥?available in all views.
         Desktop: flex sibling that animates width.
         Mobile: fixed overlay that slides in from the right. */}
     <div
@@ -510,7 +515,7 @@ export function MainView() {
       `}
       style={{ '--chat-w': `${chatSidebarWidth}px` } as React.CSSProperties}
     >
-      {/* Resize handle — desktop only */}
+      {/* Resize handle 鈥?desktop only */}
       <div
         className="hidden md:block absolute left-0 top-0 h-full w-1.5 cursor-col-resize z-10 hover:bg-[var(--color-accent)]/20 active:bg-[var(--color-accent)]/30"
         onMouseDown={handleChatResizeStart}

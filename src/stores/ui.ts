@@ -122,6 +122,12 @@ interface UIStore {
   searchPaletteInitialQuery: string;
   // Reader theme
   readerTheme: 'light' | 'dark';
+  // Atoms list scroll position (not persisted - resets on page reload)
+  atomsListScrollPosition: number;
+  // Wiki list scroll position (not persisted)
+  wikiListScrollPosition: number;
+  // Reports list scroll position (not persisted)
+  reportsListScrollPosition: number;
   // Actions
   setServerConnected: (connected: boolean) => void;
   setLeftPanelOpen: (open: boolean) => void;
@@ -195,6 +201,15 @@ interface UIStore {
   toggleSearchPalette: () => void;
   setReaderTheme: (theme: 'light' | 'dark') => void;
   toggleReaderTheme: () => void;
+  // Swipe drawer actions
+  setSwipeExpandedId: (id: string | null) => void;
+  closeSwipeDrawer: () => void;
+  // Atoms list scroll position actions
+  setAtomsListScrollPosition: (position: number) => void;
+  // Wiki list scroll position actions
+  setWikiListScrollPosition: (position: number) => void;
+  // Reports list scroll position actions
+  setReportsListScrollPosition: (position: number) => void;
 }
 
 /// Generate a tab id. Falls back to a monotonic counter for environments
@@ -352,6 +367,9 @@ export const useUIStore = create<UIStore>()(
       searchPaletteOpen: false,
       searchPaletteInitialQuery: '',
       readerTheme: 'dark' as 'light' | 'dark',
+      atomsListScrollPosition: 0,
+      wikiListScrollPosition: 0,
+      reportsListScrollPosition: 0,
 
       setLeftPanelOpen: (open: boolean) => set({ leftPanelOpen: open }),
       toggleLeftPanel: () => set((state) => ({ leftPanelOpen: !state.leftPanelOpen })),
@@ -997,6 +1015,13 @@ export const useUIStore = create<UIStore>()(
 
       setReaderTheme: (theme: 'light' | 'dark') => set({ readerTheme: theme }),
       toggleReaderTheme: () => set((state) => ({ readerTheme: state.readerTheme === 'dark' ? 'light' : 'dark' })),
+
+      // -- Atoms list scroll position ---------------------------------
+      setAtomsListScrollPosition: (position: number) => set({ atomsListScrollPosition: position }),
+      // -- Wiki list scroll position ---------------------------------
+      setWikiListScrollPosition: (position: number) => set({ wikiListScrollPosition: position }),
+      // -- Reports list scroll position ---------------------------------
+      setReportsListScrollPosition: (position: number) => set({ reportsListScrollPosition: position }),
     }),
     {
       name: 'atomic-ui-storage',

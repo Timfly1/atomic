@@ -1,8 +1,10 @@
-import { memo } from 'react';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { memo, useState } from 'react';
+import { AlertTriangle, RefreshCw, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { DisplayAtom } from '../../stores/atoms';
 import { TagChip } from '../tags/TagChip';
 import { formatRelativeDate, formatShortRelativeDate } from '../../lib/date';
+import { Modal } from '../ui/Modal';
 
 /** Get display source — prefer pre-parsed `source` field, fall back to extracting from URL */
 function getDisplaySource(atom: DisplayAtom): string | null {
@@ -30,6 +32,7 @@ interface AtomCardProps {
   matchingChunkContent?: string;  // For search results
   onRetryEmbedding?: (atomId: string) => void;  // For retry action
   onRetryTagging?: (atomId: string) => void;  // For tagging retry action
+  onDelete?: (atomId: string) => void;  // For swipe-to-delete
 }
 
 function ProcessingStatusIndicator({
@@ -43,6 +46,8 @@ function ProcessingStatusIndicator({
   onRetry?: () => void;
   onRetryTagging?: () => void;
 }) {
+  const { t } = useTranslation();
+
   // Show failed state if embedding failed
   if (embeddingStatus === 'failed') {
     return (
@@ -52,7 +57,7 @@ function ProcessingStatusIndicator({
           onRetry?.();
         }}
         className="absolute top-2 right-2 text-red-500 hover:text-red-400 transition-colors"
-        title="Embedding failed - click to retry"
+        title={t('atoms_embedding_failed_retry')}
       >
         <AlertTriangle className="w-4 h-4" strokeWidth={2} />
       </button>
@@ -71,11 +76,11 @@ function ProcessingStatusIndicator({
 
   // Show amber indicator for pending/processing states
   if (isEmbedding || isTagging) {
-    let title = 'Processing...';
+    let title = t('common_loading');
     if (isEmbedding) {
-      title = embeddingStatus === 'pending' ? 'Embedding pending' : 'Embedding in progress';
+      title = embeddingStatus === 'pending' ? t('atoms_embedding_pending') : t('atoms_embedding_in_progress');
     } else if (isTagging) {
-      title = taggingStatus === 'pending' ? 'Tag extraction pending' : 'Tag extraction in progress';
+      title = taggingStatus === 'pending' ? t('atoms_tag_extraction_pending') : t('atoms_tag_extraction_in_progress');
     }
 
     return (
@@ -95,7 +100,7 @@ function ProcessingStatusIndicator({
           onRetryTagging?.();
         }}
         className="absolute top-2 right-2 text-orange-500 hover:text-orange-400 transition-colors"
-        title="Tag extraction failed - click to retry"
+        title={t('atoms_tag_extraction_failed_retry')}
       >
         <RefreshCw className="w-4 h-4" strokeWidth={2} />
       </button>
@@ -112,7 +117,10 @@ export const AtomCard = memo(function AtomCard({
   matchingChunkContent,
   onRetryEmbedding,
   onRetryTagging,
+  onDelete,
 }: AtomCardProps) {
+  const { t } = useTranslation();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const handleClick = (e: React.MouseEvent) => {
     onAtomClick(atom.id, { newTab: e.metaKey || e.ctrlKey });
   };
@@ -139,62 +147,89 @@ export const AtomCard = memo(function AtomCard({
   if (viewMode === 'list') {
     const hasMetaRow = atom.tags.length > 0 || !!displaySource;
     return (
-      <div
-        onClick={handleClick}
-        onAuxClick={handleAuxClick}
-        className="relative flex items-center gap-3 px-3 py-2.5 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg cursor-pointer hover:border-[var(--color-border-hover)] hover:bg-[var(--color-bg-hover)] transition-all duration-150"
-      >
-        <ProcessingStatusIndicator
-          embeddingStatus={atom.embedding_status}
-          taggingStatus={atom.tagging_status}
-          onRetry={handleRetry}
-          onRetryTagging={handleRetryTagging}
-        />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-baseline gap-2 min-w-0">
-            <span
-              className={`text-sm font-medium truncate min-w-0 ${
-                matchingChunkContent ? 'text-[var(--color-accent-light)]' : 'text-[var(--color-text-primary)]'
-              }`}
-            >
-              {title || 'Untitled'}
-            </span>
-            {snippet && (
-              <span className="hidden sm:inline text-xs text-[var(--color-text-tertiary)] truncate">
-                {snippet}
+      <>
+        <div
+          onClick={handleClick}
+          onAuxClick={handleAuxClick}
+          className="group relative flex items-center gap-3 px-3 py-2.5 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg cursor-pointer hover:border-[var(--color-border-hover)] hover:bg-[var(--color-bg-hover)] active:bg-[var(--color-accent)]/10 active:border-[var(--color-accent)]/30 transition-all duration-150"
+        >
+          <ProcessingStatusIndicator
+            embeddingStatus={atom.embedding_status}
+            taggingStatus={atom.tagging_status}
+            onRetry={handleRetry}
+            onRetryTagging={handleRetryTagging}
+          />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-baseline gap-2 min-w-0">
+              <span
+                className={`text-sm font-medium truncate min-w-0 ${
+                  matchingChunkContent ? 'text-[var(--color-accent-light)]' : 'text-[var(--color-text-primary)]'
+                }`}
+              >
+                {title || t('atoms_untitled')}
               </span>
-            )}
-          </div>
-          {hasMetaRow && (
-            <div className="flex items-center gap-1.5 mt-1 min-w-0">
-              {atom.tags.length > 0 && (
-                <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
-                  {visibleTags.map((tag) => (
-                    <TagChip key={tag.id} name={tag.name} size="sm" />
-                  ))}
-                  {remainingTags > 0 && (
-                    <span className="text-xs text-[var(--color-text-tertiary)] shrink-0">+{remainingTags}</span>
-                  )}
-                </div>
-              )}
-              {displaySource && (
-                <span
-                  className="ml-auto shrink-0 text-xs text-[var(--color-text-tertiary)] bg-[var(--color-bg-panel)] px-1.5 py-0.5 rounded truncate max-w-[100px] sm:max-w-[140px]"
-                  title={atom.source_url ?? displaySource}
-                >
-                  {displaySource}
+              {snippet && (
+                <span className="hidden sm:inline text-xs text-[var(--color-text-tertiary)] truncate">
+                  {snippet}
                 </span>
               )}
             </div>
+            {hasMetaRow && (
+              <div className="flex items-center gap-1.5 mt-1 min-w-0">
+                {atom.tags.length > 0 && (
+                  <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
+                    {visibleTags.map((tag) => (
+                      <TagChip key={tag.id} name={tag.name} size="sm" />
+                    ))}
+                    {remainingTags > 0 && (
+                      <span className="text-xs text-[var(--color-text-tertiary)] shrink-0">+{remainingTags}</span>
+                    )}
+                  </div>
+                )}
+                {displaySource && (
+                  <span
+                    className="ml-auto shrink-0 text-xs text-[var(--color-text-tertiary)] bg-[var(--color-bg-panel)] px-1.5 py-0.5 rounded truncate max-w-[100px] sm:max-w-[140px]"
+                    title={atom.source_url ?? displaySource}
+                  >
+                    {displaySource}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+          <span
+            className="shrink-0 mr-10 text-xs text-[var(--color-text-tertiary)] whitespace-nowrap"
+            title={formatRelativeDate(getDisplayDate(atom))}
+          >
+            {formatShortRelativeDate(getDisplayDate(atom))}
+          </span>
+          {onDelete && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowDeleteModal(true);
+              }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-[var(--color-text-tertiary)] hover:text-red-500 hover:bg-red-500/10 transition-all"
+              title={t('common_delete')}
+            >
+              <Trash2 className="w-4 h-4" strokeWidth={2} />
+            </button>
           )}
         </div>
-        <span
-          className="shrink-0 text-xs text-[var(--color-text-tertiary)] whitespace-nowrap"
-          title={formatRelativeDate(getDisplayDate(atom))}
+        <Modal
+          isOpen={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          title={t('common_delete_confirm_title')}
+          confirmLabel={t('common_delete')}
+          confirmVariant="danger"
+          onConfirm={() => {
+            onDelete?.(atom.id);
+            setShowDeleteModal(false);
+          }}
         >
-          {formatShortRelativeDate(getDisplayDate(atom))}
-        </span>
-      </div>
+          <p>{t('atoms_delete_confirm_message', { title: title || t('atoms_untitled') })}</p>
+        </Modal>
+      </>
     );
   }
 
@@ -202,7 +237,7 @@ export const AtomCard = memo(function AtomCard({
     <div
       onClick={handleClick}
       onAuxClick={handleAuxClick}
-      className="relative flex flex-col p-4 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg cursor-pointer hover:border-[var(--color-border-hover)] hover:bg-[var(--color-bg-hover)] transition-all duration-150 h-full min-w-0 overflow-hidden break-words"
+      className="relative flex flex-col p-4 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg cursor-pointer hover:border-[var(--color-border-hover)] hover:bg-[var(--color-bg-hover)] active:bg-[var(--color-accent)]/10 active:border-[var(--color-accent)]/30 transition-all duration-150 h-full min-w-0 overflow-hidden break-words"
     >
       <ProcessingStatusIndicator
         embeddingStatus={atom.embedding_status}
@@ -217,7 +252,7 @@ export const AtomCard = memo(function AtomCard({
               matchingChunkContent ? 'text-[var(--color-accent-light)]' : 'text-[var(--color-text-primary)]'
             }`}
           >
-            {title || 'Untitled'}
+            {title || t('atoms_untitled')}
           </p>
           <span className="text-xs text-[var(--color-text-tertiary)] shrink-0" title={formatRelativeDate(getDisplayDate(atom))}>
             {formatShortRelativeDate(getDisplayDate(atom))}

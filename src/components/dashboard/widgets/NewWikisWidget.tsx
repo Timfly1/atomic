@@ -1,19 +1,21 @@
+import { useTranslation } from 'react-i18next';
 import { Section } from '../Section';
 import { useWikiStore } from '../../../stores/wiki';
 
 const MAX_ITEMS = 5;
 
 export function NewWikisWidget() {
+  const { t } = useTranslation();
   const suggestedArticles = useWikiStore(s => s.suggestedArticles);
   const openAndGenerate = useWikiStore(s => s.openAndGenerate);
 
   const items = suggestedArticles.slice(0, MAX_ITEMS);
 
   return (
-    <Section label="Ready to generate">
+    <Section label={t('dashboard_ready_to_generate')}>
       {items.length === 0 ? (
         <div className="py-6 text-sm text-[var(--color-text-tertiary)]">
-          No wiki suggestions yet. Tag more atoms to build up candidates.
+          {t('dashboard_no_wiki_suggestions')}
         </div>
       ) : (
         <ul className="-mx-2">
@@ -27,7 +29,7 @@ export function NewWikisWidget() {
                   {s.tag_name}
                 </span>
                 <span className="text-[11px] text-[var(--color-text-tertiary)] tabular-nums shrink-0">
-                  {s.atom_count} atoms
+                  {s.atom_count} {t('dashboard_atoms_count')}
                 </span>
               </button>
             </li>

@@ -1,5 +1,6 @@
 import { useState, useCallback, Fragment, ReactNode, useEffect, useMemo } from 'react';
 import { CheckCircle2, Loader2, Wrench, XCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { ChatMessageWithContext, ChatCitation, ChatToolCall } from '../../stores/chat';
 import { useAtomsStore, type AtomSummary, type AtomWithTags } from '../../stores/atoms';
 import { getTransport } from '../../lib/transport';
@@ -17,6 +18,8 @@ interface ChatMessageProps {
 }
 
 export function ChatMessage({ message, isStreaming = false, onViewAtom, searchQuery = '', highlightText }: ChatMessageProps) {
+  const { t } = useTranslation();
+
   const isUser = message.role === 'user';
   const isAssistant = message.role === 'assistant';
   const atoms = useAtomsStore(s => s.atoms);
@@ -277,7 +280,7 @@ export function ChatMessage({ message, isStreaming = false, onViewAtom, searchQu
                   <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent)] animate-bounce" style={{ animationDelay: '150ms' }} />
                   <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent)] animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
-                <span>Thinking…</span>
+                <span>{t('chat_thinking')}</span>
               </div>
             ) : null
           ) : (
@@ -296,7 +299,7 @@ export function ChatMessage({ message, isStreaming = false, onViewAtom, searchQu
           {/* Citations (for assistant messages) */}
           {isAssistant && message.citations && message.citations.length > 0 && (
             <div className="mt-3 pt-3 border-t border-[var(--color-border)]">
-              <p className="text-xs text-[var(--color-text-secondary)] mb-2">Sources:</p>
+              <p className="text-xs text-[var(--color-text-secondary)] mb-2">{t('chat_sources')}</p>
               <div className="flex flex-wrap gap-1">
                 {message.citations.map((citation) => (
                   <button
@@ -349,6 +352,8 @@ function ToolCallList({ calls }: { calls: ChatToolCall[] }) {
 }
 
 function ToolCallCard({ call }: { call: ChatToolCall }) {
+  const { t } = useTranslation();
+
   const statusIcon =
     call.status === 'running' ? (
       <Loader2 className="w-3.5 h-3.5 text-[var(--color-accent-light)] animate-spin" />
@@ -367,9 +372,9 @@ function ToolCallCard({ call }: { call: ChatToolCall }) {
 
   const summaryText =
     call.status === 'running'
-      ? 'running…'
+      ? t('chat_running')
       : resultsCount !== undefined
-      ? `${resultsCount} result${resultsCount === 1 ? '' : 's'}`
+      ? t('chat_result_count', { count: resultsCount })
       : call.status;
 
   return (

@@ -1,6 +1,7 @@
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal } from '../ui/Modal';
-import { REPORT_TEMPLATES, ReportTemplate } from '../../lib/reportTemplates';
+import { getReportTemplates, ReportTemplate } from '../../lib/reportTemplates';
 import { ReportTemplateCard } from './ReportTemplateCard';
 
 interface ReportTemplateGalleryProps {
@@ -19,11 +20,12 @@ interface ReportTemplateGalleryProps {
 /// Grid of curated template cards plus a "Start blank" card. The grid
 /// is 2-up on `sm` and wider, single-column on narrow viewports.
 const TemplateGrid = memo(function TemplateGrid({
+  templates,
   onPick,
-}: { onPick: (template: ReportTemplate | null) => void }) {
+}: { templates: ReportTemplate[]; onPick: (template: ReportTemplate | null) => void }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      {REPORT_TEMPLATES.map((t) => (
+      {templates.map((t) => (
         <ReportTemplateCard
           key={t.id}
           template={t}
@@ -38,39 +40,37 @@ const TemplateGrid = memo(function TemplateGrid({
 export const ReportTemplateGallery = memo(function ReportTemplateGallery({
   mode, isOpen, onClose, onPick,
 }: ReportTemplateGalleryProps) {
+  const { t } = useTranslation();
+  const templates = getReportTemplates(t);
+
   if (mode === 'modal') {
     return (
       <Modal
         isOpen={isOpen ?? false}
         onClose={onClose ?? (() => undefined)}
-        title="New report"
+        title={t('reports_editor_new_title')}
         width="lg"
         showFooter={false}
       >
         <p className="text-sm text-[var(--color-text-secondary)] mb-4 leading-relaxed">
-          Pick a template to get started, or build your own. You can rename,
-          re-scope, and rewrite the prompt before saving.
+          {t('reports_template_gallery_description')}
         </p>
-        <TemplateGrid onPick={onPick} />
+        <TemplateGrid templates={templates} onPick={onPick} />
       </Modal>
     );
   }
 
-  // Inline mode (empty-state). Renders without a modal wrapper, but
-  // wraps the grid in a clearly bounded panel so it reads as a
-  // standalone block rather than naked cards.
   return (
     <section className="mx-auto max-w-3xl px-6 py-10">
       <header className="mb-5">
         <h2 className="text-base font-medium text-[var(--color-text-primary)] mb-1">
-          Start your first report
+          {t('reports_template_inline_title')}
         </h2>
         <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
-          Reports run on a schedule and produce findings that join your atoms.
-          Pick a template below, or start blank.
+          {t('reports_template_inline_description')}
         </p>
       </header>
-      <TemplateGrid onPick={onPick} />
+      <TemplateGrid templates={templates} onPick={onPick} />
     </section>
   );
 });

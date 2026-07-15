@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, Play, RefreshCw, Pencil, Trash2, MoreVertical } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ContextMenu } from '../ui/ContextMenu';
 import { useReportsStore } from '../../stores/reports';
@@ -38,6 +39,7 @@ interface ReportDetailViewProps {
 ///   to `closeTab(activeTabId)` — same fallback-to-base-view path as
 ///   AtomReader.
 export function ReportDetailView({ reportId }: ReportDetailViewProps) {
+  const { t } = useTranslation();
   const report = useReportsStore(s => s.byId[reportId]);
   const findings = useReportsStore(s => s.findingsByReport[reportId]);
   const isRunning = useReportsStore(s => s.runningReportIds.has(reportId));
@@ -71,8 +73,8 @@ export function ReportDetailView({ reportId }: ReportDetailViewProps) {
       if (cancelled) return;
       setIsInitialFetch(false);
       if (!r) {
-        toast.error('Report not found', {
-          description: 'It may have been deleted in another window.',
+        toast.error(t('reports_detail_not_found'), {
+          description: t('reports_detail_not_found_hint'),
         });
         closeReportDetail();
       }
@@ -117,7 +119,7 @@ export function ReportDetailView({ reportId }: ReportDetailViewProps) {
       if (cancelled || !fresh) return;
       if (fresh.last_error && fresh.last_error !== lastErrorAtDispatch) {
         clearRunning(reportId);
-        toast.error('Run failed', { description: fresh.last_error });
+        toast.error(t('reports_detail_run_failed'), { description: fresh.last_error });
       }
     }, FAILURE_POLL_MS);
     return () => { cancelled = true; window.clearInterval(interval); };
@@ -136,8 +138,8 @@ export function ReportDetailView({ reportId }: ReportDetailViewProps) {
       // already cleared it.
       if (useReportsStore.getState().runningReportIds.has(reportId)) {
         clearRunning(reportId);
-        toast.message("Couldn't confirm completion", {
-          description: 'Refresh the report list to check current state.',
+        toast.message(t('reports_detail_confirm_completion'), {
+          description: t('reports_detail_refresh_state'),
         });
       }
     }, remaining);
@@ -173,8 +175,8 @@ export function ReportDetailView({ reportId }: ReportDetailViewProps) {
       <div className="flex items-center gap-3 px-5 py-3 border-b border-[var(--color-border)] flex-shrink-0">
         <button
           onClick={closeReportDetail}
-          title="Back to reports"
-          aria-label="Back to reports"
+          title={t('reports_detail_back')}
+          aria-label={t('reports_detail_back')}
           className="
             p-1.5 rounded-md text-[var(--color-text-secondary)]
             hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]
@@ -202,7 +204,7 @@ export function ReportDetailView({ reportId }: ReportDetailViewProps) {
             <div className="h-4 w-48 bg-[var(--color-border)] rounded animate-pulse" />
           ) : (
             <h2 className="text-base font-medium text-[var(--color-text-tertiary)]">
-              Report unavailable
+              {t('reports_detail_unavailable')}
             </h2>
           )}
         </div>
@@ -218,7 +220,7 @@ export function ReportDetailView({ reportId }: ReportDetailViewProps) {
               type="button"
               onClick={handleRunNow}
               disabled={isRunning}
-              title={isRunning ? 'Already running' : 'Run this report now'}
+              title={isRunning ? t('reports_detail_already_running') : t('reports_detail_run_now')}
               className={`
                 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium
                 min-w-[112px]
@@ -232,12 +234,12 @@ export function ReportDetailView({ reportId }: ReportDetailViewProps) {
               {isRunning ? (
                 <>
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" strokeWidth={2.5} />
-                  Running…
+                  {t('reports_detail_running')}
                 </>
               ) : (
                 <>
                   <Play className="w-3.5 h-3.5" strokeWidth={2.5} />
-                  Run now
+                  {t('reports_detail_run_now')}
                 </>
               )}
             </button>
@@ -246,8 +248,8 @@ export function ReportDetailView({ reportId }: ReportDetailViewProps) {
             <button
               type="button"
               onClick={() => setEditorOpen(true)}
-              title="Edit report"
-              aria-label="Edit report"
+              title={t('reports_detail_edit_report')}
+              aria-label={t('reports_detail_edit_report')}
               className="
                 hidden md:inline-flex p-1.5 rounded-md text-[var(--color-text-secondary)]
                 hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]
@@ -260,8 +262,8 @@ export function ReportDetailView({ reportId }: ReportDetailViewProps) {
             <button
               type="button"
               onClick={() => setConfirmDelete(true)}
-              title="Delete report"
-              aria-label="Delete report"
+              title={t('reports_detail_delete_report')}
+              aria-label={t('reports_detail_delete_report')}
               className="
                 hidden md:inline-flex p-1.5 rounded-md text-[var(--color-text-secondary)]
                 hover:text-red-400 hover:bg-red-500/10
@@ -278,8 +280,8 @@ export function ReportDetailView({ reportId }: ReportDetailViewProps) {
                 const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                 setOverflowMenuPos({ x: rect.right - 160, y: rect.bottom + 4 });
               }}
-              title="More actions"
-              aria-label="More actions"
+              title={t('reports_detail_more_actions')}
+              aria-label={t('reports_detail_more_actions')}
               className="
                 md:hidden p-1.5 rounded-md text-[var(--color-text-secondary)]
                 hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]
@@ -321,12 +323,12 @@ export function ReportDetailView({ reportId }: ReportDetailViewProps) {
         <ContextMenu
           items={[
             {
-              label: 'Edit…',
+              label: t('reports_row_edit'),
               icon: <Pencil className="w-3.5 h-3.5" strokeWidth={2} />,
               onClick: () => setEditorOpen(true),
             },
             {
-              label: 'Delete',
+              label: t('reports_row_delete'),
               icon: <Trash2 className="w-3.5 h-3.5" strokeWidth={2} />,
               onClick: () => setConfirmDelete(true),
               danger: true,
@@ -343,18 +345,16 @@ export function ReportDetailView({ reportId }: ReportDetailViewProps) {
       <Modal
         isOpen={confirmDelete}
         onClose={() => setConfirmDelete(false)}
-        title={`Delete "${report?.name ?? ''}"?`}
-        confirmLabel="Delete report"
+        title={t('reports_delete_title', { name: report?.name ?? '' })}
+        confirmLabel={t('reports_delete_button')}
         confirmVariant="danger"
         onConfirm={handleConfirmDelete}
       >
         <div className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
-          The schedule and report definition will be deleted. Past findings
-          remain in your atoms — they're first-class notes, not owned by the
-          report that produced them.
+          {t('reports_delete_message')}
           {report?.last_finding_atom_id && (
             <span className="block mt-2 text-[var(--color-text-tertiary)] text-xs">
-              The dashboard's featured report pointer is cleared if it points here.
+              {t('reports_delete_featured_note')}
             </span>
           )}
         </div>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../../ui/Button';
 import { QRCode } from '../QRCode';
 import { createApiToken } from '../../../lib/api';
@@ -28,6 +29,7 @@ interface MobileSetupStepProps {
 }
 
 export function MobileSetupStep({ state, dispatch }: MobileSetupStepProps) {
+  const { t } = useTranslation();
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -68,9 +70,9 @@ export function MobileSetupStep({ state, dispatch }: MobileSetupStepProps) {
   return (
     <div className="space-y-5 px-2">
       <div className="text-center mb-4">
-        <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-1">Mobile App</h2>
+        <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-1">{t('onboarding_mobile_setup_title')}</h2>
         <p className="text-sm text-[var(--color-text-secondary)]">
-          Connect the Atomic iOS app by scanning a QR code
+          {t('onboarding_mobile_setup_subtitle')}
         </p>
       </div>
 
@@ -78,10 +80,10 @@ export function MobileSetupStep({ state, dispatch }: MobileSetupStepProps) {
         <div className="flex flex-col items-center space-y-4">
           <div className="p-4 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg text-center space-y-3 w-full">
             <p className="text-sm text-[var(--color-text-secondary)]">
-              Generate a QR code containing your server URL and a new API token. Scan it with the Atomic iOS app to connect instantly.
+              {t('onboarding_mobile_setup_description')}
             </p>
             <Button onClick={handleGenerateQR} disabled={isGenerating}>
-              {isGenerating ? 'Generating...' : 'Generate QR Code'}
+              {isGenerating ? t('onboarding_mobile_setup_generating') : t('onboarding_mobile_setup_generate_qr')}
             </Button>
           </div>
           {error && (
@@ -95,13 +97,13 @@ export function MobileSetupStep({ state, dispatch }: MobileSetupStepProps) {
           </div>
 
           <p className="text-sm text-[var(--color-text-secondary)] text-center">
-            Open the Atomic iOS app and tap <strong className="text-[var(--color-text-primary)]">Scan QR Code</strong> on the setup screen
+            {t('onboarding_mobile_setup_scan_qr')}
           </p>
 
           <div className="w-full space-y-2">
             <div className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
               <div className="flex-1 h-px bg-[var(--color-border)]" />
-              <span>or copy manually</span>
+              <span>{t('onboarding_mobile_setup_or_copy_manually')}</span>
               <div className="flex-1 h-px bg-[var(--color-border)]" />
             </div>
 
@@ -110,7 +112,7 @@ export function MobileSetupStep({ state, dispatch }: MobileSetupStepProps) {
                 {getServerBaseUrl()}
               </code>
               <Button variant="secondary" size="sm" onClick={handleCopy}>
-                {copied ? 'Copied!' : 'Copy'}
+                {copied ? t('onboarding_mobile_setup_copied') : t('onboarding_mobile_setup_copy')}
               </Button>
             </div>
           </div>

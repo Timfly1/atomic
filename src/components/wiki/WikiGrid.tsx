@@ -1,7 +1,9 @@
-import { memo, useRef, useMemo } from 'react';
+import { memo, useRef, useMemo, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BookOpen } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { WikiArticleSummary, SuggestedArticle } from '../../stores/wiki';
+import { useUIStore } from '../../stores/ui';
 import { WikiCard } from './WikiCard';
 import { useContainerWidth } from '../../hooks/useContainerWidth';
 
@@ -29,8 +31,29 @@ export const WikiGrid = memo(function WikiGrid({
   onSuggestionClick,
   isLoading,
 }: WikiGridProps) {
+  const { t } = useTranslation();
   const parentRef = useRef<HTMLDivElement>(null);
   const containerWidth = useContainerWidth(parentRef);
+  const savedScrollPosition = useUIStore((s) => s.wikiListScrollPosition);
+  const setWikiListScrollPosition = useUIStore((s) => s.setWikiListScrollPosition);
+
+  // Save scroll position on scroll
+  const handleScroll = useCallback(() => {
+    if (parentRef.current) {
+      setWikiListScrollPosition(parentRef.current.scrollTop);
+    }
+  }, [setWikiListScrollPosition]);
+
+  // Restore scroll position when component mounts
+  useEffect(() => {
+    if (parentRef.current && savedScrollPosition > 0) {
+      requestAnimationFrame(() => {
+        if (parentRef.current) {
+          parentRef.current.scrollTop = savedScrollPosition;
+        }
+      });
+    }
+  }, [savedScrollPosition]);
 
   const ready = containerWidth > 0;
   const columnCount = ready
@@ -86,16 +109,16 @@ export const WikiGrid = memo(function WikiGrid({
     return (
       <div ref={parentRef} className="flex flex-col items-center justify-center h-full text-center p-8">
         <BookOpen className="w-16 h-16 text-[var(--color-border)] mb-4" strokeWidth={1.5} />
-        <h3 className="text-lg font-medium text-[var(--color-text-primary)] mb-2">No wiki articles yet</h3>
+        <h3 className="text-lg font-medium text-[var(--color-text-primary)] mb-2">{t('wiki_empty')}</h3>
         <p className="text-sm text-[var(--color-text-secondary)] max-w-sm">
-          Generate a wiki article from your atoms to synthesize knowledge across related notes.
+          {t('wiki_empty_description_grid')}
         </p>
       </div>
     );
   }
 
   return (
-    <div ref={parentRef} className="h-full overflow-y-auto scrollbar-auto-hide">
+    <div ref={parentRef} className="h-full overflow-y-auto scrollbar-auto-hide" onScroll={handleScroll}>
       <div
         className="relative w-full p-4"
         style={{ height: `${virtualizer.getTotalSize() + PADDING * 2}px` }}

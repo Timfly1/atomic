@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { toast } from 'sonner';
+import { toasti18n } from '../i18n/toast';
 import { getTransport } from '../lib/transport';
 import { cacheKey, readCache, writeCache } from '../lib/cache/idb';
 import { useDatabasesStore } from './databases';
@@ -376,7 +376,7 @@ export const useAtomsStore = create<AtomsStore>((set, get) => ({
         };
       });
     } catch (error) {
-      toast.error('Failed to load more atoms', { id: 'atoms-load-more-error', description: String(error) });
+      toasti18n.error('atoms:toast_load_more_failed', { id: 'atoms-load-more-error', description: String(error) });
       set({ error: String(error), isLoadingMore: false });
     }
   },
@@ -555,7 +555,7 @@ export const useAtomsStore = create<AtomsStore>((set, get) => ({
 
       set({ semanticSearchResults: results, isSearching: false });
     } catch (error) {
-      toast.error('Search failed', { id: 'atoms-search-error', description: String(error) });
+      toasti18n.error('atoms:toast_search_failed', { id: 'atoms-search-error', description: String(error) });
       set({ error: String(error), isSearching: false });
     }
   },
@@ -655,7 +655,7 @@ export const useAtomsStore = create<AtomsStore>((set, get) => ({
       set({ availableSources: sources });
     } catch (error) {
       console.error('Failed to fetch sources:', error);
-      toast.error('Failed to load sources', { id: 'atoms-sources-error', description: String(error) });
+      toasti18n.error('atoms:toast_load_sources_failed', { id: 'atoms-sources-error', description: String(error) });
     }
   },
 

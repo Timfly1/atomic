@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { Plus, MessageCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useChatStore, ConversationWithTags } from '../../stores/chat';
 import { ConversationCard } from './ConversationCard';
 import { Modal } from '../ui/Modal';
 
 export function ConversationsList() {
+  const { t } = useTranslation();
+
   const conversations = useChatStore(s => s.conversations);
   const isLoading = useChatStore(s => s.isLoading);
   const error = useChatStore(s => s.error);
@@ -52,7 +55,7 @@ export function ConversationsList() {
   if (isLoading && conversations.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-[var(--color-text-secondary)]">
-        Loading conversations...
+        {t('chat_loading_conversations')}
       </div>
     );
   }
@@ -74,7 +77,7 @@ export function ConversationsList() {
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[var(--color-bg-hover)] hover:bg-[var(--color-border)] text-[var(--color-text-primary)] rounded-lg transition-colors"
         >
           <Plus className="w-5 h-5" strokeWidth={2} />
-          New Conversation
+          {t('chat_new_conversation')}
         </button>
       </div>
 
@@ -86,9 +89,9 @@ export function ConversationsList() {
               <MessageCircle className="w-8 h-8 text-[var(--color-text-secondary)]" strokeWidth={2} />
             </div>
             <div>
-              <p className="text-[var(--color-text-primary)] font-medium mb-1">No conversations yet</p>
+              <p className="text-[var(--color-text-primary)] font-medium mb-1">{t('chat_no_conversations')}</p>
               <p className="text-[var(--color-text-secondary)] text-sm">
-                Start a new conversation to chat with your knowledge base
+                {t('chat_no_conversations_hint')}
               </p>
             </div>
           </div>
@@ -110,14 +113,13 @@ export function ConversationsList() {
       <Modal
         isOpen={deleteTarget !== null}
         onClose={() => setDeleteTarget(null)}
-        title="Delete Conversation"
-        confirmLabel={isDeleting ? 'Deleting...' : 'Delete'}
+        title={t('chat_delete_conversation')}
+        confirmLabel={isDeleting ? t('chat_deleting') : t('common_delete')}
         confirmVariant="danger"
         onConfirm={handleConfirmDelete}
       >
         <p>
-          Are you sure you want to delete "{deleteTarget?.title || 'New Conversation'}"?
-          This will remove all messages and cannot be undone.
+          {t('chat_delete_confirm', { title: deleteTarget?.title || t('chat_new_conversation') })}
         </p>
       </Modal>
     </div>

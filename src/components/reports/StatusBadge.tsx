@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Report } from '../../stores/reports';
 import { formatRelativeDate } from '../../lib/date';
 
@@ -22,22 +23,22 @@ interface Resolved {
 /// Priority: running (live) > failed (last_error set) > paused
 /// (!enabled) > active. The "active" label leans on `last_run_at` for
 /// the suffix; first-run reports show just "ACTIVE".
-function resolve(report: Report, isRunning: boolean): Resolved {
-  if (isRunning) return { tone: 'running', label: 'RUNNING NOW' };
+function resolve(report: Report, isRunning: boolean, t: (key: string) => string): Resolved {
+  if (isRunning) return { tone: 'running', label: t('reports_status_running') };
   if (report.last_error) {
     const suffix = report.last_run_at
       ? ` · ${formatRelativeDate(report.last_run_at).toUpperCase()}`
       : '';
-    return { tone: 'failed', label: `FAILED${suffix}` };
+    return { tone: 'failed', label: `${t('reports_status_failed')}${suffix}` };
   }
-  if (!report.enabled) return { tone: 'paused', label: 'PAUSED' };
+  if (!report.enabled) return { tone: 'paused', label: t('reports_status_paused') };
   if (report.last_run_at) {
     return {
       tone: 'active',
-      label: `RAN ${formatRelativeDate(report.last_run_at).toUpperCase()}`,
+      label: `${t('reports_status_ran')} ${formatRelativeDate(report.last_run_at).toUpperCase()}`,
     };
   }
-  return { tone: 'idle', label: 'NEVER RUN' };
+  return { tone: 'idle', label: t('reports_status_never_run') };
 }
 
 const DOT_BY_TONE: Record<Tone, string> = {
@@ -57,7 +58,8 @@ const TEXT_BY_TONE: Record<Tone, string> = {
 };
 
 export const StatusBadge = memo(function StatusBadge({ report, isRunning = false }: StatusBadgeProps) {
-  const { tone, label } = resolve(report, isRunning);
+  const { t } = useTranslation();
+  const { tone, label } = resolve(report, isRunning, t);
   return (
     <div className="inline-flex items-center gap-1.5">
       <span className={`w-1.5 h-1.5 rounded-full ${DOT_BY_TONE[tone]}`} aria-hidden />

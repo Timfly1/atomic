@@ -38,3 +38,15 @@ export function isMacOS(): boolean {
   if (platform) return /mac/i.test(platform);
   return /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
+
+/**
+ * Trigger a short haptic feedback vibration on supported devices.
+ * Uses the Vibration API (Web standard) for mobile browsers.
+ * No-op on desktop or unsupported browsers.
+ */
+export function hapticFeedback(): void {
+  if (typeof navigator === 'undefined') return;
+  if (typeof navigator.vibrate === 'function') {
+    navigator.vibrate(10); // 10ms vibration - short and crisp
+  }
+}

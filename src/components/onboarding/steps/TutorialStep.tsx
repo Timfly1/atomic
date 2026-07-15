@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, Loader2 } from 'lucide-react';
 import { Button } from '../../ui/Button';
 import { useAtomsStore } from '../../../stores/atoms';
@@ -69,6 +70,7 @@ interface TutorialStepProps {
 }
 
 export function TutorialStep({ state, dispatch }: TutorialStepProps) {
+  const { t } = useTranslation();
   const createAtom = useAtomsStore(s => s.createAtom);
   const fetchTags = useTagsStore(s => s.fetchTags);
   const [tagNames, setTagNames] = useState<string[]>([]);
@@ -128,9 +130,9 @@ export function TutorialStep({ state, dispatch }: TutorialStepProps) {
   return (
     <div className="space-y-5 px-2">
       <div className="text-center mb-4">
-        <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-1">Tutorial Atom</h2>
+        <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-1">{t('onboarding_tutorial_title')}</h2>
         <p className="text-sm text-[var(--color-text-secondary)]">
-          Create a tutorial note to see the full pipeline in action
+          {t('onboarding_tutorial_subtitle')}
         </p>
       </div>
 
@@ -138,10 +140,10 @@ export function TutorialStep({ state, dispatch }: TutorialStepProps) {
         <div className="flex flex-col items-center space-y-4">
           <div className="p-4 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg text-center space-y-3 w-full">
             <p className="text-sm text-[var(--color-text-secondary)]">
-              This will create a "Welcome to Atomic" note that covers all the core concepts. Watch as it gets automatically chunked, embedded, and tagged in real time.
+              {t('onboarding_tutorial_description')}
             </p>
             <Button onClick={handleCreate} disabled={state.tutorialCreating}>
-              {state.tutorialCreating ? 'Creating...' : 'Create Tutorial Atom'}
+              {state.tutorialCreating ? t('onboarding_tutorial_creating') : t('onboarding_tutorial_create_button')}
             </Button>
           </div>
         </div>
@@ -149,24 +151,24 @@ export function TutorialStep({ state, dispatch }: TutorialStepProps) {
         <div className="space-y-4">
           {/* Status indicators */}
           <div className="p-4 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg space-y-3">
-            <h3 className="text-sm font-medium text-[var(--color-text-primary)]">Processing Pipeline</h3>
+            <h3 className="text-sm font-medium text-[var(--color-text-primary)]">{t('onboarding_tutorial_processing_pipeline')}</h3>
 
             <div className="space-y-2">
               {/* Atom created */}
-              <StatusItem label="Atom created" done={true} />
+              <StatusItem label={t('onboarding_tutorial_atom_created')} done={true} />
 
               {/* Embedding */}
-              <StatusItem label="Embedding generated" done={state.tutorialEmbeddingDone} />
+              <StatusItem label={t('onboarding_tutorial_embedding_generated')} done={state.tutorialEmbeddingDone} />
 
               {/* Tagging */}
-              <StatusItem label="Tags extracted" done={state.tutorialTaggingDone} />
+              <StatusItem label={t('onboarding_tutorial_tags_extracted')} done={state.tutorialTaggingDone} />
             </div>
           </div>
 
           {/* Extracted tags */}
           {state.tutorialTaggingDone && tagNames.length > 0 && (
             <div className="p-4 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg space-y-2">
-              <h3 className="text-sm font-medium text-[var(--color-text-primary)]">Extracted Tags</h3>
+              <h3 className="text-sm font-medium text-[var(--color-text-primary)]">{t('onboarding_tutorial_extracted_tags')}</h3>
               <div className="flex flex-wrap gap-2">
                 {tagNames.map((name) => (
                   <span
@@ -182,7 +184,7 @@ export function TutorialStep({ state, dispatch }: TutorialStepProps) {
 
           {state.tutorialEmbeddingDone && state.tutorialTaggingDone && (
             <div className="text-center text-sm text-green-500">
-              All done! Your tutorial atom is ready.
+              {t('onboarding_tutorial_all_done')}
             </div>
           )}
         </div>

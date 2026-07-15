@@ -1,4 +1,5 @@
 import { lazy, Suspense, useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, Trash2, Upload, X, Eye, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { openExternalUrl } from '../../lib/platform';
@@ -48,6 +49,7 @@ interface AtomReaderProps {
 }
 
 export function AtomReader({ atomId, highlightText, initialEditing }: AtomReaderProps) {
+  const { t } = useTranslation();
   const deleteAtom = useAtomsStore(s => s.deleteAtom);
   const fetchTags = useTagsStore(s => s.fetchTags);
   const setSelectedTag = useUIStore(s => s.setSelectedTag);
@@ -137,12 +139,12 @@ export function AtomReader({ atomId, highlightText, initialEditing }: AtomReader
       {isLoadingAtom ? (
         showLoading ? (
           <div className="flex items-center justify-center h-full text-[var(--color-text-secondary)]">
-            Loading...
+            {t('common_loading')}
           </div>
         ) : null
       ) : !atom ? (
         <div className="flex items-center justify-center h-full text-[var(--color-text-secondary)]">
-          Atom not found
+          {t('atoms_not_found')}
         </div>
       ) : (
         <AtomReaderContent
@@ -184,6 +186,7 @@ function AtomReaderContent({
   onDismiss, onDelete, onTagClick, onRelatedAtomClick, onViewGraph, onAtomUpdated,
   refreshAtom,
 }: AtomReaderContentProps) {
+  const { t } = useTranslation();
   const readerTheme = useUIStore(s => s.readerTheme);
   const setReaderEditState = useUIStore(s => s.setReaderEditState);
   const retryTagging = useAtomsStore(s => s.retryTagging);
@@ -471,15 +474,15 @@ function AtomReaderContent({
                   <Input
                     value={editSourceUrl}
                     onChange={(e) => setEditSourceUrl(e.target.value)}
-                    placeholder="Source URL (optional)"
+                    placeholder={t('atoms_source_url_placeholder')}
                     className="text-xs"
                   />
                 </div>
                 <button
                   onClick={() => setShowDeleteModal(true)}
                   className="shrink-0 p-1.5 rounded text-[var(--color-text-secondary)] hover:text-red-400 hover:bg-[var(--color-bg-hover)] transition-colors"
-                  title="Delete atom"
-                  aria-label="Delete atom"
+                  title={t('atoms_delete_atom')}
+                  aria-label={t('atoms_delete_atom')}
                 >
                   <Trash2 className="w-3.5 h-3.5" strokeWidth={2} />
                 </button>
@@ -492,7 +495,7 @@ function AtomReaderContent({
                   }}
                   className="mt-2 inline-block text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-accent)]"
                 >
-                  Open source
+                  {t('atoms_open_source')}
                 </button>
               )}
             </div>
@@ -500,7 +503,7 @@ function AtomReaderContent({
             {/* Image section */}
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-[var(--color-text-secondary)]">Image</span>
+                <span className="text-xs font-medium text-[var(--color-text-secondary)]">{t('atoms_image_section')}</span>
               </div>
               {imageUrl ? (
                 <div className="relative group">
@@ -511,7 +514,7 @@ function AtomReaderContent({
                   >
                     <img
                       src={imageUrl}
-                      alt="Atom image"
+                      alt={t('atoms_image_alt')}
                       className="w-full h-32 object-cover"
                     />
                   </button>
@@ -520,7 +523,7 @@ function AtomReaderContent({
                       type="button"
                       onClick={() => setShowImagePreview(true)}
                       className="p-1 rounded bg-black/50 text-white hover:bg-black/70"
-                      title="View full image"
+                      title={t('atoms_view_full_image')}
                     >
                       <Eye className="w-3.5 h-3.5" />
                     </button>
@@ -528,7 +531,7 @@ function AtomReaderContent({
                       type="button"
                       onClick={handleImageDelete}
                       className="p-1 rounded bg-black/50 text-red-400 hover:bg-black/70"
-                      title="Delete image"
+                      title={t('atoms_delete_image')}
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -549,11 +552,11 @@ function AtomReaderContent({
                     className="flex flex-col items-center gap-1 cursor-pointer"
                   >
                     {isUploadingImage ? (
-                      <span className="text-xs text-[var(--color-text-tertiary)]">Uploading...</span>
+                      <span className="text-xs text-[var(--color-text-tertiary)]">{t('atoms_uploading')}</span>
                     ) : (
                       <>
                         <Upload className="w-5 h-5 text-[var(--color-text-tertiary)]" />
-                        <span className="text-xs text-[var(--color-text-tertiary)]">Upload image</span>
+                        <span className="text-xs text-[var(--color-text-tertiary)]">{t('atoms_upload_image')}</span>
                       </>
                     )}
                   </label>
@@ -564,7 +567,7 @@ function AtomReaderContent({
             {/* Document section */}
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-[var(--color-text-secondary)]">Document</span>
+                <span className="text-xs font-medium text-[var(--color-text-secondary)]">{t('atoms_document_section')}</span>
               </div>
               {documentUrl ? (
                 <div className="relative group border border-[var(--color-border)] rounded p-3">
@@ -575,10 +578,10 @@ function AtomReaderContent({
                       className="flex-1 min-w-0 text-left"
                     >
                       <p className="text-xs text-[var(--color-text-primary)] truncate">
-                        {atom.document_name || atom.document_type || 'Document'}
+                        {atom.document_name || atom.document_type || t('atoms_document')}
                       </p>
                       <p className="text-[10px] text-[var(--color-text-tertiary)]">
-                        Click to preview/download
+                        {t('atoms_click_to_preview_download')}
                       </p>
                     </button>
                     <div className={`flex gap-1 transition-opacity ${isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
@@ -586,7 +589,7 @@ function AtomReaderContent({
                         type="button"
                         onClick={() => setShowDocumentPreview(true)}
                         className="p-1 rounded bg-black/50 text-white hover:bg-black/70"
-                        title="View document"
+                        title={t('atoms_view_document')}
                       >
                         <Eye className="w-3.5 h-3.5" />
                       </button>
@@ -594,7 +597,7 @@ function AtomReaderContent({
                         type="button"
                         onClick={handleDocumentDelete}
                         className="p-1 rounded bg-black/50 text-red-400 hover:bg-black/70"
-                        title="Delete document"
+                        title={t('atoms_delete_document')}
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -616,13 +619,13 @@ function AtomReaderContent({
                     className="flex flex-col items-center gap-1 cursor-pointer"
                   >
                     {isUploadingDocument ? (
-                      <span className="text-xs text-[var(--color-text-tertiary)]">Uploading...</span>
+                      <span className="text-xs text-[var(--color-text-tertiary)]">{t('atoms_uploading')}</span>
                     ) : (
                       <>
                         <Upload className="w-5 h-5 text-[var(--color-text-tertiary)]" />
-                        <span className="text-xs text-[var(--color-text-tertiary)]">Upload document</span>
+                        <span className="text-xs text-[var(--color-text-tertiary)]">{t('atoms_upload_document')}</span>
                         <span className="text-[10px] text-[var(--color-text-tertiary)]">
-                          Word, Excel, PDF
+                          {t('atoms_document_formats')}
                         </span>
                       </>
                     )}
@@ -658,9 +661,9 @@ function AtomReaderContent({
               <div className="mb-4 rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-bg-card)]/60 p-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-sm text-[var(--color-text-primary)]">No tags yet</p>
+                    <p className="text-sm text-[var(--color-text-primary)]">{t('atoms_no_tags_yet')}</p>
                     <p className="mt-1 text-xs text-[var(--color-text-tertiary)]">
-                      Run tagging for this atom manually.
+                      {t('atoms_run_tagging_manually')}
                     </p>
                   </div>
                   <button
@@ -670,7 +673,7 @@ function AtomReaderContent({
                     disabled={isTaggingInFlight}
                     className="shrink-0 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-primary)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {isTaggingInFlight ? 'Tagging...' : 'Auto-tag'}
+                    {isTaggingInFlight ? t('atoms_tagging_in_progress') : t('atoms_auto_tag')}
                   </button>
                 </div>
               </div>
@@ -701,20 +704,20 @@ function AtomReaderContent({
       <Modal
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
-        title="Delete Atom"
-        confirmLabel={isDeleting ? 'Deleting...' : 'Delete'}
+        title={t('atoms_delete_confirm_title')}
+        confirmLabel={isDeleting ? t('atoms_tagging_in_progress') : t('common_delete')}
         confirmVariant="danger"
         onConfirm={handleDelete}
       >
-        <p>Are you sure you want to delete this atom? This action cannot be undone.</p>
+        <p>{t('atoms_delete_confirm_message')}</p>
       </Modal>
 
       {/* Image Preview Modal with Zoom/Pan */}
       <Modal
         isOpen={showImagePreview}
         onClose={() => setShowImagePreview(false)}
-        title="Image Preview"
-        confirmLabel="Close"
+        title={t('atoms_image_preview')}
+        confirmLabel={t('common_close')}
         onConfirm={() => setShowImagePreview(false)}
       >
         {(previewImageUrl || imageUrl) && (
@@ -732,7 +735,7 @@ function AtomReaderContent({
                     type="button"
                     onClick={() => zoomIn()}
                     className="p-1.5 rounded bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)]"
-                    title="Zoom in"
+                    title={t('atoms_zoom_in')}
                   >
                     <ZoomIn className="w-4 h-4" />
                   </button>
@@ -740,7 +743,7 @@ function AtomReaderContent({
                     type="button"
                     onClick={() => zoomOut()}
                     className="p-1.5 rounded bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)]"
-                    title="Zoom out"
+                    title={t('atoms_zoom_out')}
                   >
                     <ZoomOut className="w-4 h-4" />
                   </button>
@@ -748,7 +751,7 @@ function AtomReaderContent({
                     type="button"
                     onClick={() => resetTransform()}
                     className="p-1.5 rounded bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)]"
-                    title="Reset zoom"
+                    title={t('atoms_reset_zoom')}
                   >
                     <RotateCcw className="w-4 h-4" />
                   </button>
@@ -759,7 +762,7 @@ function AtomReaderContent({
                 >
                   <img
                     src={previewImageUrl || imageUrl || undefined}
-                    alt="Atom image full size"
+                    alt={t('atoms_image_full_size_alt')}
                     className="max-w-full max-h-full object-contain"
                   />
                 </TransformComponent>
@@ -773,8 +776,8 @@ function AtomReaderContent({
       <Modal
         isOpen={showDocumentPreview}
         onClose={() => setShowDocumentPreview(false)}
-        title={atom.document_name || 'Document Preview'}
-        confirmLabel="Close"
+        title={atom.document_name || t('atoms_document_preview')}
+        confirmLabel={t('common_close')}
         onConfirm={() => setShowDocumentPreview(false)}
       >
         {documentUrl && (
@@ -783,18 +786,18 @@ function AtomReaderContent({
               <iframe
                 src={documentUrl}
                 className="w-full h-[70vh] border border-[var(--color-border)] rounded"
-                title="PDF Preview"
+                title={t('atoms_pdf_preview')}
               />
             ) : (
               <div className="w-full p-8 border border-dashed border-[var(--color-border)] rounded-lg text-center">
                 <p className="text-sm text-[var(--color-text-secondary)] mb-2">
-                  {atom.document_name || 'Document'}
+                  {atom.document_name || t('atoms_document')}
                 </p>
                 <p className="text-xs text-[var(--color-text-tertiary)] mb-4">
-                  Content has been extracted and stored in the note.
+                  {t('atoms_content_extracted')}
                 </p>
                 <p className="text-xs text-[var(--color-text-tertiary)]">
-                  Scroll up to view the extracted content with images.
+                  {t('atoms_scroll_up_extracted')}
                 </p>
               </div>
             )}
@@ -803,7 +806,7 @@ function AtomReaderContent({
               download={atom.document_name || undefined}
               className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-accent)] text-white rounded-lg text-sm hover:bg-[var(--color-accent-light)] transition-colors"
             >
-              Download Document
+              {t('atoms_download_document')}
             </a>
           </div>
         )}
@@ -828,6 +831,7 @@ function searchResultsToAtomLinkSuggestions(
 }
 
 function SidebarRelatedAtoms({ atomId, onAtomClick }: { atomId: string; onAtomClick: (id: string, opts?: { newTab?: boolean }) => void }) {
+  const { t } = useTranslation();
   const [relatedAtoms, setRelatedAtoms] = useState<SimilarAtomResult[]>([]);
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [hasLoaded, setHasLoaded] = useState(false);
@@ -855,13 +859,13 @@ function SidebarRelatedAtoms({ atomId, onAtomClick }: { atomId: string; onAtomCl
         onClick={() => setIsCollapsed(!isCollapsed)}
         className="flex items-center justify-between w-full text-xs font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
       >
-        <span>Related atoms</span>
+        <span>{t('atoms_related_atoms')}</span>
         <ChevronDown className={`w-3 h-3 transition-transform ${isCollapsed ? '' : 'rotate-180'}`} strokeWidth={2} />
       </button>
       {!isCollapsed && (
         <div className="mt-2 space-y-1.5">
           {isLoading ? (
-            <div className="text-xs text-[var(--color-text-tertiary)]">Loading...</div>
+            <div className="text-xs text-[var(--color-text-tertiary)]">{t('common_loading')}</div>
           ) : relatedAtoms.length > 0 ? (
             relatedAtoms.map((result) => (
               <button
@@ -876,15 +880,15 @@ function SidebarRelatedAtoms({ atomId, onAtomClick }: { atomId: string; onAtomCl
                 className="w-full text-left p-2 rounded-md hover:bg-[var(--color-bg-hover)] transition-colors"
               >
                 <p className="text-xs text-[var(--color-text-primary)] line-clamp-2">
-                  {result.title || 'Untitled'}
+                  {result.title || t('atoms_untitled')}
                 </p>
                 <span className="text-[10px] text-[var(--color-accent)]">
-                  {Math.round(result.similarity_score * 100)}% similar
+                  {Math.round(result.similarity_score * 100)}{t('atoms_percent_similar')}
                 </span>
               </button>
             ))
           ) : hasLoaded ? (
-            <div className="text-xs text-[var(--color-text-tertiary)]">No similar atoms found</div>
+            <div className="text-xs text-[var(--color-text-tertiary)]">{t('atoms_no_similar_atoms')}</div>
           ) : null}
         </div>
       )}

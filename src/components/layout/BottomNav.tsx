@@ -1,53 +1,73 @@
-import { LayoutDashboard, Library, Network, BookOpen, Telescope } from 'lucide-react';
+﻿import { LayoutDashboard, Library, Network, BookOpen, Telescope } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 import { useUIStore } from '../../stores/ui';
 import { ViewMode } from '../../stores/ui';
 
-const NAV_ITEMS: { mode: ViewMode; Icon: typeof LayoutDashboard; label: string }[] = [
-  { mode: 'dashboard', Icon: LayoutDashboard, label: 'Dashboard' },
-  { mode: 'atoms', Icon: Library, label: 'Atoms' },
-  { mode: 'canvas', Icon: Network, label: 'Canvas' },
-  { mode: 'wiki', Icon: BookOpen, label: 'Wiki' },
-  { mode: 'reports', Icon: Telescope, label: 'Reports' },
-];
-
 export function BottomNav() {
+  const { t } = useTranslation();
   const viewMode = useUIStore(s => s.viewMode);
   const setViewMode = useUIStore(s => s.setViewMode);
   const activeTabId = useUIStore(s => s.activeTabId);
 
   const onBaseView = activeTabId === null;
 
+  const NAV_ITEMS: { mode: ViewMode; Icon: typeof LayoutDashboard; labelKey: string }[] = [
+    { mode: 'dashboard', Icon: LayoutDashboard, labelKey: 'nav_dashboard' },
+    { mode: 'atoms', Icon: Library, labelKey: 'nav_atoms' },
+    { mode: 'canvas', Icon: Network, labelKey: 'nav_canvas' },
+    { mode: 'wiki', Icon: BookOpen, labelKey: 'nav_wiki' },
+    { mode: 'reports', Icon: Telescope, labelKey: 'nav_reports' },
+  ];
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-20 bg-[var(--color-bg-panel)] md:hidden">
-      <div className="flex items-center justify-around h-14 border-t border-[var(--color-border)]">
-        {NAV_ITEMS.map(({ mode, Icon, label }) => {
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-20 bg-[var(--color-bg-panel)] md:hidden"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 4px)' }}
+    >
+      <div className="relative flex items-stretch w-full border-t border-[var(--color-border)]" style={{ height: '48px' }}>
+        {NAV_ITEMS.map(({ mode, Icon, labelKey }) => {
           const isActive = onBaseView && viewMode === mode;
+          const label = t(labelKey);
           return (
             <button
               key={mode}
               onClick={() => setViewMode(mode)}
-              className={`relative flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-md min-w-[56px] ${
-                isActive
-                  ? 'text-white'
-                  : 'text-[var(--color-text-secondary)]'
-              }`}
+              className="flex-1 flex flex-col items-center justify-center pt-0.5 relative"
               title={label}
               aria-label={label}
             >
+              <Icon
+                className="w-7 h-7"
+                strokeWidth={isActive ? 2.5 : 1.5}
+                style={{
+                  color: isActive
+                    ? 'var(--color-accent)'
+                    : 'var(--color-text-tertiary)',
+                }}
+              />
+              <span
+                className="text-[14px] leading-none font-medium"
+                style={{
+                  color: isActive
+                    ? 'var(--color-accent)'
+                    : 'var(--color-text-tertiary)',
+                  marginTop: '3px',
+                }}
+              >
+                {label}
+              </span>
               {isActive && (
                 <motion.div
-                  layoutId="bottom-nav-blob"
-                  className="absolute inset-0 bg-[var(--color-accent)] rounded-md"
-                  transition={{ type: 'spring', stiffness: 520, damping: 32, mass: 0.9 }}
+                  layoutId="nav-indicator"
+                  className="absolute bottom-0 w-5 h-0.75 rounded-full bg-[var(--color-accent)]"
+                  transition={{ type: 'spring', stiffness: 400, damping: 30, mass: 0.6 }}
                 />
               )}
-              <Icon className="relative z-[1] w-5 h-5" strokeWidth={2} />
-              <span className="relative z-[1] text-[10px] font-medium">{label}</span>
             </button>
           );
         })}
       </div>
-    </div>
+    </nav>
   );
 }

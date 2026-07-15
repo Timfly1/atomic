@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Section } from '../Section';
 import { useAtomsStore } from '../../../stores/atoms';
 import { useWikiStore } from '../../../stores/wiki';
@@ -12,6 +13,7 @@ type FeedItem =
 const MAX_ITEMS = 8;
 
 export function ActivityWidget() {
+  const { t } = useTranslation();
   const atoms = useAtomsStore(s => s.atoms);
   const articles = useWikiStore(s => s.articles);
   const openReader = useUIStore(s => s.openReader);
@@ -21,7 +23,7 @@ export function ActivityWidget() {
     const atomItems: FeedItem[] = atoms.slice(0, MAX_ITEMS * 2).map(a => ({
       kind: 'atom',
       id: a.id,
-      title: a.title || 'Untitled atom',
+      title: a.title || t('dashboard_untitled'),
       timestamp: a.updated_at,
     }));
     const wikiItems: FeedItem[] = articles.slice(0, MAX_ITEMS).map(w => ({
@@ -37,9 +39,9 @@ export function ActivityWidget() {
   }, [atoms, articles]);
 
   return (
-    <Section label="Recent activity">
+    <Section label={t('dashboard_recent_activity')}>
       {items.length === 0 ? (
-        <EmptyState>Activity will appear here as atoms and wikis land.</EmptyState>
+        <EmptyState>{t('dashboard_activity_empty')}</EmptyState>
       ) : (
         <ul className="-mx-2">
           {items.map(item => (
@@ -53,7 +55,7 @@ export function ActivityWidget() {
                 className="w-full flex items-baseline gap-3 px-2 py-1.5 rounded hover:bg-[var(--color-bg-hover)]/60 text-left group"
               >
                 <span className="text-[11px] uppercase tracking-wider text-[var(--color-text-tertiary)] w-10 shrink-0">
-                  {item.kind === 'atom' ? 'atom' : 'wiki'}
+                  {item.kind === 'atom' ? t('dashboard_atom_kind') : t('dashboard_wiki_kind')}
                 </span>
                 <span className="flex-1 min-w-0 truncate text-sm text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-primary)]">
                   {item.title}

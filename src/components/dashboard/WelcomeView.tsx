@@ -1,16 +1,9 @@
 import { Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAtomsStore } from '../../stores/atoms';
 import { useUIStore } from '../../stores/ui';
 import { isDesktopApp } from '../../lib/transport';
 import { CaptureOptions } from './CaptureOptions';
-
-function greeting(date: Date): string {
-  const h = date.getHours();
-  if (h < 5) return 'Working late';
-  if (h < 12) return 'Good morning';
-  if (h < 18) return 'Good afternoon';
-  return 'Good evening';
-}
 
 function formatToday(date: Date): string {
   return date
@@ -27,6 +20,7 @@ function Kbd({ children }: { children: React.ReactNode }) {
 }
 
 export function WelcomeView() {
+  const { t } = useTranslation();
   const createAtom = useAtomsStore(s => s.createAtom);
   const openReaderEditing = useUIStore(s => s.openReaderEditing);
 
@@ -40,6 +34,13 @@ export function WelcomeView() {
   };
 
   const now = new Date();
+  const h = now.getHours();
+  let greeting: string;
+  if (h < 5) greeting = t('dashboard_working_late');
+  else if (h < 12) greeting = t('dashboard_good_morning');
+  else if (h < 18) greeting = t('dashboard_good_afternoon');
+  else greeting = t('dashboard_good_evening');
+
   const modKey = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl';
   // Only surface ⌘N in the desktop build — the browser reserves it for a
   // new window and will swallow the keystroke before our listener sees it.
@@ -53,12 +54,11 @@ export function WelcomeView() {
         </div>
 
         <h1 className="text-3xl md:text-4xl font-semibold text-[var(--color-text-primary)] tracking-tight mb-4">
-          {greeting(now)}.
+          {greeting}.
         </h1>
 
         <p className="text-base md:text-lg text-[var(--color-text-secondary)] leading-relaxed max-w-2xl">
-          Atomic turns freeform notes into a semantically-connected knowledge graph. Capture
-          a thought — embeddings, tagging, and wiki synthesis happen behind the scenes.
+          {t('dashboard_atomic_description')}
         </p>
 
         <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-3">
@@ -67,15 +67,15 @@ export function WelcomeView() {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-[var(--color-accent)] text-white text-sm font-medium hover:bg-[var(--color-accent-hover)] transition-colors"
           >
             <Plus className="w-4 h-4" strokeWidth={2.5} />
-            Create your first atom
+            {t('dashboard_create_first_atom')}
           </button>
           <span className="text-[13px] text-[var(--color-text-tertiary)]">
             {showNewAtomShortcut && (
               <>
-                or press <Kbd>{modKey}N</Kbd> ·{' '}
+                {t('dashboard_or_press')} <Kbd>{modKey}N</Kbd> ·{' '}
               </>
             )}
-            command palette <Kbd>{modKey}P</Kbd>
+            {t('dashboard_command_palette')} <Kbd>{modKey}P</Kbd>
           </span>
         </div>
 

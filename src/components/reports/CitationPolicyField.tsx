@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CitationPolicy } from '../../stores/reports';
 
 interface CitationPolicyFieldProps {
@@ -6,16 +7,16 @@ interface CitationPolicyFieldProps {
   onChange: (next: CitationPolicy) => void;
 }
 
-const OPTIONS: { value: CitationPolicy; label: string; helper: string }[] = [
+const OPTIONS: { value: CitationPolicy; labelKey: string; helperKey: string }[] = [
   {
     value: 'source_only',
-    label: 'Cite source atoms only',
-    helper: 'Citations resolve to the atoms in this run’s source scope.',
+    labelKey: 'reports_editor_citation_source_only_label',
+    helperKey: 'reports_editor_citation_source_only_helper',
   },
   {
     value: 'source_and_context',
-    label: 'Allow citing context atoms',
-    helper: 'The agent can cite anything in the context scope, not just the source.',
+    labelKey: 'reports_editor_citation_source_and_context_label',
+    helperKey: 'reports_editor_citation_source_and_context_helper',
   },
 ];
 
@@ -29,10 +30,12 @@ const OPTIONS: { value: CitationPolicy; label: string; helper: string }[] = [
 export const CitationPolicyField = memo(function CitationPolicyField({
   value, onChange,
 }: CitationPolicyFieldProps) {
+  const { t } = useTranslation();
+
   return (
     <fieldset className="flex flex-col gap-2">
       <legend className="text-xs font-medium uppercase tracking-[0.1em] text-[var(--color-text-tertiary)] mb-1">
-        Citation policy
+        {t('reports_editor_citation_policy_label')}
       </legend>
       {OPTIONS.map(opt => {
         const checked = opt.value === value;
@@ -56,8 +59,8 @@ export const CitationPolicyField = memo(function CitationPolicyField({
               className="mt-1 accent-[var(--color-accent)]"
             />
             <div className="flex flex-col">
-              <span className="text-sm text-[var(--color-text-primary)]">{opt.label}</span>
-              <span className="text-[11px] text-[var(--color-text-tertiary)]">{opt.helper}</span>
+              <span className="text-sm text-[var(--color-text-primary)]">{t(opt.labelKey)}</span>
+              <span className="text-[11px] text-[var(--color-text-tertiary)]">{t(opt.helperKey)}</span>
             </div>
           </label>
         );

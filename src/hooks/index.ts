@@ -6,3 +6,4 @@ export { useFont } from './useFont';
 export { useContentSearch } from './useContentSearch';
 export { useInlineEditor } from './useInlineEditor';
 export { useIsMobile } from './useIsMobile';
+export { useKeyboardHeight, useKeyboardVisible } from './useKeyboardHeight';

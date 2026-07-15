@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { toast } from 'sonner';
+import { toasti18n } from '../i18n/toast';
 import { getTransport } from '../lib/transport';
 import { syncSharedConfig } from '../lib/mobile/shared-config';
 import { useAtomsStore } from './atoms';
@@ -70,7 +70,7 @@ export const useDatabasesStore = create<DatabasesStore>()(
       await get().fetchDatabases();
       return info;
     } catch (e) {
-      toast.error('Failed to create database', { description: String(e) });
+      toasti18n.error('databases:toast_create_failed', { description: String(e) });
       throw e;
     }
   },
@@ -81,7 +81,7 @@ export const useDatabasesStore = create<DatabasesStore>()(
       await transport.invoke('rename_database', { id, name });
       await get().fetchDatabases();
     } catch (e) {
-      toast.error('Failed to rename database', { description: String(e) });
+      toasti18n.error('databases:toast_rename_failed', { description: String(e) });
       throw e;
     }
   },
@@ -106,7 +106,7 @@ export const useDatabasesStore = create<DatabasesStore>()(
         useFeaturedReportStore.getState().fetchLatest();
       }
     } catch (e) {
-      toast.error('Failed to delete database', { description: String(e) });
+      toasti18n.error('databases:toast_delete_failed', { description: String(e) });
       throw e;
     }
   },
@@ -117,7 +117,7 @@ export const useDatabasesStore = create<DatabasesStore>()(
       await transport.invoke('set_default_database', { id });
       await get().fetchDatabases();
     } catch (e) {
-      toast.error('Failed to set default database', { description: String(e) });
+      toasti18n.error('databases:toast_set_default_failed', { description: String(e) });
       throw e;
     }
   },
@@ -127,7 +127,7 @@ export const useDatabasesStore = create<DatabasesStore>()(
       const transport = getTransport();
       return await transport.invoke('get_database_stats', { id }) as DatabaseStats;
     } catch (e) {
-      toast.error('Failed to load database stats', { description: String(e) });
+      toasti18n.error('databases:toast_load_stats_failed', { description: String(e) });
       throw e;
     }
   },
@@ -158,7 +158,7 @@ export const useDatabasesStore = create<DatabasesStore>()(
       useAtomsStore.getState().fetchAtoms();
       useFeaturedReportStore.getState().fetchLatest();
     } catch (e) {
-      toast.error('Failed to switch database', { description: String(e) });
+      toasti18n.error('databases:toast_switch_failed', { description: String(e) });
       throw e;
     }
   },

@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Sparkles, BookOpen, Link2 } from 'lucide-react';
 import { WikiArticleSummary, SuggestedArticle } from '../../stores/wiki';
 import { formatRelativeDate, formatShortRelativeDate } from '../../lib/date';
@@ -18,6 +19,8 @@ interface WikiSuggestionCardProps {
 type WikiCardProps = WikiArticleCardProps | WikiSuggestionCardProps;
 
 export const WikiCard = memo(function WikiCard(props: WikiCardProps) {
+  const { t } = useTranslation();
+
   if (props.type === 'suggestion') {
     const { suggestion, onClick } = props;
     return (
@@ -39,15 +42,12 @@ export const WikiCard = memo(function WikiCard(props: WikiCardProps) {
             <Sparkles className="w-4 h-4 text-[var(--color-accent)] shrink-0 opacity-60 group-hover:opacity-100 transition-opacity" strokeWidth={2} />
           </div>
           <p className="text-xs text-[var(--color-text-tertiary)] mt-2 leading-relaxed">
-            Generate a wiki article from {suggestion.atom_count} atom{suggestion.atom_count !== 1 ? 's' : ''}
-            {suggestion.mention_count > 0 && (
-              <> and {suggestion.mention_count} mention{suggestion.mention_count !== 1 ? 's' : ''}</>
-            )}
+            {t('wiki_generate_from_atoms', { count: suggestion.atom_count })}
           </p>
         </div>
         <div className="mt-3 pt-3 border-t border-dashed border-[var(--color-border)]">
           <span className="text-xs font-medium text-[var(--color-accent)] group-hover:text-[var(--color-accent-light)] transition-colors">
-            Generate article
+            {t('wiki_generate_article')}
           </span>
         </div>
       </div>
@@ -65,7 +65,7 @@ export const WikiCard = memo(function WikiCard(props: WikiCardProps) {
           onClick({ newTab: true });
         }
       }}
-      className="relative flex flex-col p-4 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg cursor-pointer hover:border-[var(--color-border-hover)] hover:bg-[var(--color-bg-hover)] transition-all duration-150 h-full min-w-0 overflow-hidden break-words"
+      className="relative flex flex-col p-4 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg cursor-pointer hover:border-[var(--color-border-hover)] hover:bg-[var(--color-bg-hover)] active:bg-[var(--color-accent)]/10 active:border-[var(--color-accent)]/30 transition-all duration-150 h-full min-w-0 overflow-hidden break-words"
     >
       <div className="flex-1 min-h-0">
         <div className="flex items-baseline justify-between gap-2">
@@ -81,12 +81,12 @@ export const WikiCard = memo(function WikiCard(props: WikiCardProps) {
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1 text-xs text-[var(--color-text-tertiary)]">
             <BookOpen className="w-3.5 h-3.5" strokeWidth={2} />
-            {article.atom_count} source{article.atom_count !== 1 ? 's' : ''}
+            {article.atom_count} {article.atom_count === 1 ? t('wiki_source') : t('wiki_sources')}
           </span>
           {article.inbound_links > 0 && (
             <span className="flex items-center gap-1 text-xs text-[var(--color-accent-light)]">
               <Link2 className="w-3.5 h-3.5" strokeWidth={2} />
-              {article.inbound_links} link{article.inbound_links !== 1 ? 's' : ''}
+              {article.inbound_links} {article.inbound_links === 1 ? t('wiki_link') : t('wiki_links')}
             </span>
           )}
         </div>

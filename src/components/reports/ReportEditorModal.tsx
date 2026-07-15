@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Modal } from '../ui/Modal';
 import { ScheduleField } from './ScheduleField';
 import { ScopeField } from './ScopeField';
@@ -173,6 +174,8 @@ function createInputToForm(input: CreateReportInput): FormState {
 }
 
 export function ReportEditorModal({ isOpen, report, initialBody, onClose, onSaved }: ReportEditorModalProps) {
+  const { t } = useTranslation();
+
   const create = useReportsStore(s => s.create);
   const update = useReportsStore(s => s.update);
   const tags = useTagsStore(s => s.tags);
@@ -271,9 +274,9 @@ export function ReportEditorModal({ isOpen, report, initialBody, onClose, onSave
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEdit ? `Edit "${report?.name ?? ''}"` : 'New Report'}
+      title={isEdit ? t('reports_editor_edit_title', { name: report?.name ?? '' }) : t('reports_editor_new_title')}
       width="xl"
-      confirmLabel={isEdit ? 'Save changes' : 'Create report'}
+      confirmLabel={isEdit ? t('reports_editor_save') : t('reports_editor_create')}
       onConfirm={handleSave}
       confirmDisabled={!canSave}
     >
@@ -281,13 +284,13 @@ export function ReportEditorModal({ isOpen, report, initialBody, onClose, onSave
         {/* Name */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">
-            Name
+            {t('reports_editor_name_label')}
           </label>
           <input
             type="text"
             value={form.name}
             onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
-            placeholder="Daily Briefing, Weekly contradiction scan…"
+            placeholder={t('reports_editor_name_placeholder')}
             className={`
               px-3 py-2 rounded-md text-sm
               bg-[var(--color-bg-input)] border border-[var(--color-border)]
@@ -303,12 +306,12 @@ export function ReportEditorModal({ isOpen, report, initialBody, onClose, onSave
         {/* Prompt */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">
-            Research prompt
+            {t('reports_editor_prompt_label')}
           </label>
           <textarea
             value={form.research_prompt}
             onChange={(e) => setForm(f => ({ ...f, research_prompt: e.target.value }))}
-            placeholder="What is this report supposed to do? E.g. 'Summarize today's AI articles, calling out contradictions with prior coverage.'"
+            placeholder={t('reports_editor_prompt_placeholder')}
             rows={5}
             className={`
               px-3 py-2 rounded-md text-sm font-mono leading-relaxed resize-y
@@ -319,7 +322,7 @@ export function ReportEditorModal({ isOpen, report, initialBody, onClose, onSave
             `}
           />
           <span className="text-[11px] text-[var(--color-text-tertiary)]">
-            The agent reads this verbatim. Be specific about scope, tone, and what counts as a citation.
+            {t('reports_editor_prompt_helper')}
           </span>
         </div>
 
@@ -338,9 +341,9 @@ export function ReportEditorModal({ isOpen, report, initialBody, onClose, onSave
             onChange={(e) => setForm(f => ({ ...f, enabled: e.target.checked }))}
             className="accent-[var(--color-accent)]"
           />
-          <span className="text-[var(--color-text-primary)]">Enabled</span>
+          <span className="text-[var(--color-text-primary)]">{t('reports_editor_enabled_label')}</span>
           <span className="text-[11px] text-[var(--color-text-tertiary)]">
-            (paused reports keep their schedule but don't run)
+            {t('reports_editor_enabled_helper')}
           </span>
         </label>
 
@@ -354,7 +357,7 @@ export function ReportEditorModal({ isOpen, report, initialBody, onClose, onSave
           "
         >
           {showAdvanced ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-          Advanced
+          {t('reports_editor_advanced')}
         </button>
 
         {showAdvanced && (
@@ -365,7 +368,7 @@ export function ReportEditorModal({ isOpen, report, initialBody, onClose, onSave
                 which are valid SourceScopeWindow values. Cast narrows
                 the type at the boundary. */}
             <ScopeField
-              label="Source scope"
+              label={t('reports_editor_source_scope')}
               tagIds={form.source_tag_ids}
               window={form.source_window}
               onChange={(ids, w) => setForm(f => ({
@@ -380,7 +383,7 @@ export function ReportEditorModal({ isOpen, report, initialBody, onClose, onSave
                 expressed as `explicit` with an empty tag list. */}
             <div className="flex flex-col gap-2">
               <label className="text-xs font-medium uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">
-                Context scope
+                {t('reports_editor_context_scope_label')}
               </label>
               <div className="flex flex-wrap items-center gap-3 text-sm">
                 <label className="flex items-center gap-1.5 cursor-pointer">
@@ -390,7 +393,7 @@ export function ReportEditorModal({ isOpen, report, initialBody, onClose, onSave
                     onChange={() => setForm(f => ({ ...f, context_mode: 'same_as_source' }))}
                     className="accent-[var(--color-accent)]"
                   />
-                  <span>Same as source</span>
+                  <span>{t('reports_editor_context_same_as_source')}</span>
                 </label>
                 <label className="flex items-center gap-1.5 cursor-pointer">
                   <input
@@ -399,7 +402,7 @@ export function ReportEditorModal({ isOpen, report, initialBody, onClose, onSave
                     onChange={() => setForm(f => ({ ...f, context_mode: 'all' }))}
                     className="accent-[var(--color-accent)]"
                   />
-                  <span>All atoms</span>
+                  <span>{t('reports_editor_context_all_atoms')}</span>
                 </label>
                 <label className="flex items-center gap-1.5 cursor-pointer">
                   <input
@@ -408,7 +411,7 @@ export function ReportEditorModal({ isOpen, report, initialBody, onClose, onSave
                     onChange={() => setForm(f => ({ ...f, context_mode: 'explicit' }))}
                     className="accent-[var(--color-accent)]"
                   />
-                  <span>Specific tags</span>
+                  <span>{t('reports_editor_context_specific_tags')}</span>
                 </label>
               </div>
               {form.context_mode === 'explicit' && (
@@ -416,7 +419,7 @@ export function ReportEditorModal({ isOpen, report, initialBody, onClose, onSave
                    output to `null | {duration}`, both valid
                    ContextScopeWindow values. */
                 <ScopeField
-                  label="Context tags"
+                  label={t('reports_editor_context_tags_label')}
                   tagIds={form.context_tag_ids}
                   window={form.context_window}
                   onChange={(ids, w) => setForm(f => ({
@@ -438,9 +441,9 @@ export function ReportEditorModal({ isOpen, report, initialBody, onClose, onSave
             {/* Output tags */}
             <div className="flex flex-col gap-2">
               <label className="text-xs font-medium uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">
-                Output tags
+                {t('reports_editor_output_tags_label')}
                 <span className="ml-2 normal-case text-[10px] tracking-normal text-[var(--color-text-tertiary)]">
-                  applied to each finding atom
+                  {t('reports_editor_output_tags_helper')}
                 </span>
               </label>
               <TagSelector

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { useCommandPalette } from './useCommandPalette';
 import { CommandInput } from './CommandInput';
 import { CommandList } from './CommandList';
@@ -10,6 +11,7 @@ interface CommandPaletteProps {
 }
 
 export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
+  const { t } = useTranslation();
   const overlayRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -73,21 +75,21 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
               <kbd className="px-1 py-0.5 bg-[var(--color-bg-hover)] border border-[var(--color-border-hover)] rounded text-[var(--color-text-primary)]">↑↓</kbd>
-              navigate
+              {t('command_navigate')}
             </span>
             <span className="flex items-center gap-1">
               <kbd className="px-1 py-0.5 bg-[var(--color-bg-hover)] border border-[var(--color-border-hover)] rounded text-[var(--color-text-primary)]">↵</kbd>
-              select
+              {t('command_select')}
             </span>
             <span className="flex items-center gap-1">
               <kbd className="px-1 py-0.5 bg-[var(--color-bg-hover)] border border-[var(--color-border-hover)] rounded text-[var(--color-text-primary)]">esc</kbd>
-              close
+              {t('command_close')}
             </span>
           </div>
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
               <kbd className="px-1 py-0.5 bg-[var(--color-bg-hover)] border border-[var(--color-border-hover)] rounded text-[var(--color-text-primary)]">⌘P</kbd>
-              open search
+              {t('command_open_search')}
             </span>
           </div>
         </div>

@@ -1,7 +1,8 @@
-import { memo, useRef, useEffect } from 'react';
+import { memo, useRef, useEffect, useCallback } from 'react';
 import { FileText } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { DisplayAtom } from '../../stores/atoms';
+import { useUIStore } from '../../stores/ui';
 import { AtomCard } from './AtomCard';
 import { AtomCardSkeleton } from './AtomCardSkeleton';
 import { useContainerWidth } from '../../hooks/useContainerWidth';
@@ -34,6 +35,8 @@ export const AtomGrid = memo(function AtomGrid({
 }: AtomGridProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const containerWidth = useContainerWidth(parentRef);
+  const savedScrollPosition = useUIStore((s) => s.atomsListScrollPosition);
+  const setAtomsListScrollPosition = useUIStore((s) => s.setAtomsListScrollPosition);
 
   const ready = containerWidth > 0;
   const columnCount = ready
@@ -49,6 +52,24 @@ export const AtomGrid = memo(function AtomGrid({
     gap: CARD_GAP,
     enabled: ready,
   });
+
+  // Save scroll position on scroll
+  const handleScroll = useCallback(() => {
+    if (parentRef.current) {
+      setAtomsListScrollPosition(parentRef.current.scrollTop);
+    }
+  }, [setAtomsListScrollPosition]);
+
+  // Restore scroll position when component mounts
+  useEffect(() => {
+    if (parentRef.current && savedScrollPosition > 0) {
+      requestAnimationFrame(() => {
+        if (parentRef.current) {
+          parentRef.current.scrollTop = savedScrollPosition;
+        }
+      });
+    }
+  }, [savedScrollPosition]);
 
   // Load more when nearing the end
   useEffect(() => {
@@ -92,7 +113,7 @@ export const AtomGrid = memo(function AtomGrid({
   }
 
   return (
-    <div ref={parentRef} className="h-full overflow-y-auto scrollbar-auto-hide">
+    <div ref={parentRef} className="h-full overflow-y-auto scrollbar-auto-hide" onScroll={handleScroll}>
       <div
         className="relative w-full p-4"
         style={{ height: `${virtualizer.getTotalSize() + PADDING * 2 + (isLoadingMore ? 48 : 0)}px` }}

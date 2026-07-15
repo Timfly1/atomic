@@ -1,4 +1,5 @@
 import { memo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { FileText } from 'lucide-react';
 import { ReportFindingWithAtom } from '../../stores/reports';
@@ -21,6 +22,7 @@ const ROW_HEIGHT = 56;
 export const FindingsList = memo(function FindingsList({
   findings, isLoading, onFindingClick,
 }: FindingsListProps) {
+  const { t } = useTranslation();
   const parentRef = useRef<HTMLDivElement>(null);
   const items = findings ?? [];
 
@@ -49,10 +51,9 @@ export const FindingsList = memo(function FindingsList({
     return (
       <div className="flex flex-col items-center justify-center h-full text-center px-8">
         <FileText className="w-12 h-12 text-[var(--color-border)] mb-3" strokeWidth={1.5} />
-        <h3 className="text-sm font-medium text-[var(--color-text-primary)] mb-1">No findings yet</h3>
+        <h3 className="text-sm font-medium text-[var(--color-text-primary)] mb-1">{t('reports_findings_empty')}</h3>
         <p className="text-[13px] text-[var(--color-text-secondary)] max-w-sm leading-relaxed">
-          When this report runs — on its schedule or via Run now — each
-          finding lands here as an atom in your knowledge base.
+          {t('reports_findings_empty_hint')}
         </p>
       </div>
     );

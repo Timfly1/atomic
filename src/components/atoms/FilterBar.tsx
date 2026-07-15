@@ -1,19 +1,21 @@
 import { useState, useRef, useEffect } from 'react';
 import { Filter, X, ArrowDownUp } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAtomsStore, SourceFilterType, SortField, SortOrder } from '../../stores/atoms';
 
-const SORT_OPTIONS: { field: SortField; order: SortOrder; label: string }[] = [
-  { field: 'updated', order: 'desc', label: 'Updated (newest)' },
-  { field: 'updated', order: 'asc', label: 'Updated (oldest)' },
-  { field: 'created', order: 'desc', label: 'Created (newest)' },
-  { field: 'created', order: 'asc', label: 'Created (oldest)' },
-  { field: 'published', order: 'desc', label: 'Published (newest)' },
-  { field: 'published', order: 'asc', label: 'Published (oldest)' },
-  { field: 'title', order: 'asc', label: 'Title (A-Z)' },
-  { field: 'title', order: 'desc', label: 'Title (Z-A)' },
+const SORT_OPTIONS: { field: SortField; order: SortOrder; labelKey: string }[] = [
+  { field: 'updated', order: 'desc', labelKey: 'atoms_filter_updated_newest' },
+  { field: 'updated', order: 'asc', labelKey: 'atoms_filter_updated_oldest' },
+  { field: 'created', order: 'desc', labelKey: 'atoms_filter_created_newest' },
+  { field: 'created', order: 'asc', labelKey: 'atoms_filter_created_oldest' },
+  { field: 'published', order: 'desc', labelKey: 'atoms_filter_published_newest' },
+  { field: 'published', order: 'asc', labelKey: 'atoms_filter_published_oldest' },
+  { field: 'title', order: 'asc', labelKey: 'atoms_filter_title_az' },
+  { field: 'title', order: 'desc', labelKey: 'atoms_filter_title_za' },
 ];
 
 export function FilterBar() {
+  const { t } = useTranslation();
   const sourceFilter = useAtomsStore(s => s.sourceFilter);
   const sourceValue = useAtomsStore(s => s.sourceValue);
   const sortBy = useAtomsStore(s => s.sortBy);
@@ -137,7 +139,7 @@ export function FilterBar() {
             onClick={() => setSourceFilter('all')}
             className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-[var(--color-accent)]/15 text-[var(--color-accent-light)] hover:bg-[var(--color-accent)]/25 transition-colors"
           >
-            {sourceFilter === 'manual' ? 'Manual' : 'External'}
+            {sourceFilter === 'manual' ? t('atoms_filter_source_manual') : t('atoms_filter_source_external')}
             <X className="w-3 h-3" strokeWidth={2} />
           </button>
         )}
@@ -170,7 +172,7 @@ export function FilterBar() {
           className="flex items-center gap-1 text-xs px-2 py-1 rounded-md text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors"
         >
           <ArrowDownUp className="w-3.5 h-3.5" strokeWidth={2} />
-          {currentSort.label}
+          {t(currentSort.labelKey)}
         </button>
 
         {showSortDropdown && (
@@ -182,7 +184,7 @@ export function FilterBar() {
                   onClick={() => handleSortChange(opt.field, opt.order)}
                   className={`w-full text-left px-3 py-1.5 text-sm hover:bg-[var(--color-bg-hover)] transition-colors ${sortBy === opt.field && sortOrder === opt.order ? 'text-[var(--color-accent-light)]' : 'text-[var(--color-text-primary)]'}`}
                 >
-                  {opt.label}
+                  {t(opt.labelKey)}
                 </button>
               ))}
             </div>

@@ -1,7 +1,8 @@
-import { memo, useRef, useEffect } from 'react';
+import { memo, useRef, useEffect, useCallback } from 'react';
 import { FileText } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { DisplayAtom } from '../../stores/atoms';
+import { useUIStore } from '../../stores/ui';
 import { AtomCard } from './AtomCard';
 import { AtomCardSkeleton } from './AtomCardSkeleton';
 
@@ -11,6 +12,7 @@ interface AtomListProps {
   getMatchingChunkContent?: (atomId: string) => string | undefined;
   onRetryEmbedding?: (atomId: string) => void;
   onRetryTagging?: (atomId: string) => void;
+  onDelete?: (atomId: string) => void;
   onLoadMore?: () => void;
   isLoading?: boolean;
   isLoadingMore?: boolean;
@@ -22,11 +24,14 @@ export const AtomList = memo(function AtomList({
   getMatchingChunkContent,
   onRetryEmbedding,
   onRetryTagging,
+  onDelete,
   onLoadMore,
   isLoading,
   isLoadingMore,
 }: AtomListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
+  const savedScrollPosition = useUIStore((s) => s.atomsListScrollPosition);
+  const setAtomsListScrollPosition = useUIStore((s) => s.setAtomsListScrollPosition);
 
   const virtualizer = useVirtualizer({
     count: atoms.length,
@@ -35,6 +40,24 @@ export const AtomList = memo(function AtomList({
     overscan: 10,
     gap: 8,
   });
+
+  // Save scroll position on scroll
+  const handleScroll = useCallback(() => {
+    if (parentRef.current) {
+      setAtomsListScrollPosition(parentRef.current.scrollTop);
+    }
+  }, [setAtomsListScrollPosition]);
+
+  // Restore scroll position when component mounts
+  useEffect(() => {
+    if (parentRef.current && savedScrollPosition > 0) {
+      requestAnimationFrame(() => {
+        if (parentRef.current) {
+          parentRef.current.scrollTop = savedScrollPosition;
+        }
+      });
+    }
+  }, [savedScrollPosition]);
 
   // Load more when nearing the end
   useEffect(() => {
@@ -72,7 +95,7 @@ export const AtomList = memo(function AtomList({
   }
 
   return (
-    <div ref={parentRef} className="h-full overflow-y-auto scrollbar-auto-hide">
+    <div ref={parentRef} className="h-full overflow-y-auto scrollbar-auto-hide" onScroll={handleScroll}>
       <div
         className="relative w-full px-4 pt-4"
         style={{ height: `${virtualizer.getTotalSize() + 16 + (isLoadingMore ? 48 : 0)}px` }}
@@ -82,7 +105,7 @@ export const AtomList = memo(function AtomList({
           return (
             <div
               key={atom.id}
-              className="absolute left-4 right-4"
+              className="atom-list-item absolute left-4 right-4"
               style={{
                 top: `${virtualItem.start}px`,
               }}
@@ -96,6 +119,7 @@ export const AtomList = memo(function AtomList({
                 matchingChunkContent={getMatchingChunkContent?.(atom.id)}
                 onRetryEmbedding={onRetryEmbedding}
                 onRetryTagging={onRetryTagging}
+                onDelete={onDelete}
               />
             </div>
           );

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { MessageSquare } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useChatStore } from '../../stores/chat';
 import { useUIStore } from '../../stores/ui';
 import { useChatEvents } from '../../hooks/useChatEvents';
@@ -10,6 +11,8 @@ import { ChatInput } from './ChatInput';
 import { SearchBar } from '../ui/SearchBar';
 
 export function ChatView() {
+  const { t } = useTranslation();
+
   const currentConversation = useChatStore(s => s.currentConversation);
   const messages = useChatStore(s => s.messages);
   const isLoading = useChatStore(s => s.isLoading);
@@ -114,7 +117,7 @@ export function ChatView() {
   if (!currentConversation) {
     return (
       <div className="flex items-center justify-center h-full text-[var(--color-text-secondary)]">
-        {isLoading ? 'Loading conversation...' : 'No conversation selected'}
+        {isLoading ? t('chat_loading_conversation') : t('chat_no_conversation_selected')}
       </div>
     );
   }
@@ -150,9 +153,9 @@ export function ChatView() {
               <MessageSquare className="w-8 h-8 text-[var(--color-accent)]" strokeWidth={2} />
             </div>
             <div>
-              <p className="text-[var(--color-text-primary)] font-medium mb-1">Start the conversation</p>
+              <p className="text-[var(--color-text-primary)] font-medium mb-1">{t('chat_start_conversation')}</p>
               <p className="text-[var(--color-text-secondary)] text-sm max-w-sm">
-                Ask questions about your knowledge base. The AI will search through your atoms to find relevant information.
+                {t('chat_ask_about_knowledge_base')}
               </p>
             </div>
           </div>
@@ -210,8 +213,8 @@ export function ChatView() {
         disabled={isStreaming}
         placeholder={
           currentConversation.tags.length > 0
-            ? `Ask about ${currentConversation.tags.map(t => t.name).join(', ')}...`
-            : 'Ask anything about your knowledge base...'
+            ? t('chat_ask_about_tags', { tags: currentConversation.tags.map(t => t.name).join(', ') })
+            : t('chat_placeholder')
         }
       />
     </div>

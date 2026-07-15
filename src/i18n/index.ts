@@ -4,6 +4,9 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 
 import en from '../locales/en.json';
 import zh from '../locales/zh.json';
+import { toasti18n } from './toast';
+
+export { toasti18n };
 
 export const languages = [
   { code: 'en', name: 'English' },

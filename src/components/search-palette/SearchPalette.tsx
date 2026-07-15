@@ -1,5 +1,6 @@
 import { createContext, Fragment, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { BookOpen, FileText, Hash, MessageCircle, Minus, Plus } from 'lucide-react';
 import { CommandInput } from '../command-palette/CommandInput';
 import { byteOffsetsToUtf16, MATCH_SNIPPET_PAD, useSearchPalette } from './useSearchPalette';
@@ -195,6 +196,7 @@ function buildMatchSnippet(content: string, offset: MatchOffset): string {
 }
 
 export function SearchPalette({ isOpen, onClose, initialQuery = '' }: SearchPaletteProps) {
+  const { t } = useTranslation();
   const overlayRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [usingKeyboard, setUsingKeyboard] = useState(false);
@@ -483,10 +485,10 @@ export function SearchPalette({ isOpen, onClose, initialQuery = '' }: SearchPale
           shortcutHint="⌘P"
           placeholder={
             mode === 'tags'
-              ? 'Search tags...'
+              ? t('search_tags_placeholder')
               : mode === 'atoms-hybrid'
-                ? 'Search atoms semantically...'
-                : 'Search atoms, wiki, chats, and tags...'
+                ? t('search_atoms_semantically_placeholder')
+                : t('search_atoms_wiki_chats_tags_placeholder')
           }
         />
 
@@ -497,11 +499,11 @@ export function SearchPalette({ isOpen, onClose, initialQuery = '' }: SearchPale
         >
           {!searchQuery.trim() ? (
             <div className="px-4 py-8 text-center text-[var(--color-text-tertiary)] text-sm">
-              Start typing to search across Atomic. Use `#` for tags or `&gt;` for semantic atom search.
+              {t('search_start_typing')}
             </div>
           ) : searchQuery.trim().length < 2 && mode !== 'tags' ? (
             <div className="px-4 py-8 text-center text-[var(--color-text-tertiary)] text-sm">
-              Type at least 2 characters to search.
+              {t('search_min_chars')}
             </div>
           ) : null}
 
@@ -520,7 +522,7 @@ export function SearchPalette({ isOpen, onClose, initialQuery = '' }: SearchPale
 
           {showEmptyState ? (
             <div className="px-4 py-8 text-center text-[var(--color-text-tertiary)] text-sm">
-              No matches found for "{searchQuery}".
+              {t('search_no_matches', { query: searchQuery })}
             </div>
           ) : null}
         </div>
@@ -529,29 +531,29 @@ export function SearchPalette({ isOpen, onClose, initialQuery = '' }: SearchPale
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
               <kbd className="px-1 py-0.5 bg-[var(--color-bg-hover)] border border-[var(--color-border-hover)] rounded text-[var(--color-text-primary)]">↑↓</kbd>
-              navigate
+              {t('search_navigate')}
             </span>
             <span className="flex items-center gap-1">
               <kbd className="px-1 py-0.5 bg-[var(--color-bg-hover)] border border-[var(--color-border-hover)] rounded text-[var(--color-text-primary)]">↵</kbd>
-              open
+              {t('search_open')}
             </span>
             <span className="flex items-center gap-1">
               <kbd className="px-1 py-0.5 bg-[var(--color-bg-hover)] border border-[var(--color-border-hover)] rounded text-[var(--color-text-primary)]">→</kbd>
-              expand matches
+              {t('search_expand_matches')}
             </span>
             <span className="flex items-center gap-1">
               <kbd className="px-1 py-0.5 bg-[var(--color-bg-hover)] border border-[var(--color-border-hover)] rounded text-[var(--color-text-primary)]">esc</kbd>
-              close
+              {t('search_close')}
             </span>
           </div>
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
               <kbd className="px-1 py-0.5 bg-[var(--color-bg-hover)] border border-[var(--color-border-hover)] rounded text-[var(--color-text-primary)]">#</kbd>
-              tags only
+              {t('search_tags_only')}
             </span>
             <span className="flex items-center gap-1">
               <kbd className="px-1 py-0.5 bg-[var(--color-bg-hover)] border border-[var(--color-border-hover)] rounded text-[var(--color-text-primary)]">&gt;</kbd>
-              semantic atoms
+              {t('search_semantic_atoms')}
             </span>
           </div>
         </div>

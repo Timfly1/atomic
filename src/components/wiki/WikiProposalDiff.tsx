@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { diffLines } from 'diff';
 import { Button } from '../ui/Button';
 import { formatRelativeTime } from '../../lib/date';
@@ -107,6 +108,7 @@ export function WikiProposalDiff({
   isAccepting,
   isDismissing,
 }: WikiProposalDiffProps) {
+  const { t } = useTranslation();
   const blocks = useMemo(
     () => buildDiffBlocks(liveContent, proposalContent),
     [liveContent, proposalContent]
@@ -133,18 +135,18 @@ export function WikiProposalDiff({
       <div className="flex items-center justify-between px-6 py-3 border-b border-[var(--color-border)] bg-[var(--color-bg-card)]/40">
         <div className="flex flex-col">
           <span className="text-sm font-medium text-[var(--color-text-primary)]">
-            Suggested update
+            {t('wiki_suggested_update')}
           </span>
           <span className="text-xs text-[var(--color-text-secondary)]">
-            Based on {newAtomCount} new atom{newAtomCount !== 1 ? 's' : ''} • computed {formatRelativeTime(createdAt)}
+            {t('wiki_proposal_based_on', { count: newAtomCount })} • {t('wiki_proposal_computed', { time: formatRelativeTime(createdAt) })}
             {' • '}
             <span className="text-green-400">+{added}</span>{' / '}
-            <span className="text-red-400">−{removed}</span> lines
+            <span className="text-red-400">−{removed}</span> {t('wiki_proposal_lines')}
           </span>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={onCancel} disabled={isAccepting || isDismissing}>
-            Cancel
+            {t('common_cancel')}
           </Button>
           <Button
             variant="ghost"
@@ -152,7 +154,7 @@ export function WikiProposalDiff({
             onClick={onDismiss}
             disabled={isAccepting || isDismissing}
           >
-            {isDismissing ? 'Dismissing…' : 'Dismiss'}
+            {isDismissing ? t('wiki_dismissing') : t('wiki_dismiss')}
           </Button>
           <Button
             variant="primary"
@@ -160,7 +162,7 @@ export function WikiProposalDiff({
             onClick={onAccept}
             disabled={isAccepting || isDismissing}
           >
-            {isAccepting ? 'Applying…' : 'Accept'}
+            {isAccepting ? t('wiki_applying') : t('wiki_accept')}
           </Button>
         </div>
       </div>
@@ -175,7 +177,7 @@ export function WikiProposalDiff({
                 onClick={() => toggleCollapsed(blockIdx)}
                 className="block w-full text-left py-1 px-2 my-1 rounded bg-[var(--color-bg-card)]/60 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] transition-colors text-[11px] italic"
               >
-                … {block.lines.length} unchanged line{block.lines.length !== 1 ? 's' : ''} (click to expand)
+                … {t('wiki_unchanged_lines', { count: block.lines.length })} ({t('wiki_click_to_expand')})
               </button>
             );
           }
@@ -189,7 +191,7 @@ export function WikiProposalDiff({
                   onClick={() => toggleCollapsed(blockIdx)}
                   className="block w-full text-left py-1 px-2 my-1 rounded bg-[var(--color-bg-card)]/60 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] transition-colors text-[11px] italic"
                 >
-                  ⌃ collapse {block.lines.length} unchanged lines
+                  ⌃ {t('wiki_collapse_lines', { count: block.lines.length })}
                 </button>
               )}
               {lines.map((line, lineIdx) => {

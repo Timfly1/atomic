@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { LeftPanel } from './LeftPanel';
 import { MainView } from './MainView';
 import { LoadingIndicator } from '../ui/LoadingIndicator';
@@ -12,6 +13,7 @@ import { useAtomsStore } from '../../stores/atoms';
 import { useTagsStore } from '../../stores/tags';
 import { useDatabasesStore } from '../../stores/databases';
 import { useUIStore } from '../../stores/ui';
+import { useSettingsStore } from '../../stores/settings';
 import { useTheme, useFont } from '../../hooks';
 import { verifyProviderConfigured } from '../../lib/api';
 import { isTauri } from '../../lib/platform';
@@ -20,6 +22,7 @@ import { isTauri } from '../../lib/platform';
 export function Layout() {
   useTheme(); // Initialize theme
   useFont(); // Initialize font
+  const { t } = useTranslation();
   const fetchAtoms = useAtomsStore(s => s.fetchAtoms);
   const fetchTags = useTagsStore(s => s.fetchTags);
   const [isSetupRequired, setIsSetupRequired] = useState<boolean | null>(null); // null = checking
@@ -138,6 +141,7 @@ export function Layout() {
     await Promise.all([
       useAtomsStore.getState().hydrateFromCache(),
       useTagsStore.getState().hydrateFromCache(),
+      useSettingsStore.getState().fetchSettings(),
     ]);
     await Promise.all([fetchAtoms(), fetchTags()]);
   };
@@ -152,7 +156,7 @@ export function Layout() {
   if (isSetupRequired === null) {
     return (
       <div className={`flex h-full items-center justify-center bg-[var(--color-bg-main)] ${isTauri() ? 'pt-[28px]' : ''}`}>
-        <span className="text-[var(--color-text-secondary)]">Loading...</span>
+        <span className="text-[var(--color-text-secondary)]">{t('common_loading')}</span>
       </div>
     );
   }

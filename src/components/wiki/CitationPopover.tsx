@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ArrowRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useKeyboard } from '../../hooks/useKeyboard';
 
 // Generic citation interface that works with both WikiCitation and ChatCitation
@@ -46,6 +47,7 @@ function calculatePosition(
 }
 
 export function CitationPopover({ citation, anchorRect, onClose, onViewAtom }: CitationPopoverProps) {
+  const { t } = useTranslation();
   const popoverRef = useRef<HTMLDivElement>(null);
 
   // Calculate initial position immediately (synchronously)
@@ -114,7 +116,7 @@ export function CitationPopover({ citation, anchorRect, onClose, onViewAtom }: C
         <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-[var(--color-accent)]/20 text-[var(--color-accent-light)] text-xs font-medium">
           {citation.citation_index}
         </span>
-        <span className="text-xs text-[var(--color-text-secondary)]">Source excerpt</span>
+        <span className="text-xs text-[var(--color-text-secondary)]">{t('wiki_source_excerpt')}</span>
       </div>
 
       {/* Excerpt content */}
@@ -130,7 +132,7 @@ export function CitationPopover({ citation, anchorRect, onClose, onViewAtom }: C
           onClick={handleViewAtom}
           className="flex items-center gap-1 text-sm text-[var(--color-accent)] hover:text-[var(--color-accent-light)] transition-colors"
         >
-          View full atom
+          {t('wiki_view_full_atom')}
           <ArrowRight className="w-4 h-4" strokeWidth={2} />
         </button>
       </div>
