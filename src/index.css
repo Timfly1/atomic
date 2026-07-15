@@ -441,3 +441,27 @@ mark.search-highlight[data-current="true"] {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.6; }
 }
+
+/* Hide the markdown image source `![alt](url)` text on the line that
+   precedes a rendered image block. Without this, the URL (which embeds
+   the auth token) is exposed whenever the cursor lands on the image's
+   source line. The `cm-atomic-image` widget itself is the authoritative
+   image — the markdown source should never be visible. */
+.atomic-cm-editor .cm-line:has(+ .cm-atomic-image) {
+  font-size: 0 !important;
+  line-height: 0 !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.atomic-cm-editor .cm-line:has(+ .cm-atomic-image) > * {
+  font-size: 0 !important;
+  color: transparent !important;
+  visibility: hidden !important;
+}

@@ -20,6 +20,7 @@ export interface Atom {
   document_path: string | null;
   document_name: string | null;
   document_type: string | null;
+  embedded_images: Array<{ id: string; original_ref: string; stored_path: string; content_type: string }>;
   /// Discriminator added in phase-1 of the reports work. `captured`
   /// is what users write or import; `report` is agent-written finding
   /// output. The atom list view filters to `captured` by default, but

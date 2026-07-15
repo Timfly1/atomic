@@ -327,16 +327,23 @@ export function useInlineEditor({
     });
   }, [isDirty, finalizeDraft, editContent, atom.id, deleteAtom, fetchTags]);
 
-  /** Immediate content-only save (for Cmd+S). */
+  /** Immediate content-only save (for Cmd+S). Uses refs to check dirty
+   *  state because React state (editContent etc.) may not have updated
+   *  yet when this is called immediately after setEditContent in the
+   *  same event handler (e.g. batch image upload). */
   const saveNow = useCallback(async () => {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
       debounceRef.current = null;
     }
-    if (isDirty()) {
+    const contentDirty = editContentRef.current !== lastSavedRef.current.content;
+    const sourceUrlDirty = editSourceUrlRef.current !== lastSavedRef.current.sourceUrl;
+    const currentTagIds = editTagsRef.current.map(t => t.id).sort().join(',');
+    const tagsDirty = currentTagIds !== lastSavedRef.current.tagIds;
+    if (contentDirty || sourceUrlDirty || tagsDirty) {
       await doContentSave();
     }
-  }, [isDirty, doContentSave]);
+  }, [doContentSave]);
 
   const flushDraft = useCallback(async () => {
     if (debounceRef.current) {

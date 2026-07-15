@@ -209,11 +209,33 @@ impl SqliteStorage {
                 atoms_fts_insert(&conn, id)?;
                 replace_atom_links_for_content(&conn, id, &request.content, created_at)?;
 
+                // Filter tag_ids to only include those that exist in this database
+                // This prevents FOREIGN KEY constraint failures when switching databases
+                // and the frontend sends stale tag_ids from the previous database
+                let valid_tag_ids: HashSet<String> = if request.tag_ids.is_empty() {
+                    HashSet::new()
+                } else {
+                    let placeholders: Vec<String> = request.tag_ids.iter().map(|_| "?".to_string()).collect();
+                    let query = format!(
+                        "SELECT id FROM tags WHERE id IN ({})",
+                        placeholders.join(", ")
+                    );
+                    let mut stmt = conn.prepare(&query)?;
+                    let params: Vec<&dyn rusqlite::ToSql> = request.tag_ids
+                        .iter()
+                        .map(|s| s as &dyn rusqlite::ToSql)
+                        .collect();
+                    let rows = stmt.query_map(params.as_slice(), |row| row.get::<_, String>(0))?;
+                    rows.filter_map(|r| r.ok()).collect()
+                };
+
                 for tag_id in &request.tag_ids {
-                    conn.execute(
-                        "INSERT INTO atom_tags (atom_id, tag_id, source) VALUES (?1, ?2, 'manual')",
-                        (id, tag_id),
-                    )?;
+                    if valid_tag_ids.contains(tag_id) {
+                        conn.execute(
+                            "INSERT INTO atom_tags (atom_id, tag_id, source) VALUES (?1, ?2, 'manual')",
+                            (id, tag_id),
+                        )?;
+                    }
                 }
                 Ok(())
             })() {
@@ -275,6 +297,29 @@ impl SqliteStorage {
 
             conn.execute_batch("BEGIN")?;
 
+            // Collect all unique tag_ids from all requests and validate they exist
+            // This prevents FOREIGN KEY constraint failures when switching databases
+            let all_tag_ids: HashSet<String> = atoms
+                .iter()
+                .flat_map(|(_, request, _)| request.tag_ids.iter().cloned())
+                .collect();
+            let valid_tag_ids: HashSet<String> = if all_tag_ids.is_empty() {
+                HashSet::new()
+            } else {
+                let placeholders: Vec<String> = all_tag_ids.iter().map(|_| "?".to_string()).collect();
+                let query = format!(
+                    "SELECT id FROM tags WHERE id IN ({})",
+                    placeholders.join(", ")
+                );
+                let mut stmt = conn.prepare(&query)?;
+                let params: Vec<&dyn rusqlite::ToSql> = all_tag_ids
+                    .iter()
+                    .map(|s| s as &dyn rusqlite::ToSql)
+                    .collect();
+                let rows = stmt.query_map(params.as_slice(), |row| row.get::<_, String>(0))?;
+                rows.filter_map(|r| r.ok()).collect()
+            };
+
             for (id, request, created_at) in atoms {
                 let (title, snippet) = extract_title_and_snippet(&request.content, 300);
                 let source = request.source_url.as_deref().map(parse_source);
@@ -305,12 +350,14 @@ impl SqliteStorage {
                 }
 
                 for tag_id in &request.tag_ids {
-                    if let Err(e) = conn.execute(
-                        "INSERT INTO atom_tags (atom_id, tag_id, source) VALUES (?1, ?2, 'manual')",
-                        (id, tag_id),
-                    ) {
-                        conn.execute_batch("ROLLBACK")?;
-                        return Err(AtomicCoreError::Database(e));
+                    if valid_tag_ids.contains(tag_id) {
+                        if let Err(e) = conn.execute(
+                            "INSERT INTO atom_tags (atom_id, tag_id, source) VALUES (?1, ?2, 'manual')",
+                            (id, tag_id),
+                        ) {
+                            conn.execute_batch("ROLLBACK")?;
+                            return Err(AtomicCoreError::Database(e));
+                        }
                     }
                 }
 

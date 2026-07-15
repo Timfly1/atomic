@@ -4,11 +4,13 @@ use crate::db_extractor::Db;
 use crate::error::{ok_or_error, ApiErrorResponse};
 use crate::event_bridge::embedding_event_callback;
 use crate::state::{AppState, ServerEvent};
+use actix_multipart::Multipart;
 use actix_web::{web, HttpResponse};
 use atomic_core::{
     AtomLink, AtomWithTags, BulkCreateResult, PaginatedAtoms,
     PaginatedTagChildren, SourceInfo, Tag, TagWithCount, UpdateAtomRequest,
 };
+use futures::StreamExt;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use utoipa::{IntoParams, ToSchema};
@@ -1715,10 +1717,91 @@ pub async fn get_atom_embedded_image(
         .body(body)
 }
 
+pub async fn delete_atom_embedded_image(
+    db: Db,
+    path: web::Path<EmbeddedImagePath>,
+) -> HttpResponse {
+    let EmbeddedImagePath { id: atom_id, image_id } = path.into_inner();
+
+    let atom = match db.0.get_atom(&atom_id).await {
+        Ok(Some(a)) => a,
+        Ok(None) => {
+            return HttpResponse::NotFound().json(ApiErrorResponse {
+                error: "Atom not found".to_string(),
+            });
+        }
+        Err(_) => {
+            return HttpResponse::NotFound().json(ApiErrorResponse {
+                error: "Atom not found".to_string(),
+            });
+        }
+    };
+
+    // Find the embedded image with matching id
+    let embedded_image = match atom.atom.embedded_images.iter().find(|img| img.id == image_id) {
+        Some(img) => img.clone(),
+        None => {
+            return HttpResponse::NotFound().json(ApiErrorResponse {
+                error: "Embedded image not found".to_string(),
+            });
+        }
+    };
+
+    // Delete the actual image file
+    let img_path = std::path::Path::new(&embedded_image.stored_path);
+    if img_path.exists() {
+        if let Err(e) = tokio::fs::remove_file(img_path).await {
+            tracing::error!("Failed to delete image file: {}", e);
+            return HttpResponse::InternalServerError().json(ApiErrorResponse {
+                error: format!("Failed to delete image file: {}", e),
+            });
+        }
+    }
+
+    // Remove the image from embedded_images list
+    let mut embedded_images = atom.atom.embedded_images.clone();
+    embedded_images.retain(|img| img.id != image_id);
+
+    // Serialize to JSON
+    let embedded_images_json = match serde_json::to_string(&embedded_images) {
+        Ok(json) => json,
+        Err(e) => {
+            return HttpResponse::InternalServerError().json(ApiErrorResponse {
+                error: format!("Failed to serialize embedded images: {}", e),
+            });
+        }
+    };
+
+    // Update atom with modified embedded images
+    let update_req = UpdateAtomRequest {
+        content: atom.atom.content.clone(),
+        source_url: atom.atom.source_url.clone(),
+        published_at: atom.atom.published_at.clone(),
+        tag_ids: None,
+        image_path: atom.atom.image_path.clone(),
+        document_path: atom.atom.document_path.clone(),
+        document_name: atom.atom.document_name.clone(),
+        document_type: atom.atom.document_type.clone(),
+        embedded_images: Some(embedded_images_json),
+    };
+
+    if let Err(e) = db.0.update_atom(&atom_id, update_req, |_| {}).await {
+        return HttpResponse::InternalServerError().json(ApiErrorResponse {
+            error: format!("Failed to update atom: {}", e),
+        });
+    }
+
+    tracing::debug!("delete_atom_embedded_image: atom_id={}, image_id={}", atom_id, image_id);
+
+    HttpResponse::Ok().json(serde_json::json!({
+        "success": true,
+    }))
+}
+
 pub async fn upload_atom_embedded_image(
     db: Db,
     path: web::Path<String>,
-    body: web::Bytes,
+    mut payload: Multipart,
 ) -> HttpResponse {
     let atom_id = path.into_inner();
 
@@ -1737,14 +1820,66 @@ pub async fn upload_atom_embedded_image(
         }
     };
 
-    // Detect content type
-    let content_type = match detect_image_content_type(&body) {
-        Some(ct) => ct,
-        None => {
-            return HttpResponse::BadRequest().json(ApiErrorResponse {
-                error: "Unsupported image format. Supported: JPEG, PNG, GIF, WebP".to_string(),
-            });
+    // Process multipart data
+    let mut file_data: Vec<u8> = Vec::new();
+    let mut filename = String::new();
+    let mut content_type = String::new();
+
+    while let Some(item) = payload.next().await {
+        let mut field = match item {
+            Ok(field) => field,
+            Err(e) => {
+                return HttpResponse::BadRequest().json(ApiErrorResponse {
+                    error: format!("Multipart error: {}", e),
+                });
+            }
+        };
+
+        let content_disposition = field.content_disposition();
+
+        // Get filename from content disposition
+        if let Some(cd) = content_disposition {
+            if let Some(name) = cd.get_filename() {
+                filename = name.to_string();
+            }
         }
+
+        // Get content type from field
+        if let Some(ct) = field.content_type() {
+            content_type = ct.to_string();
+        }
+
+        // Read field data
+        while let Some(chunk) = field.next().await {
+            match chunk {
+                Ok(data) => file_data.extend_from_slice(&data),
+                Err(e) => {
+                    return HttpResponse::BadRequest().json(ApiErrorResponse {
+                        error: format!("Error reading field data: {}", e),
+                    });
+                }
+            }
+        }
+    }
+
+    if file_data.is_empty() {
+        return HttpResponse::BadRequest().json(ApiErrorResponse {
+            error: "No file data provided".to_string(),
+        });
+    }
+
+    // Detect content type if not provided
+    let content_type: String = if content_type.is_empty() {
+        match detect_image_content_type(&file_data) {
+            Some(ct) => ct.to_string(),
+            None => {
+                return HttpResponse::BadRequest().json(ApiErrorResponse {
+                    error: "Unsupported image format. Supported: JPEG, PNG, GIF, WebP".to_string(),
+                });
+            }
+        }
+    } else {
+        content_type
     };
 
     // Get storage path for images
@@ -1769,19 +1904,20 @@ pub async fn upload_atom_embedded_image(
 
     // Generate unique image ID
     let image_id = uuid::Uuid::new_v4().to_string();
-    let extension = get_image_extension(content_type);
+    let extension = get_image_extension(&content_type);
     let image_filename = format!("{}-{}.{}", atom_id, image_id, extension);
     let image_path = images_dir.join(&image_filename);
 
     tracing::debug!(
-        "upload_atom_embedded_image: atom_id={}, image_id={}, content_type={}, image_path={}",
-        atom_id, image_id, content_type, image_path.display()
+        "upload_atom_embedded_image: atom_id={}, image_id={}, content_type={}, image_path={}, filename={}",
+        atom_id, image_id, content_type, image_path.display(), filename
     );
 
     // Save the image file (blocking I/O in spawn_blocking)
     let image_path_clone = image_path.clone();
+    let file_data_clone = file_data.clone();
     let result = tokio::task::spawn_blocking(move || {
-        std::fs::write(&image_path_clone, &body)
+        std::fs::write(&image_path_clone, &file_data_clone)
     })
     .await;
 
@@ -1802,9 +1938,9 @@ pub async fn upload_atom_embedded_image(
     // Add new embedded image
     embedded_images.push(atomic_core::EmbeddedImage {
         id: image_id.clone(),
-        original_ref: String::new(), // Empty for pasted images
+        original_ref: filename.clone(),
         stored_path: image_path.to_string_lossy().to_string(),
-        content_type: content_type.to_string(),
+        content_type: content_type.clone(),
     });
 
     // Serialize to JSON
@@ -1837,7 +1973,7 @@ pub async fn upload_atom_embedded_image(
     }
 
     HttpResponse::Ok().json(serde_json::json!({
-        "image_id": image_id,
+        "id": image_id,
         "content_type": content_type,
     }))
 }

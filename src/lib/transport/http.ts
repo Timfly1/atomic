@@ -315,7 +315,7 @@ export class HttpTransport implements Transport {
     return resp.json();
   }
 
-  async uploadEmbeddedImage(atomId: string, file: File): Promise<{ image_id: string; content_type: string }> {
+  async uploadEmbeddedImage(atomId: string, file: File): Promise<{ id: string; content_type: string }> {
     if (this.authExpired) {
       throw new Error('Authentication expired. Please reconnect with a valid token.');
     }
@@ -328,11 +328,13 @@ export class HttpTransport implements Transport {
       'Authorization': `Bearer ${this.config.authToken}`,
     };
 
-    const body = await file.arrayBuffer();
+    const formData = new FormData();
+    formData.append('file', file);
+
     const resp = await fetch(url, {
       method: 'POST',
       headers,
-      body,
+      body: formData,
     });
 
     if (!resp.ok) {
@@ -467,6 +469,44 @@ export class HttpTransport implements Transport {
     }
 
     const url = `${this.config.baseUrl}/api/atoms/${encodeURIComponent(atomId)}/document`;
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${this.config.authToken}`,
+    };
+
+    const resp = await fetch(url, {
+      method: 'DELETE',
+      headers,
+    });
+
+    if (!resp.ok) {
+      if (resp.status === 401) {
+        this.authExpired = true;
+        this.disconnect();
+        localStorage.removeItem('atomic-server-config');
+        window.dispatchEvent(new CustomEvent('atomic:auth-expired'));
+        throw new Error('Authentication expired. Please reconnect with a valid token.');
+      }
+      const text = await resp.text();
+      let errorMsg: string;
+      try {
+        const errJson = JSON.parse(text);
+        errorMsg = errJson.error || text;
+      } catch {
+        errorMsg = text;
+      }
+      throw errorMsg;
+    }
+  }
+
+  async deleteEmbeddedImage(atomId: string, imageId: string): Promise<void> {
+    if (this.authExpired) {
+      throw new Error('Authentication expired. Please reconnect with a valid token.');
+    }
+    if (!this.config.baseUrl) {
+      throw new Error('Not connected to a server');
+    }
+
+    const url = `${this.config.baseUrl}/api/atoms/${encodeURIComponent(atomId)}/embedded-images/${encodeURIComponent(imageId)}`;
     const headers: Record<string, string> = {
       'Authorization': `Bearer ${this.config.authToken}`,
     };

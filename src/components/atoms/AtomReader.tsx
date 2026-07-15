@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, Trash2, Upload, X, Eye, ArrowLeft, FileText, Download } from 'lucide-react';
+import { ChevronDown, Trash2, X, Eye, ArrowLeft, FileText, Download, Image } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { openExternalUrl } from '../../lib/platform';
 import { Modal } from '../ui/Modal';
@@ -205,6 +205,11 @@ function AtomReaderContent({
   const [showDocumentPreview, setShowDocumentPreview] = useState(false);
   const [isUploadingDocument, setIsUploadingDocument] = useState(false);
   const documentFileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isUploadingBatchImages, setIsUploadingBatchImages] = useState(false);
+  const batchImagesFileInputRef = useRef<HTMLInputElement | null>(null);
+  const [showEmbeddedImagePreview, setShowEmbeddedImagePreview] = useState(false);
+  const [previewEmbeddedImageUrl, setPreviewEmbeddedImageUrl] = useState<string | null>(null);
+  const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
 
   // Listen for double-click on images in the editor to show preview
   useEffect(() => {
@@ -267,6 +272,75 @@ function AtomReaderContent({
     }
   }, [atom.id, refreshAtom, resetToAtom]);
 
+  const handleBatchImagesUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploadingBatchImages(true);
+    const transport = getTransport();
+    const config = transport.getConfig();
+    const baseUrl = config.baseUrl?.replace(/\/$/, '') || '';
+    const uploadedImages: string[] = [];
+
+    try {
+      for (const file of Array.from(files)) {
+        if (!file.type.startsWith('image/')) continue;
+
+        const result = await transport.uploadEmbeddedImage(atom.id, file);
+        const imageUrl = `${baseUrl}/api/atoms/${encodeURIComponent(atom.id)}/embedded-images/${encodeURIComponent(result.id)}?token=${encodeURIComponent(config.authToken)}`;
+        uploadedImages.push(`![${file.name || 'image'}](${imageUrl})`);
+      }
+
+      if (uploadedImages.length > 0) {
+        // Append images at the end of the content
+        const imageMarkdown = uploadedImages.join('\n\n');
+        const newContent = editContent + '\n\n' + imageMarkdown;
+        setEditContent(newContent);
+        // Persist changes to server before refresh
+        await saveNow();
+        // Refresh atom to update embedded_images list
+        await refreshAtom();
+        // Force editor remount so it picks up the newly saved content
+        resetToAtom();
+      }
+    } catch (error) {
+      console.error('Failed to upload batch images:', error);
+    } finally {
+      setIsUploadingBatchImages(false);
+      if (batchImagesFileInputRef.current) {
+        batchImagesFileInputRef.current.value = '';
+      }
+    }
+  }, [atom.id, editContent, setEditContent, saveNow, refreshAtom, resetToAtom]);
+
+  const handleEmbeddedImagePreview = useCallback((imgUrl: string) => {
+    setPreviewEmbeddedImageUrl(imgUrl);
+    setShowEmbeddedImagePreview(true);
+  }, []);
+
+  const handleEmbeddedImageDelete = useCallback(async (imageId: string) => {
+    setDeletingImageId(imageId);
+    try {
+      await getTransport().deleteEmbeddedImage(atom.id, imageId);
+      // Remove the image markdown from content
+      const config = getTransport().getConfig();
+      const baseUrl = config.baseUrl?.replace(/\/$/, '') || '';
+      const imageUrl = `${baseUrl}/api/atoms/${encodeURIComponent(atom.id)}/embedded-images/${encodeURIComponent(imageId)}?token=${encodeURIComponent(config.authToken)}`;
+      const imageMarkdownPattern = new RegExp(`!\\[([^\\]]*)\\]\\(${escapeRegExp(imageUrl)}\\)\\n?`, 'g');
+      const newContent = editContent.replace(imageMarkdownPattern, '');
+      setEditContent(newContent);
+      // Persist changes to server before refresh
+      await saveNow();
+      await refreshAtom();
+      // Force editor remount so it picks up the updated content
+      resetToAtom();
+    } catch (error) {
+      console.error('Failed to delete embedded image:', error);
+    } finally {
+      setDeletingImageId(null);
+    }
+  }, [atom.id, editContent, setEditContent, saveNow, refreshAtom, resetToAtom]);
+
   const handleDocumentUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -298,6 +372,11 @@ function AtomReaderContent({
 
   const imageUrl = atom.image_path ? getTransport().getImageUrl(atom.id) : null;
   const documentUrl = atom.document_path ? getTransport().getDocumentUrl(atom.id) : null;
+  const embeddedImageUrls = atom.embedded_images?.map((img) => {
+    const config = getTransport().getConfig();
+    const baseUrl = config.baseUrl?.replace(/\/$/, '') || '';
+    return `${baseUrl}/api/atoms/${encodeURIComponent(atom.id)}/embedded-images/${encodeURIComponent(img.id)}?token=${encodeURIComponent(config.authToken)}`;
+  }) || [];
 
   useEffect(() => {
     setReaderEditState(Boolean(initialEditing), saveStatus);
@@ -535,11 +614,11 @@ function AtomReaderContent({
                 </div>
                 <button
                   onClick={() => setShowDeleteModal(true)}
-                  className="shrink-0 p-1.5 rounded text-[var(--color-text-secondary)] hover:text-red-400 hover:bg-[var(--color-bg-hover)] transition-colors"
+                  className="shrink-0 p-2 rounded text-[var(--color-text-secondary)] hover:text-red-400 hover:bg-[var(--color-bg-hover)] transition-colors"
                   title={t('atoms_delete_atom')}
                   aria-label={t('atoms_delete_atom')}
                 >
-                  <Trash2 className="w-3.5 h-3.5" strokeWidth={2} />
+                  <Trash2 className="w-4 h-4" strokeWidth={2} />
                 </button>
               </div>
               {atom.source_url && (
@@ -593,7 +672,7 @@ function AtomReaderContent({
                   </div>
                 </div>
               ) : (
-                <div className="border border-dashed border-[var(--color-border)] rounded p-4 text-center">
+                <div className="border border-dashed border-[var(--color-border)] rounded p-3">
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -604,17 +683,91 @@ function AtomReaderContent({
                   />
                   <label
                     htmlFor={`image-upload-${atom.id}`}
-                    className="flex flex-col items-center gap-1 cursor-pointer"
+                    className="flex items-center justify-center gap-2 cursor-pointer"
                   >
                     {isUploadingImage ? (
                       <span className="text-xs text-[var(--color-text-tertiary)]">{t('atoms_uploading')}</span>
                     ) : (
                       <>
-                        <Upload className="w-5 h-5 text-[var(--color-text-tertiary)]" />
-                        <span className="text-xs text-[var(--color-text-tertiary)]">{t('atoms_upload_image')}</span>
+                        <Image className="w-4 h-4 text-[var(--color-text-tertiary)]" />
+                        <span className="text-xs text-[var(--color-text-tertiary)]">{t('atoms_upload_ocr_image')}</span>
                       </>
                     )}
                   </label>
+                </div>
+              )}
+            </div>
+
+            {/* Batch Images section */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-[var(--color-text-secondary)]">{t('atoms_batch_images_section')}</span>
+                <input
+                  ref={batchImagesFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleBatchImagesUpload}
+                  className="hidden"
+                  id={`batch-images-upload-${atom.id}`}
+                />
+                <label
+                  htmlFor={`batch-images-upload-${atom.id}`}
+                  className="flex items-center gap-2 text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] cursor-pointer"
+                >
+                  {isUploadingBatchImages ? (
+                    <span>{t('atoms_uploading_images')}</span>
+                  ) : (
+                    <>
+                      <Image className="w-4 h-4" />
+                      <span>{t('atoms_upload_batch_images')}</span>
+                    </>
+                  )}
+                </label>
+              </div>
+              {embeddedImageUrls.length > 0 ? (
+                <div className="grid grid-cols-3 gap-2">
+                  {atom.embedded_images.map((img, index) => {
+                    const imgUrl = embeddedImageUrls[index];
+                    const isDeleting = deletingImageId === img.id;
+                    return (
+                      <div key={img.id} className="relative group aspect-square">
+                        <img
+                          src={imgUrl}
+                          alt={img.original_ref || `${t('atoms_image_alt')} ${index + 1}`}
+                          className="w-full h-full object-cover rounded border border-[var(--color-border)]"
+                        />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleEmbeddedImagePreview(imgUrl)}
+                            className="p-1 rounded bg-black/50 text-white hover:bg-black/70"
+                            title={t('atoms_view_full_image')}
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleEmbeddedImageDelete(img.id)}
+                            disabled={isDeleting}
+                            className="p-1 rounded bg-black/50 text-red-400 hover:bg-black/70 disabled:opacity-50"
+                            title={t('atoms_delete_image')}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        {isDeleting && (
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded">
+                            <span className="text-white text-xs">{t('common_loading')}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="border border-dashed border-[var(--color-border)] rounded p-4 text-center">
+                  <span className="text-xs text-[var(--color-text-tertiary)]">{t('atoms_no_images')}</span>
                 </div>
               )}
             </div>
@@ -660,7 +813,7 @@ function AtomReaderContent({
                   </div>
                 </div>
               ) : (
-                <div className="border border-dashed border-[var(--color-border)] rounded p-4 text-center">
+                <div className="border border-dashed border-[var(--color-border)] rounded p-3">
                   <input
                     ref={documentFileInputRef}
                     type="file"
@@ -671,17 +824,14 @@ function AtomReaderContent({
                   />
                   <label
                     htmlFor={`document-upload-${atom.id}`}
-                    className="flex flex-col items-center gap-1 cursor-pointer"
+                    className="flex items-center justify-center gap-2 cursor-pointer"
                   >
                     {isUploadingDocument ? (
                       <span className="text-xs text-[var(--color-text-tertiary)]">{t('atoms_uploading')}</span>
                     ) : (
                       <>
-                        <Upload className="w-5 h-5 text-[var(--color-text-tertiary)]" />
+                        <FileText className="w-4 h-4 text-[var(--color-text-tertiary)]" />
                         <span className="text-xs text-[var(--color-text-tertiary)]">{t('atoms_upload_document')}</span>
-                        <span className="text-[10px] text-[var(--color-text-tertiary)]">
-                          {t('atoms_document_formats')}
-                        </span>
                       </>
                     )}
                   </label>
@@ -775,6 +925,14 @@ function AtomReaderContent({
         />
       )}
 
+      {/* Embedded Image Fullscreen Preview */}
+      {showEmbeddedImagePreview && previewEmbeddedImageUrl && (
+        <FullscreenImagePreview
+          src={previewEmbeddedImageUrl}
+          onClose={() => setShowEmbeddedImagePreview(false)}
+        />
+      )}
+
       {/* Document Preview Modal */}
       <Modal
         isOpen={showDocumentPreview}
@@ -816,6 +974,10 @@ function AtomReaderContent({
       </Modal>
     </div>
   );
+}
+
+function escapeRegExp(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function searchResultsToAtomLinkSuggestions(

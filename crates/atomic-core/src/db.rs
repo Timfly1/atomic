@@ -276,7 +276,7 @@ impl Database {
     ///   1. Add a new `if version < N` block at the end (before the virtual-table section)
     ///   2. End the block with `PRAGMA user_version = N;`
     ///   3. Bump LATEST_VERSION
-    const LATEST_VERSION: i32 = 25;
+    const LATEST_VERSION: i32 = 26;
 
     pub fn run_migrations(conn: &Connection) -> Result<(), AtomicCoreError> {
         Self::run_migrations_internal(conn, false)
@@ -1108,6 +1108,7 @@ impl Database {
 
         // V24: Add document_path, document_type, embedded_images columns for document attachments
         if version < 24 {
+            // Check and add each column individually in case of partial migration
             let has_doc_path: bool = conn
                 .query_row(
                     "SELECT COUNT(*) > 0 FROM pragma_table_info('atoms') WHERE name = 'document_path'",
@@ -1115,21 +1116,32 @@ impl Database {
                     |row| row.get(0),
                 )
                 .unwrap_or(false);
-
             if !has_doc_path {
-                conn.execute(
-                    "ALTER TABLE atoms ADD COLUMN document_path TEXT",
-                    [],
-                )?;
-                conn.execute(
-                    "ALTER TABLE atoms ADD COLUMN document_type TEXT",
-                    [],
-                )?;
-                conn.execute(
-                    "ALTER TABLE atoms ADD COLUMN embedded_images TEXT",
-                    [],
-                )?;
+                conn.execute("ALTER TABLE atoms ADD COLUMN document_path TEXT", [])?;
             }
+
+            let has_doc_type: bool = conn
+                .query_row(
+                    "SELECT COUNT(*) > 0 FROM pragma_table_info('atoms') WHERE name = 'document_type'",
+                    [],
+                    |row| row.get(0),
+                )
+                .unwrap_or(false);
+            if !has_doc_type {
+                conn.execute("ALTER TABLE atoms ADD COLUMN document_type TEXT", [])?;
+            }
+
+            let has_embedded_images: bool = conn
+                .query_row(
+                    "SELECT COUNT(*) > 0 FROM pragma_table_info('atoms') WHERE name = 'embedded_images'",
+                    [],
+                    |row| row.get(0),
+                )
+                .unwrap_or(false);
+            if !has_embedded_images {
+                conn.execute("ALTER TABLE atoms ADD COLUMN embedded_images TEXT", [])?;
+            }
+
             conn.execute_batch(&format!("PRAGMA user_version = {};", Self::LATEST_VERSION))?;
         }
 
@@ -1148,6 +1160,21 @@ impl Database {
                     "ALTER TABLE atoms ADD COLUMN document_name TEXT",
                     [],
                 )?;
+            }
+            conn.execute_batch(&format!("PRAGMA user_version = {};", Self::LATEST_VERSION))?;
+        }
+
+        // V26: Fix missing embedded_images column from partial V24 migration
+        if version < 26 {
+            let has_embedded_images: bool = conn
+                .query_row(
+                    "SELECT COUNT(*) > 0 FROM pragma_table_info('atoms') WHERE name = 'embedded_images'",
+                    [],
+                    |row| row.get(0),
+                )
+                .unwrap_or(false);
+            if !has_embedded_images {
+                conn.execute("ALTER TABLE atoms ADD COLUMN embedded_images TEXT", [])?;
             }
             conn.execute_batch(&format!("PRAGMA user_version = {};", Self::LATEST_VERSION))?;
         }

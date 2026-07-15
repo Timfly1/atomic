@@ -77,7 +77,8 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
     // Embedded images (from document parsing and paste-to-editor upload)
     cfg.service(
         web::resource("/atoms/{id}/embedded-images/{imageId}")
-            .route(web::get().to(atoms::get_atom_embedded_image)),
+            .route(web::get().to(atoms::get_atom_embedded_image))
+            .route(web::delete().to(atoms::delete_atom_embedded_image)),
     );
     cfg.service(
         web::resource("/atoms/{id}/embedded-images")
