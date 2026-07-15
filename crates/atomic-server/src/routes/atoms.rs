@@ -1714,3 +1714,130 @@ pub async fn get_atom_embedded_image(
         .content_type(embedded_image.content_type.as_str())
         .body(body)
 }
+
+pub async fn upload_atom_embedded_image(
+    db: Db,
+    path: web::Path<String>,
+    body: web::Bytes,
+) -> HttpResponse {
+    let atom_id = path.into_inner();
+
+    // Verify atom exists
+    let existing_atom = match db.0.get_atom(&atom_id).await {
+        Ok(Some(atom)) => atom,
+        Ok(None) => {
+            return HttpResponse::NotFound().json(ApiErrorResponse {
+                error: "Atom not found".to_string(),
+            });
+        }
+        Err(e) => {
+            return HttpResponse::NotFound().json(ApiErrorResponse {
+                error: format!("Atom not found: {}", e),
+            });
+        }
+    };
+
+    // Detect content type
+    let content_type = match detect_image_content_type(&body) {
+        Some(ct) => ct,
+        None => {
+            return HttpResponse::BadRequest().json(ApiErrorResponse {
+                error: "Unsupported image format. Supported: JPEG, PNG, GIF, WebP".to_string(),
+            });
+        }
+    };
+
+    // Get storage path for images
+    let storage_path = db.0.db_path();
+    let images_dir = get_images_dir(storage_path);
+
+    // Create images directory if it doesn't exist
+    if images_dir.exists() {
+        if !images_dir.is_dir() {
+            if let Err(e) = std::fs::remove_file(&images_dir) {
+                return HttpResponse::InternalServerError().json(ApiErrorResponse {
+                    error: format!("Failed to remove conflicting file: {}", e),
+                });
+            }
+        }
+    }
+    if let Err(e) = std::fs::create_dir_all(&images_dir) {
+        return HttpResponse::InternalServerError().json(ApiErrorResponse {
+            error: format!("Failed to create images directory: {}", e),
+        });
+    }
+
+    // Generate unique image ID
+    let image_id = uuid::Uuid::new_v4().to_string();
+    let extension = get_image_extension(content_type);
+    let image_filename = format!("{}-{}.{}", atom_id, image_id, extension);
+    let image_path = images_dir.join(&image_filename);
+
+    tracing::debug!(
+        "upload_atom_embedded_image: atom_id={}, image_id={}, content_type={}, image_path={}",
+        atom_id, image_id, content_type, image_path.display()
+    );
+
+    // Save the image file (blocking I/O in spawn_blocking)
+    let image_path_clone = image_path.clone();
+    let result = tokio::task::spawn_blocking(move || {
+        std::fs::write(&image_path_clone, &body)
+    })
+    .await;
+
+    if let Err(e) = result {
+        return HttpResponse::InternalServerError().json(ApiErrorResponse {
+            error: format!("Failed to save image: {}", e),
+        });
+    }
+    if let Err(e) = result.unwrap() {
+        return HttpResponse::InternalServerError().json(ApiErrorResponse {
+            error: format!("Failed to write image file: {}", e),
+        });
+    }
+
+    // Get existing embedded images or start with empty array
+    let mut embedded_images = existing_atom.atom.embedded_images.clone();
+
+    // Add new embedded image
+    embedded_images.push(atomic_core::EmbeddedImage {
+        id: image_id.clone(),
+        original_ref: String::new(), // Empty for pasted images
+        stored_path: image_path.to_string_lossy().to_string(),
+        content_type: content_type.to_string(),
+    });
+
+    // Serialize to JSON
+    let embedded_images_json = match serde_json::to_string(&embedded_images) {
+        Ok(json) => json,
+        Err(e) => {
+            return HttpResponse::InternalServerError().json(ApiErrorResponse {
+                error: format!("Failed to serialize embedded images: {}", e),
+            });
+        }
+    };
+
+    // Update atom with new embedded images
+    let update_req = UpdateAtomRequest {
+        content: existing_atom.atom.content.clone(),
+        source_url: existing_atom.atom.source_url.clone(),
+        published_at: existing_atom.atom.published_at.clone(),
+        tag_ids: None,
+        image_path: existing_atom.atom.image_path.clone(),
+        document_path: existing_atom.atom.document_path.clone(),
+        document_name: existing_atom.atom.document_name.clone(),
+        document_type: existing_atom.atom.document_type.clone(),
+        embedded_images: Some(embedded_images_json),
+    };
+
+    if let Err(e) = db.0.update_atom(&atom_id, update_req, |_| {}).await {
+        return HttpResponse::InternalServerError().json(ApiErrorResponse {
+            error: format!("Failed to update atom: {}", e),
+        });
+    }
+
+    HttpResponse::Ok().json(serde_json::json!({
+        "image_id": image_id,
+        "content_type": content_type,
+    }))
+}

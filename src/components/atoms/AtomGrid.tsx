@@ -60,16 +60,16 @@ export const AtomGrid = memo(function AtomGrid({
     }
   }, [setAtomsListScrollPosition]);
 
-  // Restore scroll position when component mounts
+  // Restore scroll position when component mounts or data loads
   useEffect(() => {
-    if (parentRef.current && savedScrollPosition > 0) {
+    if (parentRef.current && savedScrollPosition > 0 && !isLoading && ready) {
       requestAnimationFrame(() => {
         if (parentRef.current) {
           parentRef.current.scrollTop = savedScrollPosition;
         }
       });
     }
-  }, [savedScrollPosition]);
+  }, [savedScrollPosition, isLoading, ready]);
 
   // Load more when nearing the end
   useEffect(() => {

@@ -9,7 +9,6 @@ export function WikiFullView() {
   const suggestedArticles = useWikiStore(s => s.suggestedArticles);
   const isLoadingList = useWikiStore(s => s.isLoadingList);
   const fetchAllArticles = useWikiStore(s => s.fetchAllArticles);
-  const reset = useWikiStore(s => s.reset);
 
   const openWikiReader = useUIStore(s => s.openWikiReader);
 
@@ -21,11 +20,6 @@ export function WikiFullView() {
     initializedRef.current = true;
     fetchAllArticles();
   }, [fetchAllArticles]);
-
-  // Clean up wiki store state on unmount
-  useEffect(() => {
-    return () => { reset(); };
-  }, [reset]);
 
   const handleArticleClick = (tagId: string, tagName: string, opts?: { newTab?: boolean }) => {
     openWikiReader(tagId, tagName, undefined, opts);

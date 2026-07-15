@@ -48,16 +48,16 @@ export const AtomList = memo(function AtomList({
     }
   }, [setAtomsListScrollPosition]);
 
-  // Restore scroll position when component mounts
+  // Restore scroll position when component mounts or data loads
   useEffect(() => {
-    if (parentRef.current && savedScrollPosition > 0) {
+    if (parentRef.current && savedScrollPosition > 0 && !isLoading) {
       requestAnimationFrame(() => {
         if (parentRef.current) {
           parentRef.current.scrollTop = savedScrollPosition;
         }
       });
     }
-  }, [savedScrollPosition]);
+  }, [savedScrollPosition, isLoading]);
 
   // Load more when nearing the end
   useEffect(() => {

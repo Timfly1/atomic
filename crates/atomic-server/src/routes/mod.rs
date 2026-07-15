@@ -74,10 +74,15 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
             .route(web::delete().to(atoms::delete_atom_document)),
     );
 
-    // Embedded images (from document parsing)
+    // Embedded images (from document parsing and paste-to-editor upload)
     cfg.service(
         web::resource("/atoms/{id}/embedded-images/{imageId}")
             .route(web::get().to(atoms::get_atom_embedded_image)),
+    );
+    cfg.service(
+        web::resource("/atoms/{id}/embedded-images")
+            .app_data(actix_web::web::PayloadConfig::new(50 * 1024 * 1024)) // 50MB limit
+            .route(web::post().to(atoms::upload_atom_embedded_image)),
     );
 
     // Tags

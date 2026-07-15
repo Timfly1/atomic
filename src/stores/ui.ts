@@ -707,9 +707,8 @@ export const useUIStore = create<UIStore>()(
 
       closeReader: () => {
         const state = get();
-        if (state.activeTabId) {
-          state.closeTab(state.activeTabId);
-        }
+        state.deactivateTabs();
+        navigateTo(viewPath(state.viewMode, state.selectedTagId));
       },
 
       openWikiReader: (tagId, tagName, highlightText, opts) => {

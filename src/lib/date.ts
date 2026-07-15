@@ -1,3 +1,5 @@
+import i18n from 'i18next';
+
 export function formatRelativeDate(dateString: string): string {
   const date = new Date(dateString);
   const now = new Date();
@@ -8,24 +10,24 @@ export function formatRelativeDate(dateString: string): string {
   const diffDays = Math.floor(diffHours / 24);
 
   if (diffSecs < 60) {
-    return 'Just now';
+    return i18n.t('time_just_now');
   } else if (diffMins < 60) {
-    return `${diffMins} minute${diffMins === 1 ? '' : 's'} ago`;
+    return i18n.t('time_minutes_ago', { count: diffMins });
   } else if (diffHours < 24) {
-    return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+    return i18n.t('time_hours_ago', { count: diffHours });
   } else if (diffDays === 1) {
-    return 'Yesterday';
+    return i18n.t('time_yesterday');
   } else if (diffDays < 7) {
-    return `${diffDays} days ago`;
+    return i18n.t('time_days_ago', { count: diffDays });
   } else if (diffDays < 30) {
     const weeks = Math.floor(diffDays / 7);
-    return `${weeks} week${weeks === 1 ? '' : 's'} ago`;
+    return i18n.t('time_weeks_ago', { count: weeks });
   } else if (diffDays < 365) {
     const months = Math.floor(diffDays / 30);
-    return `${months} month${months === 1 ? '' : 's'} ago`;
+    return i18n.t('time_months_ago', { count: months });
   } else {
     const years = Math.floor(diffDays / 365);
-    return `${years} year${years === 1 ? '' : 's'} ago`;
+    return i18n.t('time_years_ago', { count: years });
   }
 }
 

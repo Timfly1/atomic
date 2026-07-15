@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Clock, RefreshCw } from 'lucide-react';
+import { Clock, RefreshCw, ArrowLeft, BookOpen } from 'lucide-react';
 import { useWikiStore } from '../../stores/wiki';
 import { useUIStore } from '../../stores/ui';
 import { WikiArticleContent } from './WikiArticleContent';
@@ -9,7 +9,7 @@ import { WikiGenerating } from './WikiGenerating';
 import { WikiProposalDiff } from './WikiProposalDiff';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
-import { formatRelativeTime } from '../../lib/date';
+import { formatRelativeTime, formatRelativeDate } from '../../lib/date';
 
 interface WikiReaderProps {
   tagId: string;
@@ -56,6 +56,7 @@ export function WikiReader({ tagId, tagName, highlightText }: WikiReaderProps) {
   const fetchProposal = useWikiStore(s => s.fetchProposal);
 
   const overlayNavigate = useUIStore(s => s.overlayNavigate);
+  const overlayDismiss = useUIStore(s => s.overlayDismiss);
 
   const [showRegenerateModal, setShowRegenerateModal] = useState(false);
   const [showVersions, setShowVersions] = useState(false);
@@ -161,6 +162,37 @@ export function WikiReader({ tagId, tagName, highlightText }: WikiReaderProps) {
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-[var(--color-bg-main)]">
+      {/* Header — back button + icon + title + date */}
+      <div className="flex items-center gap-3 px-5 py-3 border-b border-[var(--color-border)] flex-shrink-0">
+        <button
+          onClick={overlayDismiss}
+          title={t('common_back')}
+          aria-label={t('common_back')}
+          className="
+            p-1.5 rounded-md text-[var(--color-text-secondary)]
+            hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]
+            transition-colors
+          "
+        >
+          <ArrowLeft className="w-4 h-4" strokeWidth={2} />
+        </button>
+
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <BookOpen className="w-4 h-4 text-[var(--color-text-tertiary)] flex-shrink-0" strokeWidth={2} />
+          <span className="text-sm font-medium text-[var(--color-text-primary)] truncate">
+            {tagName}
+          </span>
+          {displayArticle.updated_at && (
+            <>
+              <span className="text-[var(--color-text-tertiary)]/40">·</span>
+              <span className="text-[10.5px] font-medium uppercase tracking-[0.14em] text-[var(--color-text-tertiary)] tabular-nums">
+                {formatRelativeDate(displayArticle.updated_at).toUpperCase()}
+              </span>
+            </>
+          )}
+        </div>
+      </div>
+
       {/* Version viewing banner */}
       {selectedVersion && (
         <div className="flex items-center justify-between px-6 py-2 bg-amber-500/10 border-b border-amber-500/20 flex-shrink-0">

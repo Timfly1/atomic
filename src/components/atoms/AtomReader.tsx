@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, Trash2, Upload, X, Eye, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { ChevronDown, Trash2, Upload, X, Eye, ArrowLeft, FileText, Download } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { openExternalUrl } from '../../lib/platform';
 import { Modal } from '../ui/Modal';
@@ -12,10 +12,11 @@ import { useAtomsStore, type AtomWithTags, type SemanticSearchResult, type Simil
 import { useTagsStore } from '../../stores/tags';
 import { useUIStore } from '../../stores/ui';
 import { useInlineEditor, useIsMobile } from '../../hooks';
-import { formatDate } from '../../lib/date';
+import { formatDate, formatRelativeDate } from '../../lib/date';
 import { getTransport } from '../../lib/transport';
 import { readerEditorActions } from '../../lib/reader-editor-bridge';
 import { atomLinkExtension, type AtomLinkSuggestion, type AtomLinkSuggestionSource } from '../../editor/atom-links';
+import { pasteImageHandler } from '../../lib/editor/paste-handler';
 import type {
   AtomicCodeMirrorEditorHandle,
   AtomicCodeMirrorEditorProps,
@@ -190,6 +191,7 @@ function AtomReaderContent({
   const readerTheme = useUIStore(s => s.readerTheme);
   const setReaderEditState = useUIStore(s => s.setReaderEditState);
   const retryTagging = useAtomsStore(s => s.retryTagging);
+  const closeReader = useUIStore(s => s.closeReader);
   const isMobile = useIsMobile();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const editorHandleRef = useRef<AtomicCodeMirrorEditorHandle | null>(null);
@@ -203,6 +205,26 @@ function AtomReaderContent({
   const [showDocumentPreview, setShowDocumentPreview] = useState(false);
   const [isUploadingDocument, setIsUploadingDocument] = useState(false);
   const documentFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Listen for double-click on images in the editor to show preview
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleDoubleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const img = target.closest('.cm-atomic-image')?.querySelector('img');
+      if (img && img.src) {
+        e.preventDefault();
+        e.stopPropagation();
+        setPreviewImageUrl(img.src);
+        setShowImagePreview(true);
+      }
+    };
+
+    container.addEventListener('dblclick', handleDoubleClick);
+    return () => container.removeEventListener('dblclick', handleDoubleClick);
+  }, []);
 
   const {
     editContent, editSourceUrl, editTags, saveStatus,
@@ -425,6 +447,11 @@ function AtomReaderContent({
     [atom.id, onRelatedAtomClick, resolveAtomLink, suggestAtomLinks],
   );
 
+  const pasteImageExtension = useMemo(
+    () => pasteImageHandler({ atomId: atom.id }),
+    [atom.id],
+  );
+
   return (
     <div
       ref={containerRef}
@@ -434,6 +461,34 @@ function AtomReaderContent({
         revealed ? 'opacity-100' : 'opacity-0'
       }`}
     >
+      {/* Header — back button + icon + title + date */}
+      <div className="flex items-center gap-3 px-5 py-3 border-b border-[var(--color-border)] flex-shrink-0">
+        <button
+          onClick={closeReader}
+          title={t('common_back')}
+          aria-label={t('common_back')}
+          className="
+            p-1.5 rounded-md text-[var(--color-text-secondary)]
+            hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]
+            transition-colors
+          "
+        >
+          <ArrowLeft className="w-4 h-4" strokeWidth={2} />
+        </button>
+
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <FileText className="w-4 h-4 text-[var(--color-text-tertiary)] shrink-0" strokeWidth={2} />
+          <span className="text-sm font-medium text-[var(--color-text-primary)] truncate min-w-0 flex-1">
+            {atom.title || t('atoms_untitled')}
+          </span>
+        </div>
+        {atom.created_at && (
+          <span className="shrink-0 text-[10.5px] font-medium uppercase tracking-[0.14em] text-[var(--color-text-tertiary)] tabular-nums">
+            {formatRelativeDate(atom.created_at).toUpperCase()}
+          </span>
+        )}
+      </div>
+
       {/* @container makes the two-column layout react to the actual reader
           pane width rather than the viewport. With the chat sidebar open,
           the viewport may be wide while the reader is narrow — without
@@ -460,7 +515,7 @@ function AtomReaderContent({
                   void openExternalUrl(url);
                 }}
                 editorHandleRef={editorHandleRef}
-                extensions={atomLinkExtensions}
+                extensions={[atomLinkExtensions, pasteImageExtension]}
               />
             </Suspense>
           </div>
@@ -712,65 +767,13 @@ function AtomReaderContent({
         <p>{t('atoms_delete_confirm_message')}</p>
       </Modal>
 
-      {/* Image Preview Modal with Zoom/Pan */}
-      <Modal
-        isOpen={showImagePreview}
-        onClose={() => setShowImagePreview(false)}
-        title={t('atoms_image_preview')}
-        confirmLabel={t('common_close')}
-        onConfirm={() => setShowImagePreview(false)}
-      >
-        {(previewImageUrl || imageUrl) && (
-          <TransformWrapper
-            initialScale={1}
-            minScale={0.5}
-            maxScale={8}
-            centerOnInit
-            limitToBounds={false}
-          >
-            {({ zoomIn, zoomOut, resetTransform }) => (
-              <>
-                <div className="flex justify-center gap-2 mb-2">
-                  <button
-                    type="button"
-                    onClick={() => zoomIn()}
-                    className="p-1.5 rounded bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)]"
-                    title={t('atoms_zoom_in')}
-                  >
-                    <ZoomIn className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => zoomOut()}
-                    className="p-1.5 rounded bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)]"
-                    title={t('atoms_zoom_out')}
-                  >
-                    <ZoomOut className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => resetTransform()}
-                    className="p-1.5 rounded bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)]"
-                    title={t('atoms_reset_zoom')}
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                  </button>
-                </div>
-                <TransformComponent
-                  wrapperClass="!w-full !h-[60vh]"
-                  contentClass="!w-full !h-full"
-                >
-                  <img
-                    src={previewImageUrl || imageUrl || undefined}
-                    alt={t('atoms_image_full_size_alt')}
-                    className="max-w-full max-h-full object-contain"
-                  />
-                </TransformComponent>
-              </>
-            )}
-          </TransformWrapper>
-        )}
-      </Modal>
+      {/* Fullscreen Image Preview */}
+      {showImagePreview && (previewImageUrl || imageUrl) && (
+        <FullscreenImagePreview
+          src={previewImageUrl || imageUrl || ''}
+          onClose={() => setShowImagePreview(false)}
+        />
+      )}
 
       {/* Document Preview Modal */}
       <Modal
@@ -892,6 +895,88 @@ function SidebarRelatedAtoms({ atomId, onAtomClick }: { atomId: string; onAtomCl
           ) : null}
         </div>
       )}
+    </div>
+  );
+}
+
+// Fullscreen image preview
+function FullscreenImagePreview({ src, onClose }: { src: string; onClose: () => void }) {
+  const { t } = useTranslation();
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [onClose]);
+
+  const handleDownload = () => {
+    const link = document.createElement('a');
+    link.href = src;
+    link.download = '';
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-100 bg-black/95 flex flex-col"
+      onClick={onClose}
+    >
+      {/* Image container */}
+      <div
+        className="flex-1 flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <TransformWrapper
+          initialScale={1}
+          minScale={0.1}
+          maxScale={10}
+          centerOnInit
+          limitToBounds={false}
+        >
+          <TransformComponent
+            wrapperClass="!w-full !h-full"
+            contentClass="!w-full !h-full"
+          >
+            <img
+              src={src}
+              alt={t('atoms_image_full_size_alt')}
+              className="max-w-full max-h-full object-contain"
+              draggable={false}
+            />
+          </TransformComponent>
+        </TransformWrapper>
+      </div>
+      {/* Bottom controls */}
+      <div
+        className="flex items-center justify-center gap-6 px-4 py-4 bg-black/50"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={handleDownload}
+          className="p-3 rounded-full bg-white/10 hover:bg-white/20 text-white/90 hover:text-white transition-colors"
+          title={t('atoms_download_document')}
+        >
+          <Download className="w-6 h-6" />
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="p-3 rounded-full bg-white/10 hover:bg-white/20 text-white/90 hover:text-white transition-colors"
+          title={t('common_close')}
+        >
+          <X className="w-6 h-6" />
+        </button>
+      </div>
     </div>
   );
 }

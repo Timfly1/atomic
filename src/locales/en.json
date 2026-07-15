@@ -1060,5 +1060,19 @@
   "error_generic": "Something went wrong",
   "error_network": "Network error",
   "error_not_found": "Not found",
-  "error_unauthorized": "Unauthorized"
+  "error_unauthorized": "Unauthorized",
+  "time_just_now": "Just now",
+  "time_minutes_ago_one": "{{count}} minute ago",
+  "time_minutes_ago_other": "{{count}} minutes ago",
+  "time_hours_ago_one": "{{count}} hour ago",
+  "time_hours_ago_other": "{{count}} hours ago",
+  "time_yesterday": "Yesterday",
+  "time_days_ago_one": "{{count}} day ago",
+  "time_days_ago_other": "{{count}} days ago",
+  "time_weeks_ago_one": "{{count}} week ago",
+  "time_weeks_ago_other": "{{count}} weeks ago",
+  "time_months_ago_one": "{{count}} month ago",
+  "time_months_ago_other": "{{count}} months ago",
+  "time_years_ago_one": "{{count}} year ago",
+  "time_years_ago_other": "{{count}} years ago"
 }

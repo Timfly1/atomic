@@ -1,4 +1,4 @@
-{
+﻿{
   "common_save": "保存",
   "common_cancel": "取消",
   "common_delete": "删除",
@@ -1060,5 +1060,19 @@
   "error_generic": "出错了",
   "error_network": "网络错误",
   "error_not_found": "未找到",
-  "error_unauthorized": "未授权"
+  "error_unauthorized": "未授权",
+  "time_just_now": "刚刚",
+  "time_minutes_ago_one": "{{count}} 分钟前",
+  "time_minutes_ago_other": "{{count}} 分钟前",
+  "time_hours_ago_one": "{{count}} 小时前",
+  "time_hours_ago_other": "{{count}} 小时前",
+  "time_yesterday": "昨天",
+  "time_days_ago_one": "{{count}} 天前",
+  "time_days_ago_other": "{{count}} 天前",
+  "time_weeks_ago_one": "{{count}} 周前",
+  "time_weeks_ago_other": "{{count}} 周前",
+  "time_months_ago_one": "{{count}} 个月前",
+  "time_months_ago_other": "{{count}} 个月前",
+  "time_years_ago_one": "{{count}} 年前",
+  "time_years_ago_other": "{{count}} 年前"
 }

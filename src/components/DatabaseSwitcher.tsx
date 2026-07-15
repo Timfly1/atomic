@@ -67,12 +67,12 @@ export function DatabaseSwitcher() {
     <div className="relative flex-1 min-w-0" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center gap-1.5 px-2 py-1.5 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] rounded transition-colors"
+        className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] rounded transition-colors"
         title={activeName}
       >
-        <Database className="w-3 h-3 flex-shrink-0 opacity-60" strokeWidth={2} />
+        <Database className="w-4 h-4 flex-shrink-0 opacity-70" strokeWidth={2} />
         <span className="truncate">{activeName}</span>
-        <ChevronDown className="w-2 h-2 flex-shrink-0 opacity-40" strokeWidth={2} />
+        <ChevronDown className="w-3 h-3 flex-shrink-0 opacity-50" strokeWidth={2} />
       </button>
 
       {isOpen && (
@@ -145,7 +145,7 @@ export function DatabaseSwitcher() {
                 onClick={() => setIsCreating(true)}
                 className="w-full text-left px-3 py-1.5 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)]"
               >
-                + New database
+                + {t('database_create')}
               </button>
             )}
           </div>
