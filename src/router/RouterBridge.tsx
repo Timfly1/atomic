@@ -289,6 +289,8 @@ export function RouterBridge() {
       stack: [newEntry],
       stackIndex: 0,
       ordinal: store.nextTabOrdinal,
+      databaseId: store.currentDatabaseId ?? '',
+      visible: true,
     };
     const projected = projectActiveEntry(newEntry);
     useUIStore.setState((s) => ({

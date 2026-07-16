@@ -129,8 +129,11 @@ export function WikiReader({ tagId, tagName, highlightText }: WikiReaderProps) {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-4 p-4">
+      <div className="flex flex-col items-center justify-center h-full gap-4 p-4 text-[var(--color-text-secondary)]">
         <p className="text-red-400 text-sm">{error}</p>
+        <span className="text-xs text-[var(--color-text-tertiary)]">
+          该知识库可能已被删除或不存在于当前数据库
+        </span>
         <button onClick={clearError} className="text-xs text-[var(--color-accent)] hover:underline">
           {t('common_close')}
         </button>

@@ -4,7 +4,7 @@
 
 use crate::executor::FETCH_SEMAPHORE;
 use regex::Regex;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::sync::LazyLock;
 
 /// Detect if a URL is a Feishu document URL.
@@ -52,95 +52,6 @@ struct FeishuDocument {
     create_uid: Option<String>,
     #[serde(rename = "owner_id")]
     owner_id: Option<String>,
-}
-
-/// Feishu document blocks response.
-#[derive(Debug, Deserialize)]
-struct BlocksResponse {
-    data: BlocksData,
-}
-
-#[derive(Debug, Deserialize)]
-struct BlocksData {
-    items: Vec<Block>,
-    #[serde(rename = "page_token")]
-    page_token: Option<String>,
-    #[serde(rename = "has_more")]
-    has_more: bool,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-struct Block {
-    #[serde(rename = "block_id")]
-    block_id: String,
-    #[serde(rename = "block_type")]
-    block_type: u32,
-    parent_id: Option<String>,
-    children: Option<Vec<String>>,
-    #[serde(rename = "block_style")]
-    block_style: Option<BlockStyle>,
-    #[serde(rename = "text")]
-    text: Option<TextContent>,
-}
-
-#[derive(Debug, Deserialize, Default, Clone)]
-struct BlockStyle {
-    #[serde(rename = "bold")]
-    bold: Option<bool>,
-    #[serde(rename = "italic")]
-    italic: Option<bool>,
-    #[serde(rename = "strikethrough")]
-    strikethrough: Option<bool>,
-    #[serde(rename = "underline")]
-    underline: Option<bool>,
-    #[serde(rename = "inline_code")]
-    inline_code: Option<bool>,
-    #[serde(rename = "link")]
-    link: Option<LinkStyle>,
-}
-
-#[derive(Debug, Deserialize, Default, Clone)]
-struct LinkStyle {
-    pub url: String,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-struct TextContent {
-    #[serde(rename = "text_elements")]
-    text_elements: Option<Vec<TextElement>>,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-struct TextElement {
-    #[serde(rename = "text_run")]
-    text_run: TextRun,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-struct TextRun {
-    content: String,
-    #[serde(rename = "text_element_style")]
-    text_element_style: Option<TextElementStyle>,
-}
-
-#[derive(Debug, Deserialize, Default, Clone)]
-struct TextElementStyle {
-    #[serde(rename = "bold")]
-    bold: Option<bool>,
-    #[serde(rename = "italic")]
-    italic: Option<bool>,
-    #[serde(rename = "strikethrough")]
-    strikethrough: Option<bool>,
-    #[serde(rename = "underline")]
-    underline: Option<bool>,
-    #[serde(rename = "inline_code")]
-    inline_code: Option<bool>,
-    #[serde(rename = "link")]
-    link: Option<LinkStyle>,
-    #[serde(rename = "text_color")]
-    text_color: Option<u32>,
-    #[serde(rename = "background_color")]
-    background_color: Option<u32>,
 }
 
 /// Shared reqwest client for Feishu API calls.
@@ -196,8 +107,8 @@ pub async fn fetch_feishu_doc(
     // Fetch document metadata
     let doc = fetch_document_meta(&doc_id, token).await?;
 
-    // Fetch document blocks and convert to markdown
-    let markdown = fetch_document_blocks(&doc_id, token).await?;
+    // Fetch raw document content (markdown format)
+    let markdown = fetch_raw_content(&doc_id, token).await?;
 
     let title = doc.title.clone();
     let content = if title.is_empty() {
@@ -253,115 +164,21 @@ async fn fetch_document_meta(
     Ok(doc_response.data.document)
 }
 
-/// Fetch all document blocks and convert to markdown.
-async fn fetch_document_blocks(
+/// Fetch raw document content (markdown format).
+async fn fetch_raw_content(
     doc_id: &str,
     token: Option<&str>,
 ) -> Result<String, String> {
-    let mut all_blocks = Vec::new();
-    let mut page_token: Option<String> = None;
-
-    loop {
-        let blocks = fetch_blocks_page(doc_id, page_token.as_deref(), token)
-            .await?;
-
-        all_blocks.extend(blocks.items);
-
-        if blocks.has_more {
-            page_token = blocks.page_token;
-        } else {
-            break;
-        }
-    }
-
-    // Fetch text content for blocks that don't have it
-    let mut blocks_with_text = all_blocks.clone();
-    for block in blocks_with_text.iter_mut() {
-        let needs_fetch = block.text.is_none() || block.text.as_ref().and_then(|t| t.text_elements.as_ref()).map(|e| e.is_empty()).unwrap_or(true);
-        if needs_fetch {
-            eprintln!("[Feishu] Fetching text for block {} (type={})", block.block_id, block.block_type);
-            match fetch_single_block(doc_id, &block.block_id, token).await {
-                Ok(updated_block) => {
-                    eprintln!("[Feishu] Got text for block {}: {:?}", block.block_id, updated_block.text);
-                    block.text = updated_block.text;
-                }
-                Err(e) => {
-                    eprintln!("[Feishu] Failed to fetch block {}: {}", block.block_id, e);
-                }
-            }
-        }
-    }
-
-    Ok(blocks_to_markdown(&blocks_with_text))
-}
-
-/// Fetch a single block with its text content.
-async fn fetch_single_block(
-    doc_id: &str,
-    block_id: &str,
-    token: Option<&str>,
-) -> Result<Block, String> {
     let _permit = FETCH_SEMAPHORE
         .acquire()
         .await
         .map_err(|_| "Fetch semaphore closed".to_string())?;
 
     let url = format!(
-        "https://open.feishu.cn/open-apis/docx/v1/documents/{}/blocks/{}",
-        doc_id, block_id
-    );
-
-    let mut request = FEISHU_CLIENT.get(&url);
-
-    if let Some(t) = token {
-        request = request.header("Authorization", format!("Bearer {}", t));
-    }
-
-    let response = request
-        .send()
-        .await
-        .map_err(|e| format!("Failed to fetch Feishu block: {}", e))?;
-
-    if !response.status().is_success() {
-        return Err(format!("Feishu block API error: {}", response.status()));
-    }
-
-    #[derive(Deserialize)]
-    struct SingleBlockResponse {
-        data: BlockData,
-    }
-    #[derive(Deserialize)]
-    struct BlockData {
-        block: Block,
-    }
-
-    let body = response.text().await.map_err(|e| format!("Failed to read block body: {}", e))?;
-    let block_response: SingleBlockResponse = serde_json::from_str(&body)
-        .map_err(|e| format!("Failed to parse block response: {}", e))?;
-
-    Ok(block_response.data.block)
-}
-
-/// Fetch a single page of blocks.
-async fn fetch_blocks_page(
-    doc_id: &str,
-    page_token: Option<&str>,
-    token: Option<&str>,
-) -> Result<BlocksData, String> {
-    let _permit = FETCH_SEMAPHORE
-        .acquire()
-        .await
-        .map_err(|_| "Fetch semaphore closed".to_string())?;
-
-    let mut url = format!(
-        "https://open.feishu.cn/open-apis/docx/v1/documents/{}/blocks?page_size=500",
+        "https://open.feishu.cn/open-apis/docx/v1/documents/{}/raw_content?lang=0",
         doc_id
     );
 
-    if let Some(pt) = page_token {
-        url.push_str(&format!("&page_token={}", pt));
-    }
-
     let mut request = FEISHU_CLIENT.get(&url);
 
     if let Some(t) = token {
@@ -371,149 +188,29 @@ async fn fetch_blocks_page(
     let response = request
         .send()
         .await
-        .map_err(|e| format!("Failed to fetch Feishu blocks: {}", e))?;
+        .map_err(|e| format!("Failed to fetch Feishu raw content: {}", e))?;
 
     if !response.status().is_success() {
         let status = response.status();
         let body = response.text().await.unwrap_or_default();
-        return Err(format!("Feishu blocks API error ({}): {}", status, body));
+        return Err(format!("Feishu raw content API error ({}): {}", status, body));
     }
 
-    let body = response.text().await.map_err(|e| format!("Failed to read Feishu blocks body: {}", e))?;
+    let body = response.text().await.map_err(|e| format!("Failed to read Feishu raw content body: {}", e))?;
 
-    let blocks_response: BlocksResponse = serde_json::from_str(&body)
-        .map_err(|e| format!("Failed to parse Feishu blocks response: {} | Body: {}", e, &body[..body.len().min(500)]))?;
-
-    Ok(blocks_response.data)
-}
-
-/// Convert Feishu blocks to markdown.
-fn blocks_to_markdown(blocks: &[Block]) -> String {
-    let mut result = String::new();
-
-    // Build a map of block_id -> block for quick lookup
-    let block_map: std::collections::HashMap<&str, &Block> = blocks
-        .iter()
-        .map(|b| (b.block_id.as_str(), b))
-        .collect();
-
-    // Find root blocks (blocks whose parent_id is empty or points to the document root)
-    // The document root block typically has block_type 1 and is the first block
-    let root_block_id = blocks.first().map(|b| b.block_id.as_str()).unwrap_or("");
-
-    // Recursively render blocks starting from root
-    render_block_tree(blocks, &block_map, root_block_id, &mut result, 0);
-
-    result
-}
-
-/// Recursively render a block and its children.
-fn render_block_tree(
-    blocks: &[Block],
-    block_map: &std::collections::HashMap<&str, &Block>,
-    block_id: &str,
-    result: &mut String,
-    depth: usize,
-) {
-    let block = match block_map.get(block_id) {
-        Some(b) => b,
-        None => return,
-    };
-
-    // If this block has children, render them instead of this block
-    if let Some(children) = &block.children {
-        if !children.is_empty() {
-            for child_id in children {
-                render_block_tree(blocks, block_map, child_id, result, depth);
-            }
-            return;
-        }
+    #[derive(Deserialize)]
+    struct RawContentResponse {
+        data: RawContentData,
+    }
+    #[derive(Deserialize)]
+    struct RawContentData {
+        content: String,
     }
 
-    // This is a leaf block - convert it to markdown
-    let markdown = block_to_markdown_leaf(block, depth);
-    if !markdown.is_empty() {
-        result.push_str(&markdown);
-        result.push('\n');
-    }
-}
+    let content_response: RawContentResponse = serde_json::from_str(&body)
+        .map_err(|e| format!("Failed to parse Feishu raw content response: {} | Body: {}", e, &body[..body.len().min(500)]))?;
 
-/// Convert a leaf block to markdown (without recursion into children).
-fn block_to_markdown_leaf(block: &Block, _depth: usize) -> String {
-    // Get text content from the block
-    let text = block.text
-        .as_ref()
-        .and_then(|t| t.text_elements.as_ref())
-        .map(|els| {
-            els.iter()
-                .map(|e| e.text_run.content.clone())
-                .collect::<String>()
-        })
-        .unwrap_or_default();
-
-    match block.block_type {
-        1 => {
-            // Paragraph - just return the text
-            if text.is_empty() {
-                String::new()
-            } else {
-                text
-            }
-        }
-        2 => format!("# {}", text),           // Heading 1
-        3 => format!("## {}", text),          // Heading 2
-        4 => format!("### {}", text),         // Heading 3
-        5 => format!("#### {}", text),        // Heading 4
-        6 => format!("##### {}", text),       // Heading 5
-        7 => format!("###### {}", text),      // Heading 6
-        12 => format!("- {}", text),          // Bullet list
-        13 => format!("1. {}", text),         // Ordered list
-        14 => format!("```\n{}\n```", text),  // Code block
-        15 => format!("> {}", text),          // Quote
-        17 => format!("> [!NOTE]\n> {}", text), // Callout
-        18 => format!("<details>\n<summary>{}</summary>\n\n</details>", text), // Toggle
-        20 => {
-            // Table - simplified
-            if text.is_empty() {
-                String::new()
-            } else {
-                format!("| {} |\n|--|\n| |", text)
-            }
-        }
-        22 => {
-            // Image
-            if text.is_empty() {
-                String::new()
-            } else {
-                format!("![{}]()", text)
-            }
-        }
-        23 => {
-            // Video
-            if text.is_empty() {
-                String::new()
-            } else {
-                format!("[Video: {}]()", text)
-            }
-        }
-        24 => {
-            // Embed
-            if text.is_empty() {
-                String::new()
-            } else {
-                format!("[Link: {}]()", text)
-            }
-        }
-        27 => "---\n".to_string(),            // Divider
-        _ => text,                            // Fallback
-    }
-}
-
-/// Extract plain text content from text elements.
-fn text_content(elements: Option<&Vec<TextElement>>) -> String {
-    elements
-        .map(|els| els.iter().map(|e| e.text_run.content.clone()).collect())
-        .unwrap_or_default()
+    Ok(content_response.data.content)
 }
 
 /// Validate Feishu credentials by attempting to get a token.

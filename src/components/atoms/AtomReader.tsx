@@ -144,8 +144,17 @@ export function AtomReader({ atomId, highlightText, initialEditing }: AtomReader
           </div>
         ) : null
       ) : !atom ? (
-        <div className="flex items-center justify-center h-full text-[var(--color-text-secondary)]">
-          {t('atoms_not_found')}
+        <div className="flex flex-col items-center justify-center h-full gap-4 text-[var(--color-text-secondary)]">
+          <span>{t('atoms_not_found')}</span>
+          <span className="text-xs text-[var(--color-text-tertiary)]">
+            该原子可能已被删除或不存在于当前数据库
+          </span>
+          <button
+            onClick={overlayDismiss}
+            className="text-xs text-[var(--color-accent)] hover:underline"
+          >
+            {t('common_close')}
+          </button>
         </div>
       ) : (
         <AtomReaderContent

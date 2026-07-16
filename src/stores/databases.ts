@@ -8,6 +8,7 @@ import { useTagsStore } from './tags';
 import { useWikiStore } from './wiki';
 import { useChatStore } from './chat';
 import { useFeaturedReportStore } from './featuredReport';
+import { useUIStore } from './ui';
 
 export interface DatabaseInfo {
   id: string;
@@ -57,6 +58,8 @@ export const useDatabasesStore = create<DatabasesStore>()(
         activeId: result.active_id,
         isLoading: false,
       });
+      // Sync currentDatabaseId in UI store so tab databaseId assignment works
+      useUIStore.getState().setCurrentDatabaseId(result.active_id);
       void syncSharedConfig({ databaseId: result.active_id });
     } catch (e) {
       set({ error: String(e), isLoading: false });
@@ -136,6 +139,19 @@ export const useDatabasesStore = create<DatabasesStore>()(
     try {
       const transport = getTransport();
       await transport.invoke('activate_database', { id });
+
+      const previousDatabaseId = useUIStore.getState().currentDatabaseId;
+
+      // Hide tabs from the previous database, show tabs for the new database
+      if (previousDatabaseId) {
+        useUIStore.getState().setTabsVisibility(previousDatabaseId, false);
+      } else {
+        // First switch: hide any tabs with empty databaseId (created before initialization)
+        useUIStore.getState().setTabsVisibility('', false);
+      }
+      useUIStore.getState().setCurrentDatabaseId(id);
+      useUIStore.getState().setTabsVisibility(id, true);
+
       set({ activeId: id });
       void syncSharedConfig({ databaseId: id });
 
@@ -157,6 +173,7 @@ export const useDatabasesStore = create<DatabasesStore>()(
       useTagsStore.getState().fetchTags();
       useAtomsStore.getState().fetchAtoms();
       useFeaturedReportStore.getState().fetchLatest();
+      useChatStore.getState().fetchConversations();
     } catch (e) {
       toasti18n.error('databases:toast_switch_failed', { description: String(e) });
       throw e;

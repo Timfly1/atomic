@@ -282,9 +282,9 @@ function SortablePill({ tab, isActive, onSwitch, onClose, onBack, onForward, onM
 }
 
 export function TabStrip() {
-  const { tabs, activeTabId } = useUIStore(
-    useShallow((s) => ({ tabs: s.tabs, activeTabId: s.activeTabId }))
-  );
+  const allTabs = useUIStore((s) => s.tabs);
+  const visibleTabs = useUIStore(useShallow((s) => s.tabs.filter(t => t.visible)));
+  const activeTabId = useUIStore((s) => s.activeTabId);
   const switchToTab = useUIStore((s) => s.switchToTab);
   const closeTab = useUIStore((s) => s.closeTab);
   const reorderTabs = useUIStore((s) => s.reorderTabs);
@@ -305,12 +305,13 @@ export function TabStrip() {
     (event: DragEndEvent) => {
       const { active, over } = event;
       if (!over || active.id === over.id) return;
-      const fromIndex = tabs.findIndex((t) => t.id === active.id);
-      const toIndex = tabs.findIndex((t) => t.id === over.id);
+      // Use allTabs for index calculation since reorderTabs operates on the full array
+      const fromIndex = allTabs.findIndex((t) => t.id === active.id);
+      const toIndex = allTabs.findIndex((t) => t.id === over.id);
       if (fromIndex === -1 || toIndex === -1) return;
       reorderTabs(fromIndex, toIndex);
     },
-    [tabs, reorderTabs]
+    [allTabs, reorderTabs]
   );
 
   // Middle-click closes a tab — same affordance as browser tabs.
@@ -325,9 +326,9 @@ export function TabStrip() {
     [closeTab]
   );
 
-  const tabIds = useMemo(() => tabs.map((t) => t.id), [tabs]);
+  const tabIds = useMemo(() => visibleTabs.map((t) => t.id), [visibleTabs]);
 
-  if (tabs.length === 0) return null;
+  if (visibleTabs.length === 0) return null;
 
   return (
     <div className="flex items-center gap-1 overflow-x-auto scrollbar-auto-hide min-w-0 max-w-full py-0.5">
@@ -337,7 +338,7 @@ export function TabStrip() {
               LayoutGroup so the active blob can FLIP between main-nav
               buttons and tab pills. */}
           <div className="flex items-center gap-1">
-            {tabs.map((tab) => (
+            {visibleTabs.map((tab) => (
               <SortablePill
                 key={tab.id}
                 tab={tab}

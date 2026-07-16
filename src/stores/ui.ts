@@ -69,6 +69,12 @@ export interface Tab {
   /// "Tab N" fallback label so untitled tabs stay distinguishable even after
   /// reordering or closures.
   ordinal: number;
+  /// The database this tab belongs to. Used to hide tabs when switching
+  /// databases and restore them when switching back.
+  databaseId: string;
+  /// Whether this tab is visible in the tab strip. Hidden tabs belong to
+  /// a different database and are preserved for cross-database switching.
+  visible: boolean;
 }
 
 /// Legacy shape preserved for any callers / tests that still import it.
@@ -97,6 +103,10 @@ interface UIStore {
   tabs: Tab[];
   activeTabId: string | null;
   nextTabOrdinal: number;
+  /// The currently active database ID. Used to tag tabs with their database
+  /// and enable cross-database tab preservation (hide tabs when switching
+  /// DB, restore them when switching back).
+  currentDatabaseId: string | null;
   viewMode: ViewMode;
   atomsLayout: AtomsLayout;
   searchQuery: string;
@@ -146,6 +156,8 @@ interface UIStore {
   tabForward: () => void;
   deactivateTabs: () => void;
   removeAtomFromTabs: (atomId: string) => void;
+  setCurrentDatabaseId: (id: string) => void;
+  setTabsVisibility: (databaseId: string, visible: boolean) => void;
   // Legacy public openers (delegate to openEntry)
   openReader: (atomId: string, highlightText?: string, opts?: { newTab?: boolean }) => void;
   openReaderEditing: (atomId: string, opts?: { newTab?: boolean }) => void;
@@ -343,6 +355,7 @@ export const useUIStore = create<UIStore>()(
       tabs: [],
       activeTabId: null,
       nextTabOrdinal: 1,
+      currentDatabaseId: null,
       viewMode: 'atoms',
       atomsLayout: 'grid',
       searchQuery: '',
@@ -428,7 +441,7 @@ export const useUIStore = create<UIStore>()(
         // Cmd/ctrl+click: always new tab.
         if (newTab) {
           const id = generateTabId();
-          const tab: Tab = { id, stack: [entry], stackIndex: 0, ordinal: state.nextTabOrdinal };
+          const tab: Tab = { id, stack: [entry], stackIndex: 0, ordinal: state.nextTabOrdinal, databaseId: state.currentDatabaseId ?? '', visible: true };
           set((s) => {
             const projected = projectActiveEntry(entry);
             return {
@@ -514,7 +527,7 @@ export const useUIStore = create<UIStore>()(
 
         // Otherwise: create a fresh tab.
         const id = generateTabId();
-        const tab: Tab = { id, stack: [entry], stackIndex: 0, ordinal: state.nextTabOrdinal };
+        const tab: Tab = { id, stack: [entry], stackIndex: 0, ordinal: state.nextTabOrdinal, databaseId: state.currentDatabaseId ?? '', visible: true };
         set((s) => {
           const projected = projectActiveEntry(entry);
           return {
@@ -672,6 +685,16 @@ export const useUIStore = create<UIStore>()(
         } else {
           set({ tabs: remaining });
         }
+      },
+
+      setCurrentDatabaseId: (id: string) => set({ currentDatabaseId: id }),
+
+      setTabsVisibility: (databaseId: string, visible: boolean) => {
+        set((state) => ({
+          tabs: state.tabs.map((tab) =>
+            tab.databaseId === databaseId ? { ...tab, visible } : tab,
+          ),
+        }));
       },
 
       // -- Legacy openers (delegate to openEntry) ------------------------
@@ -1026,7 +1049,7 @@ export const useUIStore = create<UIStore>()(
     }),
     {
       name: 'atomic-ui-storage',
-      version: 2,
+      version: 3,
       partialize: (state) => ({
         viewMode: state.viewMode,
         atomsLayout: state.atomsLayout,
@@ -1038,11 +1061,13 @@ export const useUIStore = create<UIStore>()(
         tabs: state.tabs,
         activeTabId: state.activeTabId,
         nextTabOrdinal: state.nextTabOrdinal,
+        currentDatabaseId: state.currentDatabaseId,
       }),
       // v0 → v1: 'grid' and 'list' were top-level ViewMode values. They're now
       // collapsed into a single 'atoms' view with a separate atomsLayout field.
       // v1 → v2: tabs introduced. No data migration needed — older sessions
       // without persisted tabs simply start with [].
+      // v2 → v3: tabs now have databaseId and visible fields.
       migrate: (persistedState: unknown, version: number) => {
         const state = (persistedState ?? {}) as Record<string, unknown>;
         if (version < 1) {
@@ -1055,6 +1080,17 @@ export const useUIStore = create<UIStore>()(
           state.tabs = [];
           state.activeTabId = null;
           state.nextTabOrdinal = 1;
+        }
+        if (version < 3) {
+          // Add databaseId and visible to existing tabs
+          state.currentDatabaseId = null;
+          if (Array.isArray(state.tabs)) {
+            state.tabs = state.tabs.map((tab: Record<string, unknown>) => ({
+              ...tab,
+              databaseId: '',
+              visible: true,
+            }));
+          }
         }
         return state;
       },

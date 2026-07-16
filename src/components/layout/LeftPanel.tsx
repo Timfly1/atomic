@@ -66,7 +66,7 @@ export function LeftPanel() {
         `}
       >
         <div
-          className="h-full w-[260px] bg-[var(--color-bg-panel)] border-r border-[var(--color-border)] backdrop-blur-xl flex flex-col overflow-hidden md:absolute md:inset-y-0 md:left-0 md:translate-x-0 md:pointer-events-auto"
+          className={`h-full w-[260px] bg-[var(--color-bg-panel)] backdrop-blur-xl flex flex-col overflow-hidden md:absolute md:inset-y-0 md:left-0 md:translate-x-0 md:pointer-events-auto ${leftPanelOpen ? 'border-r border-[var(--color-border)]' : ''}`}
         >
           {/* Titlebar row with settings button */}
           <div className={`h-[52px] flex items-center px-3 flex-shrink-0 gap-1 ${isTauri() ? 'pl-[78px]' : ''}`} data-tauri-drag-region>
