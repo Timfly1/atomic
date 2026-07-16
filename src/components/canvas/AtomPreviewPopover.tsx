@@ -248,7 +248,7 @@ export function AtomPreviewPopover({ atomId, anchorRect, onClose, onViewAtom }: 
           {!isCollapsed && (
             <>
               {/* Content preview */}
-              <div className="px-4 py-3 prose prose-invert prose-sm max-w-none [&_h1]:text-sm [&_h2]:text-sm [&_h3]:text-xs [&_h4]:text-xs [&_h1]:m-0 [&_h2]:m-0 [&_h3]:m-0 [&_h4]:m-0 [&_p]:text-xs [&_li]:text-xs [&_pre]:text-[10px] [&_code]:text-[10px] [&_blockquote]:text-xs max-h-[200px] overflow-y-auto">
+              <div className="px-4 py-3 prose prose-sm max-w-none text-[var(--color-text-primary)] [&_h1]:text-sm [&_h2]:text-sm [&_h3]:text-xs [&_h4]:text-xs [&_h1]:m-0 [&_h2]:m-0 [&_h3]:m-0 [&_h4]:m-0 [&_p]:text-xs [&_li]:text-xs [&_pre]:text-[10px] [&_code]:text-[10px] [&_blockquote]:text-xs max-h-[200px] overflow-y-auto">
                 {chunks.slice(0, renderedChunkCount).map((chunk, i) => (
                   <MemoizedChunk key={i} content={chunk} />
                 ))}

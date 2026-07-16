@@ -69,7 +69,7 @@ export const WikiCard = memo(function WikiCard(props: WikiCardProps) {
             onClick({ newTab: true });
           }
         }}
-        className="relative flex flex-col p-4 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg cursor-pointer hover:border-[var(--color-border-hover)] hover:bg-[var(--color-bg-hover)] active:bg-[var(--color-accent)]/10 active:border-[var(--color-accent)]/30 transition-all duration-150 h-full min-w-0 overflow-hidden break-words"
+        className="relative flex flex-col p-4 bg-[var(--color-bg-card)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl cursor-pointer hover:border-[var(--color-border-hover)] hover:-translate-y-0.5 hover:shadow-md active:bg-[var(--color-accent)]/10 transition-all duration-200 h-full min-w-0 overflow-hidden break-words"
       >
         <div className="flex-1 min-h-0">
           <div className="flex items-baseline justify-between gap-2">

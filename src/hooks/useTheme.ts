@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
 import { useSettingsStore } from '../stores/settings';
 
-export type Theme = 'obsidian' | 'liquid-glass';
+export type Theme = 'obsidian' | 'liquid-glass' | 'frost';
 
 export const THEMES: { value: Theme; label: string }[] = [
   { value: 'obsidian', label: 'Obsidian (Dark)' },
+  { value: 'frost', label: 'Frost (Light)' },
   { value: 'liquid-glass', label: 'Liquid Glass (Light)' },
 ];
 

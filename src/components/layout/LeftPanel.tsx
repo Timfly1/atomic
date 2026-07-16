@@ -59,14 +59,14 @@ export function LeftPanel() {
           relative h-full z-10 flex-shrink-0 overflow-hidden
           md:transition-[width,border-color] md:duration-300 md:ease-in-out
           max-md:transition-all max-md:duration-300 max-md:ease-in-out
-          max-md:fixed max-md:top-0 max-md:left-0 max-md:z-40 max-md:shadow-2xl max-md:w-[250px]
+          max-md:fixed max-md:top-0 max-md:left-0 max-md:z-40 max-md:shadow-2xl max-md:w-[260px]
           max-md:pt-[env(safe-area-inset-top)] max-md:pb-[env(safe-area-inset-bottom)] max-md:pl-[env(safe-area-inset-left)]
           ${leftPanelOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'}
-          ${leftPanelOpen ? 'md:w-[250px]' : 'md:w-0'}
+          ${leftPanelOpen ? 'md:w-[260px]' : 'md:w-0'}
         `}
       >
         <div
-          className="h-full w-[250px] bg-[var(--color-bg-panel)]/80 border-r border-[var(--color-border)] backdrop-blur-xl flex flex-col overflow-hidden md:absolute md:inset-y-0 md:left-0 md:translate-x-0 md:pointer-events-auto"
+          className="h-full w-[260px] bg-[var(--color-bg-panel)] border-r border-[var(--color-border)] backdrop-blur-xl flex flex-col overflow-hidden md:absolute md:inset-y-0 md:left-0 md:translate-x-0 md:pointer-events-auto"
         >
           {/* Titlebar row with settings button */}
           <div className={`h-[52px] flex items-center px-3 flex-shrink-0 gap-1 ${isTauri() ? 'pl-[78px]' : ''}`} data-tauri-drag-region>

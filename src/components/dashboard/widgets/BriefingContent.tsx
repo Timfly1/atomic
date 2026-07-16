@@ -56,7 +56,7 @@ export function BriefingContent({ content, citations, onCitationClick }: Briefin
   };
 
   return (
-    <div className="prose prose-invert prose-sm md:prose-base max-w-none text-[var(--color-text-secondary)] [&_p]:leading-relaxed [&_p]:my-3 first:[&_p]:mt-0 last:[&_p]:mb-0">
+    <div className="prose prose-sm md:prose-base max-w-none text-[var(--color-text-secondary)] [&_p]:leading-relaxed [&_p]:my-3 first:[&_p]:mt-0 last:[&_p]:mb-0 [&_h1]:text-[var(--color-text-primary)] [&_h2]:text-[var(--color-text-primary)] [&_h3]:text-[var(--color-text-primary)] [&_h4]:text-[var(--color-text-primary)] [&_a]:text-[var(--color-accent)] [&_strong]:text-[var(--color-text-primary)]">
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
         {content}
       </ReactMarkdown>

@@ -81,7 +81,7 @@ export function SigmaCanvas({
   const [error, setError] = useState<string | null>(null);
   const appTheme = useTheme();
   const [manualTheme, setManualTheme] = useState<CanvasTheme | null>(null);
-  const theme = manualTheme ?? (appTheme === 'liquid-glass' ? LIGHT_THEME : DEFAULT_THEME);
+  const theme = manualTheme ?? ((appTheme === 'liquid-glass' || appTheme === 'frost') ? LIGHT_THEME : DEFAULT_THEME);
   const [themePickerOpen, setThemePickerOpen] = useState(false);
   const [edgeThreshold, setEdgeThreshold] = useState(0);
   const edgeThresholdRef = useRef(0);

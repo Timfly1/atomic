@@ -120,7 +120,7 @@ export function CitationPopover({ citation, anchorRect, onClose, onViewAtom }: C
       </div>
 
       {/* Excerpt content */}
-      <div className="px-4 py-3 prose prose-invert prose-sm max-w-none [&_h1]:text-sm [&_h2]:text-sm [&_h3]:text-sm [&_h4]:text-sm [&_h1]:m-0 [&_h2]:m-0 [&_h3]:m-0 [&_h4]:m-0 max-h-[200px] overflow-y-auto">
+      <div className="px-4 py-3 prose prose-sm max-w-none text-[var(--color-text-primary)] [&_h1]:text-sm [&_h2]:text-sm [&_h3]:text-sm [&_h4]:text-sm [&_h1]:m-0 [&_h2]:m-0 [&_h3]:m-0 [&_h4]:m-0 max-h-[200px] overflow-y-auto">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>
           {displayExcerpt}
         </ReactMarkdown>

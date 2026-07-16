@@ -18,8 +18,8 @@ export const TagChip = memo(function TagChip({ name, onClick, onRemove, size = '
 
   return (
     <span
-      className={`inline-flex items-center gap-1 bg-[var(--color-accent)]/20 text-[var(--color-accent-light)] rounded-full shrink-0 max-w-[120px] ${sizeStyles[size]} ${
-        onClick ? 'cursor-pointer hover:bg-[var(--color-accent)]/30 transition-colors' : ''
+      className={`inline-flex items-center gap-1 bg-[var(--color-accent)]/15 text-[var(--color-accent)] font-medium rounded-lg shrink-0 max-w-[120px] ${sizeStyles[size]} ${
+        onClick ? 'cursor-pointer hover:bg-[var(--color-accent)]/25 hover:-translate-y-px transition-all' : ''
       } ${className}`}
       onClick={onClick}
       title={name}
@@ -31,7 +31,7 @@ export const TagChip = memo(function TagChip({ name, onClick, onRemove, size = '
             e.stopPropagation();
             onRemove();
           }}
-          className="ml-0.5 hover:text-white transition-colors shrink-0"
+          className="ml-0.5 hover:text-[var(--color-accent-hover)] transition-colors shrink-0"
         >
           <X className="w-3 h-3" strokeWidth={2} />
         </button>

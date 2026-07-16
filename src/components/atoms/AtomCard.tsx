@@ -151,7 +151,7 @@ export const AtomCard = memo(function AtomCard({
         <div
           onClick={handleClick}
           onAuxClick={handleAuxClick}
-          className="group relative flex items-center gap-3 px-3 py-2.5 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg cursor-pointer hover:border-[var(--color-border-hover)] hover:bg-[var(--color-bg-hover)] active:bg-[var(--color-accent)]/10 active:border-[var(--color-accent)]/30 transition-all duration-150"
+          className="group relative flex items-center gap-3 px-3 py-2.5 bg-[var(--color-bg-card)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl cursor-pointer hover:border-[var(--color-border-hover)] hover:bg-[var(--color-bg-card)] hover:-translate-y-0.5 hover:shadow-md active:bg-[var(--color-accent)]/10 transition-all duration-200"
         >
           <ProcessingStatusIndicator
             embeddingStatus={atom.embedding_status}
@@ -237,7 +237,7 @@ export const AtomCard = memo(function AtomCard({
     <div
       onClick={handleClick}
       onAuxClick={handleAuxClick}
-      className="relative flex flex-col p-4 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg cursor-pointer hover:border-[var(--color-border-hover)] hover:bg-[var(--color-bg-hover)] active:bg-[var(--color-accent)]/10 active:border-[var(--color-accent)]/30 transition-all duration-150 h-full min-w-0 overflow-hidden break-words"
+      className="relative flex flex-col p-4 bg-[var(--color-bg-card)]/80 backdrop-blur-sm border border-[var(--color-border)] rounded-xl cursor-pointer hover:border-[var(--color-border-hover)] hover:-translate-y-1 hover:shadow-lg active:bg-[var(--color-accent)]/10 transition-all duration-200 h-full min-w-0 overflow-hidden break-words"
     >
       <ProcessingStatusIndicator
         embeddingStatus={atom.embedding_status}
