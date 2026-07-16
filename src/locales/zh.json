@@ -755,6 +755,7 @@
   "wiki_unknown_article": "未知文章",
   "wiki_source_excerpt": "来源摘录",
   "wiki_view_full_atom": "查看完整原子",
+  "wiki_delete_confirm_message": "确定要删除「{{name}}」的百科文章吗？此操作无法撤销。",
 
   "dashboard_working_late": "挑灯夜战",
   "dashboard_good_morning": "早上好",

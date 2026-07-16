@@ -755,6 +755,7 @@
   "wiki_unknown_article": "Unknown article",
   "wiki_source_excerpt": "Source excerpt",
   "wiki_view_full_atom": "View full atom",
+  "wiki_delete_confirm_message": "Are you sure you want to delete the wiki article for \"{{name}}\"? This cannot be undone.",
 
   "dashboard_working_late": "Working late",
   "dashboard_good_morning": "Good morning",

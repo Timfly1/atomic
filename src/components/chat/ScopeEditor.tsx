@@ -3,6 +3,7 @@ import { X, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ConversationWithTags, useChatStore } from '../../stores/chat';
 import { useTagsStore } from '../../stores/tags';
+import { useIsMobile } from '../../hooks';
 
 interface ScopeEditorProps {
   conversation: ConversationWithTags;
@@ -82,6 +83,7 @@ interface FlatTag {
 
 export function ScopeEditor({ conversation }: ScopeEditorProps) {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
 
   const [isAdding, setIsAdding] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -188,7 +190,11 @@ export function ScopeEditor({ conversation }: ScopeEditorProps) {
             {tag.name}
             <button
               onClick={() => handleRemoveTag(tag.id)}
-              className="opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all"
+              className={`hover:text-red-400 transition-all ${
+                isMobile
+                  ? 'opacity-100 active:text-red-400'
+                  : 'opacity-0 group-hover:opacity-100'
+              }`}
               aria-label={t('chat_scope_remove_tag', { name: tag.name })}
             >
               <X className="w-3 h-3" strokeWidth={2} />

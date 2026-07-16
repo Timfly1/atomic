@@ -938,7 +938,7 @@ pub async fn upload_atom_image(
         });
     }
 
-    // Get tesseract_host from settings
+    // Get OCR provider from settings
     let settings = match db.0.get_settings().await {
         Ok(s) => s,
         Err(e) => {
@@ -968,12 +968,36 @@ pub async fn upload_atom_image(
         }
     };
 
-    let tesseract_host = settings.get("tesseract_host").cloned().unwrap_or_else(|| {
-        "http://10.70.0.52:8080".to_string()
-    });
+    let ocr_provider = match atomic_core::create_ocr_provider(&settings) {
+        Ok(provider) => provider,
+        Err(e) => {
+            tracing::warn!("Failed to create OCR provider: {}", e);
+            let image_path_str = image_path.to_string_lossy().to_string();
+            let update_req = UpdateAtomRequest {
+                content: existing_content,
+                source_url: None,
+                published_at: None,
+                tag_ids: None,
+                image_path: Some(image_path_str.clone()),
+                document_path: None,
+                document_name: None,
+                document_type: None,
+                embedded_images: None,
+            };
+            if let Err(e) = db.0.update_atom(&atom_id, update_req, |_| {}).await {
+                return HttpResponse::InternalServerError().json(ApiErrorResponse {
+                    error: format!("Failed to update atom: {}", e),
+                });
+            }
+            return HttpResponse::Ok().json(serde_json::json!({
+                "image_path": image_path_str,
+                "content_type": content_type,
+            }));
+        }
+    };
 
     // Run OCR on the image
-    let ocr_result = atomic_core::extract_text_from_image(&tesseract_host, &image_path).await;
+    let ocr_result = ocr_provider.extract_text(&image_path).await;
     let ocr_text = match ocr_result {
         Ok(ocr) => {
             tracing::info!("OCR extracted {} chars from image for atom {}", ocr.text.len(), atom_id);
@@ -987,6 +1011,7 @@ pub async fn upload_atom_image(
     };
 
     // Combine existing content with OCR text (don't add image reference - it's already in the sidebar)
+    let ocr_text_len = ocr_text.len();
     let new_content = if ocr_text.is_empty() {
         existing_content
     } else if existing_content.is_empty() {
@@ -1018,7 +1043,7 @@ pub async fn upload_atom_image(
     HttpResponse::Ok().json(serde_json::json!({
         "image_path": image_path_str,
         "content_type": content_type,
-        "ocr_text_length": ocr_text.len(),
+        "ocr_text_length": ocr_text_len,
     }))
 }
 

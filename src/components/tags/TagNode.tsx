@@ -46,9 +46,11 @@ export const TagNode = memo(function TagNode({ tag, level, selectedTagId, onSele
   };
 
   const openWikiReader = useUIStore(s => s.openWikiReader);
+  const setLeftPanelOpen = useUIStore(s => s.setLeftPanelOpen);
 
   const handleWikiClick = (e: MouseEvent) => {
     e.stopPropagation();
+    setLeftPanelOpen(false);
     openWikiReader(tag.id, tag.name, undefined, { newTab: e.metaKey || e.ctrlKey });
   };
 
@@ -80,44 +82,44 @@ export const TagNode = memo(function TagNode({ tag, level, selectedTagId, onSele
           <span className="w-4" />
         )}
         <span className="flex-1 truncate text-sm">{tag.name}</span>
-        {!hasChildren && (
-          <>
-            {/* Chat icon - visible on hover */}
-            <button
-              onClick={handleChatClick}
-              className={`w-6 h-6 flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-accent-light)] transition-all ${
-                isMobile
-                  ? 'opacity-100 active:text-[var(--color-accent-light)] active:bg-[var(--color-bg-hover)]'
-                  : 'opacity-0 group-hover:opacity-100'
-              }`}
-              title="Chat with this tag"
-            >
-              <MessageCircle className="w-4 h-4" strokeWidth={2} />
-            </button>
-            {/* Article icon - visible on hover */}
-            <button
-              onClick={handleWikiClick}
-              className={`w-6 h-6 flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-accent-light)] transition-all ${
-                isMobile
-                  ? 'opacity-100 active:text-[var(--color-accent-light)] active:bg-[var(--color-bg-hover)]'
-                  : 'opacity-0 group-hover:opacity-100'
-              }`}
-              title="View wiki article"
-            >
-              <FileText className="w-4 h-4" strokeWidth={2} />
-            </button>
-          </>
-        )}
-        {!hasChildren && <span className="text-xs text-[var(--color-text-tertiary)] tabular-nums">{tag.atom_count}</span>}
-        {onDelete && (
+        {/* Chat icon - visible on hover */}
+        <button
+          onClick={handleChatClick}
+          className={`w-6 h-6 flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-accent-light)] transition-all ${
+            isMobile
+              ? 'opacity-100 active:text-[var(--color-accent-light)] active:bg-[var(--color-bg-hover)]'
+              : 'opacity-0 group-hover:opacity-100'
+          }`}
+          title="Chat with this tag"
+        >
+          <MessageCircle className="w-4 h-4" strokeWidth={2} />
+        </button>
+        {/* Article icon - visible on hover */}
+        <button
+          onClick={handleWikiClick}
+          className={`w-6 h-6 flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-accent-light)] transition-all ${
+            isMobile
+              ? 'opacity-100 active:text-[var(--color-accent-light)] active:bg-[var(--color-bg-hover)]'
+              : 'opacity-0 group-hover:opacity-100'
+          }`}
+          title="View wiki article"
+        >
+          <FileText className="w-4 h-4" strokeWidth={2} />
+        </button>
+        {!hasChildren && onDelete && (
           <button
             onClick={handleDeleteClick}
-            className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-md text-[var(--color-text-tertiary)] hover:text-red-500 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all"
+            className={`p-1 rounded-md text-[var(--color-text-tertiary)] hover:text-red-500 hover:bg-red-500/10 transition-all ${
+              isMobile
+                ? 'opacity-100 active:text-red-500 active:bg-red-500/10'
+                : 'opacity-0 group-hover:opacity-100'
+            }`}
             title={t('common_delete')}
           >
             <Trash2 className="w-4 h-4" strokeWidth={2} />
           </button>
         )}
+        {!hasChildren && <span className="text-xs text-[var(--color-text-tertiary)] tabular-nums">{tag.atom_count}</span>}
       </div>
       <Modal
         isOpen={showDeleteModal}

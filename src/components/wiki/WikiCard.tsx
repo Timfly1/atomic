@@ -1,13 +1,15 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Sparkles, BookOpen, Link2 } from 'lucide-react';
+import { Sparkles, BookOpen, Link2, Trash2 } from 'lucide-react';
 import { WikiArticleSummary, SuggestedArticle } from '../../stores/wiki';
 import { formatRelativeDate, formatShortRelativeDate } from '../../lib/date';
+import { Modal } from '../ui/Modal';
 
 interface WikiArticleCardProps {
   type: 'article';
   article: WikiArticleSummary;
   onClick: (opts?: { newTab?: boolean }) => void;
+  onDelete?: (tagId: string) => void;
 }
 
 interface WikiSuggestionCardProps {
@@ -54,44 +56,74 @@ export const WikiCard = memo(function WikiCard(props: WikiCardProps) {
     );
   }
 
-  const { article, onClick } = props;
+  const { article, onClick, onDelete } = props;
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   return (
-    <div
-      onClick={(e) => onClick({ newTab: e.metaKey || e.ctrlKey })}
-      onAuxClick={(e) => {
-        if (e.button === 1) {
-          e.preventDefault();
-          onClick({ newTab: true });
-        }
-      }}
-      className="relative flex flex-col p-4 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg cursor-pointer hover:border-[var(--color-border-hover)] hover:bg-[var(--color-bg-hover)] active:bg-[var(--color-accent)]/10 active:border-[var(--color-accent)]/30 transition-all duration-150 h-full min-w-0 overflow-hidden break-words"
-    >
-      <div className="flex-1 min-h-0">
-        <div className="flex items-baseline justify-between gap-2">
-          <p className="text-sm font-medium text-[var(--color-text-primary)] line-clamp-1 min-w-0">
-            {article.tag_name}
-          </p>
-          <span className="text-xs text-[var(--color-text-tertiary)] shrink-0" title={formatRelativeDate(article.updated_at)}>
-            {formatShortRelativeDate(article.updated_at)}
-          </span>
+    <>
+      <div
+        onClick={(e) => onClick({ newTab: e.metaKey || e.ctrlKey })}
+        onAuxClick={(e) => {
+          if (e.button === 1) {
+            e.preventDefault();
+            onClick({ newTab: true });
+          }
+        }}
+        className="relative flex flex-col p-4 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg cursor-pointer hover:border-[var(--color-border-hover)] hover:bg-[var(--color-bg-hover)] active:bg-[var(--color-accent)]/10 active:border-[var(--color-accent)]/30 transition-all duration-150 h-full min-w-0 overflow-hidden break-words"
+      >
+        <div className="flex-1 min-h-0">
+          <div className="flex items-baseline justify-between gap-2">
+            <p className="text-sm font-medium text-[var(--color-text-primary)] line-clamp-1 min-w-0">
+              {article.tag_name}
+            </p>
+            <div className="flex items-center gap-1 shrink-0">
+              <span className="text-xs text-[var(--color-text-tertiary)]" title={formatRelativeDate(article.updated_at)}>
+                {formatShortRelativeDate(article.updated_at)}
+              </span>
+              {onDelete && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowDeleteModal(true);
+                  }}
+                  className="p-1 rounded text-[var(--color-text-tertiary)] hover:text-red-500 hover:bg-red-500/10 transition-all"
+                  title={t('common_delete')}
+                >
+                  <Trash2 className="w-3.5 h-3.5" strokeWidth={2} />
+                </button>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
-      <div className="mt-3 pt-3 border-t border-[var(--color-border)]">
-        <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1 text-xs text-[var(--color-text-tertiary)]">
-            <BookOpen className="w-3.5 h-3.5" strokeWidth={2} />
-            {article.atom_count} {article.atom_count === 1 ? t('wiki_source') : t('wiki_sources')}
-          </span>
-          {article.inbound_links > 0 && (
-            <span className="flex items-center gap-1 text-xs text-[var(--color-accent-light)]">
-              <Link2 className="w-3.5 h-3.5" strokeWidth={2} />
-              {article.inbound_links} {article.inbound_links === 1 ? t('wiki_link') : t('wiki_links')}
+        <div className="mt-3 pt-3 border-t border-[var(--color-border)]">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1 text-xs text-[var(--color-text-tertiary)]">
+              <BookOpen className="w-3.5 h-3.5" strokeWidth={2} />
+              {article.atom_count} {article.atom_count === 1 ? t('wiki_source') : t('wiki_sources')}
             </span>
-          )}
+            {article.inbound_links > 0 && (
+              <span className="flex items-center gap-1 text-xs text-[var(--color-accent-light)]">
+                <Link2 className="w-3.5 h-3.5" strokeWidth={2} />
+                {article.inbound_links} {article.inbound_links === 1 ? t('wiki_link') : t('wiki_links')}
+              </span>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title={t('common_delete_confirm_title')}
+        confirmLabel={t('common_delete')}
+        confirmVariant="danger"
+        onConfirm={() => {
+          onDelete?.(article.tag_id);
+          setShowDeleteModal(false);
+        }}
+      >
+        <p>{t('wiki_delete_confirm_message', { name: article.tag_name })}</p>
+      </Modal>
+    </>
   );
 }, (prev, next) => {
   if (prev.type !== next.type) return false;

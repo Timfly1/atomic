@@ -169,7 +169,6 @@ export function TagTree({ onOpenTagSettings }: TagTreeProps = {}) {
     if (deleteModal.tag) {
       await deleteTag(deleteModal.tag.id, deleteModal.recursive);
       if (selectedTagId === deleteModal.tag.id) {
-        clearExpandedTags();
         handleSelectTag(null);
       }
       setDeleteModal({ isOpen: false, tag: null, recursive: false });

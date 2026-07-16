@@ -12,6 +12,9 @@ pub const DEFAULT_OLLAMA_HOST: &str = "http://127.0.0.1:11434";
 /// Default Tesseract OCR host URL
 pub const DEFAULT_TESSERACT_HOST: &str = "http://10.70.0.52:8080";
 
+/// Default PaddleOCR host URL
+pub const DEFAULT_PADDLEOCR_HOST: &str = "http://10.70.0.52:8081";
+
 /// Settings whose values are properties of the user/machine, not the knowledge
 /// base, so they always live in `registry.db` and can never be overridden
 /// per-database. Everything *not* in this list is overridable: the registry
@@ -29,6 +32,7 @@ pub const WORKSPACE_ONLY_KEYS: &[&str] = &[
     "ollama_host",
     "openai_compat_base_url",
     "tesseract_host",
+    "paddleocr_host",
 ];
 
 /// True if `key` must live in `registry.db` and cannot be overridden per-DB.
@@ -78,6 +82,8 @@ pub const DEFAULT_SETTINGS: &[(&str, &str)] = &[
     ("openai_compat_context_length", "65536"),
     ("openai_compat_timeout_secs", "300"), // 5 minutes default for OpenAI-compatible servers
     ("tesseract_host", DEFAULT_TESSERACT_HOST),
+    ("ocr_provider_type", "paddleocr"),
+    ("paddleocr_host", DEFAULT_PADDLEOCR_HOST),
     ("wiki_generation_prompt", ""),
     ("wiki_update_prompt", ""),
     ("chat_prompt", ""),

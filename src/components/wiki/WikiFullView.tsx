@@ -9,6 +9,7 @@ export function WikiFullView() {
   const suggestedArticles = useWikiStore(s => s.suggestedArticles);
   const isLoadingList = useWikiStore(s => s.isLoadingList);
   const fetchAllArticles = useWikiStore(s => s.fetchAllArticles);
+  const deleteArticle = useWikiStore(s => s.deleteArticle);
 
   const openWikiReader = useUIStore(s => s.openWikiReader);
 
@@ -30,6 +31,10 @@ export function WikiFullView() {
     openWikiReader(tagId, tagName, undefined, opts);
   };
 
+  const handleDeleteArticle = (tagId: string) => {
+    deleteArticle(tagId);
+  };
+
   return (
     <div className="h-full overflow-hidden flex flex-col">
       <WikiGrid
@@ -37,6 +42,7 @@ export function WikiFullView() {
         suggestedArticles={suggestedArticles}
         onArticleClick={handleArticleClick}
         onSuggestionClick={handleSuggestionClick}
+        onDeleteArticle={handleDeleteArticle}
         isLoading={isLoadingList}
       />
 

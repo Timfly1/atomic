@@ -17,6 +17,7 @@ interface WikiGridProps {
   suggestedArticles: SuggestedArticle[];
   onArticleClick: (tagId: string, tagName: string, opts?: { newTab?: boolean }) => void;
   onSuggestionClick: (tagId: string, tagName: string, opts?: { newTab?: boolean }) => void;
+  onDeleteArticle?: (tagId: string) => void;
   isLoading?: boolean;
 }
 
@@ -29,6 +30,7 @@ export const WikiGrid = memo(function WikiGrid({
   suggestedArticles,
   onArticleClick,
   onSuggestionClick,
+  onDeleteArticle,
   isLoading,
 }: WikiGridProps) {
   const { t } = useTranslation();
@@ -146,6 +148,7 @@ export const WikiGrid = memo(function WikiGrid({
                       type="article"
                       article={item.article}
                       onClick={(opts) => onArticleClick(item.article.tag_id, item.article.tag_name, opts)}
+                      onDelete={onDeleteArticle}
                     />
                   );
                 } else {

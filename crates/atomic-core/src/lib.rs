@@ -71,7 +71,7 @@ pub use export::{MarkdownArchiveFormat, MarkdownExportProgress, MarkdownExportRe
 pub use import::{ImportProgress, ImportResult};
 pub use ingest::{FeedPollResult, IngestionEvent, IngestionRequest, IngestionResult};
 pub use manager::DatabaseManager;
-pub use ocr::{extract_text_from_image, OcrResult};
+pub use ocr::{create_ocr_provider, OcrProvider, OcrResult};
 pub use models::*;
 pub use providers::{ProviderConfig, ProviderType};
 pub use registry::{DatabaseInfo, OAuthCodeInfo, Registry};
