@@ -13,6 +13,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <link rel="stylesheet" href="/fonts/fonts.css" />
     <title>Atomic</title>
+    <script>
+      // Sync theme/font from localStorage before React renders to prevent flash
+      (function() {
+        try {
+          var cached = localStorage.getItem('atomic-settings-cache');
+          if (cached) {
+            var settings = JSON.parse(cached);
+            if (settings.theme) {
+              document.documentElement.setAttribute('data-theme', settings.theme);
+            }
+            if (settings.font) {
+              document.documentElement.setAttribute('data-font', settings.font);
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

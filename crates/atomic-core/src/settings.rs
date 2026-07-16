@@ -33,6 +33,9 @@ pub const WORKSPACE_ONLY_KEYS: &[&str] = &[
     "openai_compat_base_url",
     "tesseract_host",
     "paddleocr_host",
+    // Feishu credentials
+    "feishu_app_id",
+    "feishu_app_secret",
 ];
 
 /// True if `key` must live in `registry.db` and cannot be overridden per-DB.

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { MessageSquare } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { motion, useMotionValue, animate } from 'motion/react';
 import { useChatStore } from '../../stores/chat';
 import { useUIStore } from '../../stores/ui';
 import { useChatEvents } from '../../hooks/useChatEvents';
@@ -29,6 +30,12 @@ export function ChatView() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const isNearBottomRef = useRef(true);
+
+  const swipeX = useMotionValue(0);
+  const dragStartX = useRef(0);
+  const startY = useRef(0);
+  const isHorizontalSwipe = useRef(false);
+  const hasTriggeredSwipe = useRef(false);
 
   // Combine all message content for search
   const allContent = useMemo(() => {
@@ -111,8 +118,50 @@ export function ChatView() {
 
   // Handle viewing an atom from citation - switch drawer to viewer mode
   const handleViewAtom = useCallback((atomId: string, highlightText?: string) => {
+    goBack();
     openReader(atomId, highlightText);
-  }, [openReader]);
+  }, [goBack, openReader]);
+
+  // Right swipe to go back to conversation list using Motion
+  const handlePointerDown = (e: React.PointerEvent) => {
+    dragStartX.current = e.clientX;
+    startY.current = e.clientY;
+    isHorizontalSwipe.current = false;
+    hasTriggeredSwipe.current = false;
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    const deltaX = e.clientX - dragStartX.current;
+    const deltaY = e.clientY - startY.current;
+
+    if (!isHorizontalSwipe.current && (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)) {
+      isHorizontalSwipe.current = Math.abs(deltaX) > Math.abs(deltaY);
+      if (!isHorizontalSwipe.current) return;
+    }
+
+    if (!isHorizontalSwipe.current) return;
+
+    // Only allow right swipe (positive delta)
+    if (deltaX <= 0) {
+      swipeX.set(0);
+      return;
+    }
+
+    const clampedDelta = Math.min(deltaX, window.innerWidth * 0.4);
+    swipeX.set(clampedDelta);
+    hasTriggeredSwipe.current = true;
+  };
+
+  const handlePointerUp = () => {
+    const currentX = swipeX.get();
+    if (hasTriggeredSwipe.current && currentX > 100) {
+      animate(swipeX, 0, { duration: 0.2, ease: 'easeOut' });
+      goBack();
+    } else if (hasTriggeredSwipe.current) {
+      animate(swipeX, 0, { duration: 0.3, ease: 'spring' });
+    }
+    hasTriggeredSwipe.current = false;
+  };
 
   if (!currentConversation) {
     return (
@@ -123,7 +172,14 @@ export function ChatView() {
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <motion.div
+      className="h-full flex flex-col"
+      style={{ x: swipeX, touchAction: 'none' }}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+    >
       {/* Header with back button and scope */}
       <ChatHeader conversation={currentConversation} onBack={goBack} />
 
@@ -217,6 +273,6 @@ export function ChatView() {
             : t('chat_placeholder')
         }
       />
-    </div>
+    </motion.div>
   );
 }

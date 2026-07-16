@@ -441,6 +441,10 @@ export async function testOpenAICompatConnection(baseUrl: string, apiKey?: strin
   return getTransport().invoke('test_openai_compat_connection', { baseUrl, apiKey });
 }
 
+export async function testFeishuConnection(appId: string, appSecret: string): Promise<boolean> {
+  return getTransport().invoke('test_feishu_connection', { app_id: appId, app_secret: appSecret });
+}
+
 export async function getOllamaModels(host: string): Promise<OllamaModel[]> {
   return getTransport().invoke('get_ollama_models', { host });
 }

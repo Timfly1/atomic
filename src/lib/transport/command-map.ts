@@ -430,6 +430,13 @@ export const COMMAND_MAP: Record<string, CommandSpec> = {
     transformArgs: (a) => ({ base_url: a.baseUrl, api_key: a.apiKey }),
     transformResponse: (d: any) => d.success as boolean,
   },
+  test_feishu_connection: {
+    method: 'POST',
+    path: '/api/settings/test-feishu',
+    argsMode: 'body',
+    transformArgs: (a) => ({ app_id: a.app_id, app_secret: a.app_secret }),
+    transformResponse: (d: any) => d.success as boolean,
+  },
 
   // ==================== Canvas ====================
   get_atom_positions: {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Plus, MessageCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore, ConversationWithTags } from '../../stores/chat';
@@ -15,13 +15,15 @@ export function ConversationsList() {
   const createConversation = useChatStore(s => s.createConversation);
   const openConversation = useChatStore(s => s.openConversation);
   const deleteConversation = useChatStore(s => s.deleteConversation);
+  const scrollToConversationId = useChatStore(s => s.scrollToConversationId);
 
   const [deleteTarget, setDeleteTarget] = useState<ConversationWithTags | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const listContainerRef = useRef<HTMLDivElement>(null);
+  const hasScrolledRef = useRef(false);
 
   const handleNewChat = async () => {
     try {
-      // Create conversation with current filter tag if any
       const tagIds = listFilterTagId ? [listFilterTagId] : [];
       await createConversation(tagIds);
     } catch (e) {
@@ -52,6 +54,20 @@ export function ConversationsList() {
     }
   };
 
+  useEffect(() => {
+    if (scrollToConversationId && !hasScrolledRef.current) {
+      const element = document.getElementById(`conversation-${scrollToConversationId}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        hasScrolledRef.current = true;
+        setTimeout(() => {
+          useChatStore.getState().scrollToConversationId = null;
+          hasScrolledRef.current = false;
+        }, 500);
+      }
+    }
+  }, [scrollToConversationId, conversations]);
+
   if (isLoading && conversations.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-[var(--color-text-secondary)]">
@@ -71,18 +87,18 @@ export function ConversationsList() {
   return (
     <div className="h-full flex flex-col">
       {/* New Chat Button */}
-      <div className="flex-shrink-0 p-4 border-b border-[var(--color-border)]">
+      <div className="flex-shrink-0 px-4 py-3 border-b border-[var(--color-border)]">
         <button
           onClick={handleNewChat}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[var(--color-bg-hover)] hover:bg-[var(--color-border)] text-[var(--color-text-primary)] rounded-lg transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-[var(--color-bg-hover)] hover:bg-[var(--color-border)] text-[var(--color-text-primary)] rounded-lg transition-colors"
         >
-          <Plus className="w-5 h-5" strokeWidth={2} />
-          {t('chat_new_conversation')}
+          <Plus className="w-4 h-4" strokeWidth={2} />
+          <span className="text-sm font-medium">{t('chat_new_conversation')}</span>
         </button>
       </div>
 
       {/* Conversations List */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" ref={listContainerRef}>
         {conversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-4 p-8 text-center">
             <div className="w-16 h-16 rounded-full bg-[var(--color-bg-card)] flex items-center justify-center">
@@ -100,6 +116,7 @@ export function ConversationsList() {
             {conversations.map((conversation) => (
               <ConversationCard
                 key={conversation.id}
+                id={`conversation-${conversation.id}`}
                 conversation={conversation}
                 onClick={() => handleOpenConversation(conversation)}
                 onDelete={(e) => handleDeleteClick(conversation, e)}

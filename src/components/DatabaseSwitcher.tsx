@@ -76,7 +76,7 @@ export function DatabaseSwitcher() {
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-lg shadow-xl z-50 py-1">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#2d2d2d] border border-[var(--color-border)] rounded-lg shadow-xl z-50 py-1">
           {databases.map(db => (
             <div
               key={db.id}

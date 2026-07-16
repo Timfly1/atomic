@@ -122,6 +122,9 @@ interface ChatStore {
   currentConversation: ConversationWithTags | null;
   messages: ChatMessageWithContext[];
 
+  // Scroll target when returning to list view (non-persisted)
+  scrollToConversationId: string | null;
+
   // Conversations list
   conversations: ConversationWithTags[];
   listFilterTagId: string | null;
@@ -188,6 +191,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   streamingMessageId: null,
   streamingToolCalls: [],
   error: null,
+  scrollToConversationId: null,
 
   // Navigation
   showList: (filterTagId?: string) => {
@@ -262,13 +266,15 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   },
 
   goBack: () => {
-    const { listFilterTagId } = get();
+    const { listFilterTagId, currentConversation } = get();
+    const scrollToId = currentConversation?.id ?? null;
     set({
       view: 'list',
       currentConversation: null,
       messages: [],
       streamingContent: '',
       streamingToolCalls: [],
+      scrollToConversationId: scrollToId,
     });
     useUIStore.getState().setChatSidebarConversationId(null);
     get().fetchConversations(listFilterTagId ?? undefined);

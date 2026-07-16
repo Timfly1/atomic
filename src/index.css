@@ -102,7 +102,7 @@
   --atomic-editor-link: var(--atomic-prose-link, #60a5fa);
   --atomic-editor-link-hover: var(--atomic-prose-link-hover, #93c5fd);
   --atomic-editor-code-bg: color-mix(in srgb, var(--color-bg-card) 88%, black 12%);
-  --atomic-editor-selection-bg: color-mix(in srgb, var(--color-accent) 28%, var(--color-bg-main) 72%);
+  --atomic-editor-selection-bg: #a78bfa;
   --atomic-editor-search-bg: color-mix(in srgb, var(--color-accent) 26%, transparent 74%);
   --atomic-editor-search-bg-active: color-mix(in srgb, var(--color-accent) 60%, transparent 40%);
 }
@@ -497,6 +497,47 @@ mark.search-highlight[data-current="true"] {
     background-color: transparent;
     color: inherit;
   }
+}
+
+/* Text selection overrides */
+:root {
+  --atomic-editor-selection-bg: #60a5fa;
+}
+
+/* CodeMirror selection layer - light blue on ALL platforms */
+.cm-editor.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground,
+.cm-editor .cm-selectionLayer .cm-selectionBackground,
+.cm-editor .cm-selectionBackground {
+  background-color: #60a5fa !important;
+  background: #60a5fa !important;
+}
+
+/* iOS-specific: disable both CodeMirror and native selection backgrounds */
+@supports (-webkit-touch-callout: none) {
+  /* On iOS, disable all selection backgrounds - let iOS handle selection UI natively */
+  .cm-editor.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground,
+  .cm-editor .cm-selectionLayer .cm-selectionBackground,
+  .cm-editor .cm-selectionBackground {
+    background-color: transparent !important;
+    background: transparent !important;
+  }
+
+  /* Style native selection to be visible - light blue with transparency */
+  ::selection {
+    background-color: rgba(96, 165, 250, 0.4) !important;
+    color: inherit !important;
+  }
+
+  ::-moz-selection {
+    background-color: rgba(96, 165, 250, 0.4) !important;
+    color: inherit !important;
+  }
+}
+
+/* Non-iOS selection */
+:not(*|\::-webkit-calendar-picker-indicator) ::selection {
+  background-color: #60a5fa !important;
+  color: #1e1e1e !important;
 }
 
 /* Markdown image styles */

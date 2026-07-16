@@ -222,7 +222,7 @@ export function ScopeEditor({ conversation }: ScopeEditorProps) {
 
           {/* Dropdown */}
           {filteredTags.length > 0 && (
-            <div className="absolute z-50 w-56 mt-1 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md shadow-lg max-h-48 overflow-y-auto">
+            <div className="absolute z-50 w-56 mt-1 bg-white dark:bg-[#2d2d2d] border border-[var(--color-border)] rounded-md shadow-lg max-h-48 overflow-y-auto">
               {filteredTags.map(({ tag, matchIndices }) => (
                 <button
                   key={tag.id}
@@ -236,7 +236,7 @@ export function ScopeEditor({ conversation }: ScopeEditorProps) {
           )}
 
           {searchQuery && filteredTags.length === 0 && (
-            <div className="absolute z-50 w-56 mt-1 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md shadow-lg px-3 py-2 text-sm text-[var(--color-text-secondary)]">
+            <div className="absolute z-50 w-56 mt-1 bg-white dark:bg-[#2d2d2d] border border-[var(--color-border)] rounded-md shadow-lg px-3 py-2 text-sm text-[var(--color-text-secondary)]">
               {t('chat_scope_no_matching')}
             </div>
           )}

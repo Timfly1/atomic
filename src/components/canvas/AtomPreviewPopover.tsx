@@ -187,7 +187,7 @@ export function AtomPreviewPopover({ atomId, anchorRect, onClose, onViewAtom }: 
     <div
       ref={popoverRef}
       data-modal="true"
-      className="fixed z-[100] bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg shadow-xl"
+      className="fixed z-[100] bg-white dark:bg-[#2d2d2d] border border-[var(--color-border)] rounded-lg shadow-xl"
       style={{ top: position.top, left: position.left, width: POPOVER_WIDTH, maxWidth: 'calc(100vw - 16px)' }}
     >
       {isLoading ? (

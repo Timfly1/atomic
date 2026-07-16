@@ -104,7 +104,7 @@ export function WikiHeader({
                 {t('wiki_history')} ({versions.length})
               </Button>
               {showVersions && (
-                <div className="absolute right-0 top-full mt-1 w-64 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg shadow-lg z-50 py-1 max-h-64 overflow-y-auto">
+                <div className="absolute right-0 top-full mt-1 w-64 bg-white dark:bg-[#2d2d2d] border border-[var(--color-border)] rounded-lg shadow-lg z-50 py-1 max-h-64 overflow-y-auto">
                   {isViewingVersion && (
                     <button
                       onClick={() => {

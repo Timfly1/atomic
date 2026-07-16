@@ -33,6 +33,7 @@ import {
   getOpenRouterEmbeddingModels,
   testOllamaConnection,
   testOpenAICompatConnection,
+  testFeishuConnection,
   getOllamaModels,
   getMcpStdioConfig,
   getMcpHttpConfig,
@@ -951,6 +952,13 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
   const [embeddingProvider, setEmbeddingProvider] = useState<'openrouter' | 'ollama' | 'openai_compat' | ''>('');
   const [embeddingProviderUrl, setEmbeddingProviderUrl] = useState('');
 
+  // Feishu settings
+  const [feishuAppId, setFeishuAppId] = useState('');
+  const [feishuAppSecret, setFeishuAppSecret] = useState('');
+  const [feishuShowSecret, setFeishuShowSecret] = useState(false);
+  const [feishuStatus, setFeishuStatus] = useState<'idle' | 'checking' | 'connected' | 'error'>('idle');
+  const [feishuError, setFeishuError] = useState<string | null>(null);
+
   // Common settings
   const [autoTaggingEnabled, setAutoTaggingEnabled] = useState(true);
   const [embeddingModel, setEmbeddingModel] = useState('openai/text-embedding-3-small');
@@ -1397,6 +1405,8 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
     setOpenaiCompatTimeoutSecs(settings.openai_compat_timeout_secs || '300');
     setEmbeddingProvider(settings.embedding_provider as 'openrouter' | 'ollama' | 'openai_compat' | '' || '');
     setEmbeddingProviderUrl(settings.embedding_provider_url || '');
+    setFeishuAppId(settings.feishu_app_id || '');
+    setFeishuAppSecret(settings.feishu_app_secret || '');
   }, [settings]);
 
   // Check Ollama connection when provider is ollama or host changes.
@@ -1486,6 +1496,20 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
     } catch (e) {
       setOpenaiCompatStatus('error');
       setOpenaiCompatError(String(e));
+    }
+  }, []);
+
+  // Test Feishu connection
+  const checkFeishuConnection = useCallback(async (appId: string, appSecret: string) => {
+    if (!appId.trim() || !appSecret.trim()) return;
+    setFeishuStatus('checking');
+    setFeishuError(null);
+    try {
+      await testFeishuConnection(appId, appSecret);
+      setFeishuStatus('connected');
+    } catch (e) {
+      setFeishuStatus('error');
+      setFeishuError(String(e));
     }
   }, []);
 
@@ -3081,6 +3105,90 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                           </>
                         ) : t('common_add')}
                       </Button>
+                    </div>
+                  </div>
+
+                  {/* Feishu Integration */}
+                  <div className="space-y-4 pt-4 border-t border-[var(--color-border)]">
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-[var(--color-text-primary)]">
+                        {t('settings_integrations_feishu')}
+                      </label>
+                      <p className="text-xs text-[var(--color-text-secondary)]">
+                        {t('settings_integrations_feishu_desc')}
+                      </p>
+                    </div>
+
+                    {/* Feishu App ID */}
+                    <div className="space-y-1">
+                      <label className="block text-sm text-[var(--color-text-secondary)]">
+                        {t('settings_integrations_feishu_app_id')}
+                      </label>
+                      <input
+                        type="text"
+                        value={feishuAppId}
+                        onChange={(e) => setFeishuAppId(e.target.value)}
+                        onBlur={() => autoSave('feishu_app_id', feishuAppId)}
+                        placeholder={t('settings_integrations_feishu_app_id_placeholder')}
+                        className="w-full px-3 py-2 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors duration-150"
+                      />
+                    </div>
+
+                    {/* Feishu App Secret */}
+                    <div className="space-y-1">
+                      <label className="block text-sm text-[var(--color-text-secondary)]">
+                        {t('settings_integrations_feishu_app_secret')}
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={feishuShowSecret ? 'text' : 'password'}
+                          value={feishuAppSecret}
+                          onChange={(e) => setFeishuAppSecret(e.target.value)}
+                          onBlur={() => autoSave('feishu_app_secret', feishuAppSecret)}
+                          placeholder={t('settings_integrations_feishu_app_secret_placeholder')}
+                          className="w-full px-3 py-2 pr-10 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-colors duration-150"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setFeishuShowSecret(!feishuShowSecret)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                        >
+                          {feishuShowSecret ? (
+                            <EyeOff className="w-5 h-5" strokeWidth={2} />
+                          ) : (
+                            <Eye className="w-5 h-5" strokeWidth={2} />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Test Connection Button */}
+                    <div className="flex items-center gap-4">
+                      <button
+                        onClick={() => checkFeishuConnection(feishuAppId, feishuAppSecret)}
+                        disabled={!feishuAppId.trim() || !feishuAppSecret.trim() || feishuStatus === 'checking'}
+                        className="px-4 py-2 text-sm font-medium bg-[var(--color-accent)] text-white rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+                      >
+                        {t('settings_integrations_feishu_test_connection')}
+                      </button>
+                      {feishuStatus === 'checking' && (
+                        <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+                          <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2} />
+                          {t('settings_ai_testing_connection')}
+                        </div>
+                      )}
+                      {feishuStatus === 'connected' && (
+                        <div className="flex items-center gap-2 text-sm text-green-500">
+                          <div className="w-2 h-2 rounded-full bg-green-500" />
+                          {t('settings_integrations_feishu_connected')}
+                        </div>
+                      )}
+                      {feishuStatus === 'error' && (
+                        <div className="flex items-center gap-2 text-sm text-red-500">
+                          <div className="w-2 h-2 rounded-full bg-red-500" />
+                          {feishuError || t('settings_integrations_feishu_connection_failed')}
+                        </div>
+                      )}
                     </div>
                   </div>
 

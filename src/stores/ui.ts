@@ -437,6 +437,7 @@ export const useUIStore = create<UIStore>()(
               nextTabOrdinal: s.nextTabOrdinal + 1,
               ...projected,
               localGraph: { ...s.localGraph, ...projected.localGraphPatch },
+              chatSidebarOpen: false,
             };
           });
           navigateTo(entryUrl(entry));
@@ -457,6 +458,7 @@ export const useUIStore = create<UIStore>()(
               tabs,
               ...projected,
               localGraph: { ...s.localGraph, ...projected.localGraphPatch },
+              chatSidebarOpen: false,
             };
           });
           navigateTo(entryUrl(entry));

@@ -78,7 +78,7 @@ export function Modal({
       data-modal="true"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-xl safe-area-padding"
     >
-      <div className={`bg-[var(--color-bg-elevated)]/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-[var(--color-border)] w-full ${WIDTH_CLASSES[width]} mx-4 max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-200`}>
+      <div className={`bg-white dark:bg-[#2d2d2d] rounded-2xl shadow-2xl border border-[var(--color-border)] w-full ${WIDTH_CLASSES[width]} mx-4 max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-200`}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">{title}</h2>
           <button

@@ -1,4 +1,5 @@
 import { Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { ConversationWithTags } from '../../stores/chat';
 import { formatRelativeDate } from '../../lib/date';
 
@@ -6,16 +7,19 @@ interface ConversationCardProps {
   conversation: ConversationWithTags;
   onClick: () => void;
   onDelete: (e: React.MouseEvent) => void;
+  id?: string;
 }
 
-export function ConversationCard({ conversation, onClick, onDelete }: ConversationCardProps) {
-  const title = conversation.title || 'New Conversation';
-  const preview = conversation.last_message_preview || 'No messages yet';
+export function ConversationCard({ conversation, onClick, onDelete, id }: ConversationCardProps) {
+  const { t } = useTranslation();
+  const title = conversation.title || t('chat_new_conversation');
+  const preview = conversation.last_message_preview || t('chat_no_messages_yet');
   const messageCount = conversation.message_count;
   const updatedAt = formatRelativeDate(conversation.updated_at);
 
   return (
     <div
+      id={id}
       onClick={onClick}
       className="group px-4 py-3 hover:bg-[var(--color-bg-card)] cursor-pointer transition-colors"
     >

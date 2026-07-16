@@ -221,6 +221,10 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         "/settings/test-openai-compat",
         web::post().to(settings::test_openai_compat_connection),
     );
+    cfg.route(
+        "/settings/test-feishu",
+        web::post().to(settings::test_feishu_connection),
+    );
 
     // Embedding management
     cfg.route(

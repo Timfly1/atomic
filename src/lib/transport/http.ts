@@ -61,7 +61,12 @@ export class HttpTransport implements Transport {
     };
 
     this.visibilityHandler = () => {
-      if (document.visibilityState === 'visible') wakeUp();
+      if (document.visibilityState === 'visible') {
+        // Debounce: only wake if not already reconnecting
+        if (!this.reconnectTimer) {
+          wakeUp();
+        }
+      }
     };
     this.onlineHandler = wakeUp;
 

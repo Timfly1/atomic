@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Check, ChevronDown, Telescope } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useReportsStore } from '../../stores/reports';
 import { useFeaturedReportStore } from '../../stores/featuredReport';
 
@@ -27,6 +28,7 @@ interface FeaturedDropdownProps {
 }
 
 export const FeaturedDropdown = memo(function FeaturedDropdown({ label }: FeaturedDropdownProps) {
+  const { t } = useTranslation();
   const reports = useReportsStore(s => s.reports);
   const fetchAll = useReportsStore(s => s.fetchAll);
   const featuredId = useFeaturedReportStore(s => s.reportId);
@@ -161,8 +163,6 @@ export const FeaturedDropdown = memo(function FeaturedDropdown({ label }: Featur
         type="button"
         onClick={() => setOpen(s => !s)}
         onKeyDown={(e) => {
-          // Open with ArrowDown/Enter/Space; the open effect will
-          // focus the right item.
           if (!open && (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ')) {
             e.preventDefault();
             setOpen(true);
@@ -171,13 +171,18 @@ export const FeaturedDropdown = memo(function FeaturedDropdown({ label }: Featur
         aria-haspopup="menu"
         aria-expanded={open}
         className="
-          inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-[0.14em]
-          text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors
-          focus:outline-none focus-visible:text-[var(--color-text-primary)]
+          inline-flex items-center gap-1.5 px-2.5 py-1.5
+          text-[12px] font-medium
+          bg-[var(--color-bg-card)]/80 backdrop-blur-sm
+          border border-[var(--color-border)] rounded-lg
+          text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]
+          hover:border-[var(--color-border-hover)] hover:bg-[var(--color-bg-card)]
+          transition-all duration-150
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:border-transparent
         "
       >
         {label}
-        <ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} strokeWidth={2.5} />
+        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} strokeWidth={2.5} />
       </button>
 
       {open && (
@@ -186,7 +191,7 @@ export const FeaturedDropdown = memo(function FeaturedDropdown({ label }: Featur
           onKeyDown={onMenuKeyDown}
           className="
             absolute left-0 mt-1.5 min-w-[220px] z-30
-            bg-[var(--color-bg-card)] border border-[var(--color-border)]
+            bg-white dark:bg-[#2d2d2d] border border-[var(--color-border)]
             rounded-md shadow-xl py-1
             animate-in fade-in zoom-in-95 duration-100
           "
@@ -236,7 +241,7 @@ export const FeaturedDropdown = memo(function FeaturedDropdown({ label }: Featur
                   ${highlighted === reports.length ? 'bg-[var(--color-bg-hover)] text-[var(--color-text-primary)]' : ''}
                 `}
               >
-                Unfeature
+                {t('reports_unfeature_from_dashboard')}
               </button>
             </>
           )}

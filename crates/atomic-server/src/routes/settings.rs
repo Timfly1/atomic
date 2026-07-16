@@ -221,6 +221,24 @@ pub async fn test_openai_compat_connection(body: web::Json<TestOpenAICompatBody>
     }
 }
 
+#[derive(Deserialize, Serialize, ToSchema)]
+pub struct TestFeishuBody {
+    /// Feishu App ID
+    pub app_id: String,
+    /// Feishu App Secret
+    pub app_secret: String,
+}
+
+#[utoipa::path(post, path = "/api/settings/test-feishu", request_body = TestFeishuBody, responses((status = 200, description = "Connection successful"), (status = 400, description = "API error", body = ApiErrorResponse)), tag = "settings")]
+pub async fn test_feishu_connection(body: web::Json<TestFeishuBody>) -> HttpResponse {
+    use atomic_core::ingest::feishu;
+
+    match feishu::validate_credentials(&body.app_id, &body.app_secret).await {
+        Ok(()) => HttpResponse::Ok().json(serde_json::json!({"success": true})),
+        Err(e) => HttpResponse::BadRequest().json(serde_json::json!({"error": e})),
+    }
+}
+
 #[utoipa::path(get, path = "/api/settings/embedding-models", responses((status = 200, description = "Curated OpenRouter embedding models with dimensions")), tag = "settings")]
 pub async fn get_openrouter_embedding_models() -> HttpResponse {
     let models = atomic_core::providers::openrouter::models::get_embedding_models();

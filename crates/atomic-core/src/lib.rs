@@ -3588,8 +3588,33 @@ impl AtomicCore {
             )));
         }
 
+        // Get Feishu token if this is a Feishu URL
+        let feishu_token = if ingest::feishu::is_feishu_url(&request.url) {
+            let settings = self.get_settings().await.ok();
+            let app_id = settings.as_ref().and_then(|s| s.get("feishu_app_id"));
+            let app_secret = settings.as_ref().and_then(|s| s.get("feishu_app_secret"));
+
+            if let (Some(app_id), Some(app_secret)) = (app_id, app_secret) {
+                if !app_id.is_empty() && !app_secret.is_empty() {
+                    match ingest::feishu::get_access_token(app_id, app_secret).await {
+                        Ok(token) => Some(token),
+                        Err(e) => {
+                            tracing::debug!("Failed to get Feishu token: {}", e);
+                            None
+                        }
+                    }
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
         // Resolve: fetch + extract
-        let resolved = ingest::resolve_url(&request.url, &request_id, &on_ingest)
+        let resolved = ingest::resolve_url(&request.url, &request_id, &on_ingest, feishu_token.as_deref())
             .await
             .map_err(|e| {
                 on_ingest(ingest::IngestionEvent::IngestionFailed {
@@ -3816,7 +3841,8 @@ impl AtomicCore {
             };
 
             let request_id = Uuid::new_v4().to_string();
-            match ingest::resolve_url(&link, &request_id, &on_ingest).await {
+            // For feed items, we don't pass Feishu token - feeds should use public URLs
+            match ingest::resolve_url(&link, &request_id, &on_ingest, None).await {
                 Ok(resolved) => {
                     match self
                         .create_atom(

@@ -886,7 +886,7 @@ function AtomReaderContent({
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         title={t('atoms_delete_confirm_title')}
-        confirmLabel={isDeleting ? t('atoms_tagging_in_progress') : t('common_delete')}
+        confirmLabel={isDeleting ? t('common_deleting') : t('common_delete')}
         confirmVariant="danger"
         onConfirm={handleDelete}
       >

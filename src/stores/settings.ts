@@ -50,8 +50,30 @@ function splitResolvedSettings(
   return { settings, sources };
 }
 
-export const useSettingsStore = create<SettingsStore>((set) => ({
-  settings: {},
+const SETTINGS_CACHE_KEY = 'atomic-settings-cache';
+
+function cacheSettings(settings: Record<string, string>) {
+  try {
+    localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify(settings));
+  } catch (e) {
+    // Ignore cache errors
+  }
+}
+
+function loadCachedSettings(): Record<string, string> {
+  try {
+    const cached = localStorage.getItem(SETTINGS_CACHE_KEY);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+  } catch (e) {
+    // Ignore cache errors
+  }
+  return {};
+}
+
+export const useSettingsStore = create<SettingsStore>((set, get) => ({
+  settings: loadCachedSettings(),
   sources: {},
   isLoading: false,
   error: null,
@@ -63,6 +85,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         'get_settings',
       );
       const { settings, sources } = splitResolvedSettings(resolved);
+      cacheSettings(settings);
       set({ settings, sources, isLoading: false });
     } catch (e) {
       set({ error: String(e), isLoading: false });
@@ -85,10 +108,14 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         : dbCount <= 1
           ? 'workspace_default'
           : 'override';
-      set((state) => ({
-        settings: { ...state.settings, [key]: value },
-        sources: { ...state.sources, [key]: newSource },
-      }));
+      set((state) => {
+        const newSettings = { ...state.settings, [key]: value };
+        cacheSettings(newSettings);
+        return {
+          settings: newSettings,
+          sources: { ...state.sources, [key]: newSource },
+        };
+      });
     } catch (e) {
       set({ error: String(e) });
       throw e;

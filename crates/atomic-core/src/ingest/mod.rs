@@ -6,6 +6,7 @@
 
 pub mod extract;
 pub mod fetch;
+pub mod feishu;
 pub mod rss;
 
 use serde::{Deserialize, Serialize};
@@ -102,10 +103,12 @@ pub struct ResolvedContent {
 
 /// Fetch a URL, check readability, and extract article content as markdown.
 /// Does NOT touch the database. Emits events via the callback.
+/// For Feishu URLs, uses the Feishu Open Platform API if feishu_token is provided.
 pub async fn resolve_url<F>(
     url: &str,
     request_id: &str,
     on_event: &F,
+    feishu_token: Option<&str>,
 ) -> Result<ResolvedContent, String>
 where
     F: Fn(IngestionEvent),
@@ -115,6 +118,39 @@ where
         request_id: request_id.to_string(),
     });
 
+    // Check if this is a Feishu URL and use Feishu API
+    if feishu::is_feishu_url(url) {
+        // Feishu API requires authentication even for public documents
+        if feishu_token.is_none() {
+            let err = "Feishu document ingestion requires credentials. Please configure Feishu App ID and App Secret in Settings > Integrations.".to_string();
+            on_event(IngestionEvent::FetchFailed {
+                url: url.to_string(),
+                request_id: request_id.to_string(),
+                error: err.clone(),
+            });
+            return Err(err);
+        }
+        match feishu::fetch_feishu_doc(url, feishu_token).await {
+            Ok(content) => {
+                on_event(IngestionEvent::FetchComplete {
+                    url: url.to_string(),
+                    request_id: request_id.to_string(),
+                    content_length: content.markdown.len(),
+                });
+                return Ok(content);
+            }
+            Err(e) => {
+                on_event(IngestionEvent::FetchFailed {
+                    url: url.to_string(),
+                    request_id: request_id.to_string(),
+                    error: e.clone(),
+                });
+                return Err(e);
+            }
+        }
+    }
+
+    // Standard HTML fetch for non-Feishu URLs
     let html = match fetch::fetch_html(url).await {
         Ok(html) => {
             on_event(IngestionEvent::FetchComplete {

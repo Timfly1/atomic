@@ -250,7 +250,7 @@ export function TagSelector({
 
         {/* Dropdown */}
         {inputValue && (filteredTags.length > 0 || showCreateOption) && (
-          <div className="absolute z-10 w-full mt-1 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-md shadow-lg max-h-48 overflow-y-auto">
+          <div className="absolute z-10 w-full mt-1 bg-white dark:bg-[#2d2d2d] border border-[var(--color-border)] rounded-md shadow-lg max-h-48 overflow-y-auto">
             {filteredTags.map((tag) => {
               const matchIndices = matchIndicesMap.get(tag.id) || [];
               return (
