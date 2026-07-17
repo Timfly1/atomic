@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Atomic Web Clipper",
+  "name": "Solis Web Clipper",
   "version": "1.0.0",
-  "description": "Capture web content to Atomic note-taking app",
+  "description": "Capture web content to Solis note-taking app",
 
   "permissions": [
     "activeTab",
