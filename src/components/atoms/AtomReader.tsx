@@ -17,10 +17,14 @@ import { getTransport } from '../../lib/transport';
 import { readerEditorActions } from '../../lib/reader-editor-bridge';
 import { atomLinkExtension, type AtomLinkSuggestion, type AtomLinkSuggestionSource } from '../../editor/atom-links';
 import { pasteImageHandler } from '../../lib/editor/paste-handler';
+import { MarkdownShorthandPicker, createQuickTriggerExtension } from '../ui/MarkdownShorthandPicker';
+import type { QuickTriggerCallbacks } from '../ui/MarkdownShorthandPicker';
 import type {
   AtomicCodeMirrorEditorHandle,
   AtomicCodeMirrorEditorProps,
 } from '@atomic-editor/editor';
+
+import type { Extension } from '@codemirror/state';
 
 // Lazy-load the editor module AND the curated code-languages
 // registry together. Pinning both inside the same dynamic boundary
@@ -204,6 +208,7 @@ function AtomReaderContent({
   const isMobile = useIsMobile();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const editorHandleRef = useRef<AtomicCodeMirrorEditorHandle | null>(null);
+  const triggerCallbacksRef = useRef<QuickTriggerCallbacks | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showTagSelector, setShowTagSelector] = useState(false);
@@ -540,6 +545,11 @@ function AtomReaderContent({
     [atom.id],
   );
 
+  const quickTriggerExtension = useMemo(
+    () => createQuickTriggerExtension(triggerCallbacksRef),
+    [],
+  );
+
   return (
     <div
       ref={containerRef}
@@ -603,9 +613,10 @@ function AtomReaderContent({
                   void openExternalUrl(url);
                 }}
                 editorHandleRef={editorHandleRef}
-                extensions={[atomLinkExtensions, pasteImageExtension]}
+                extensions={[atomLinkExtensions, pasteImageExtension, quickTriggerExtension]}
               />
             </Suspense>
+            <MarkdownShorthandPicker editorHandleRef={editorHandleRef} triggerCallbacksRef={triggerCallbacksRef} />
           </div>
 
           <div className="w-full @4xl:w-80 @4xl:shrink-0 mt-6 @4xl:mt-0 border border-[var(--color-border)] rounded-lg p-4 self-start">
