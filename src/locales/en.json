@@ -1013,6 +1013,9 @@
   "chat_scope_no_matching": "No matching tags",
   "chat_scope_add_tag": "Add tag",
   "chat_scope_remove_tag": "Remove {{name}} from scope",
+  "chat_conversation_not_found": "Conversation not found",
+  "chat_conversation_not_found_desc": "This conversation has been deleted or does not exist",
+  "chat_go_back_to_list": "Go back to list",
 
   "tags_title": "Tags",
   "tags_empty": "No tags yet",

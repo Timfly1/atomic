@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useRef, useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Mic, Keyboard } from 'lucide-react';
 
 interface ChatInputProps {
@@ -181,192 +181,270 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(({
   }, [value, onSend]);
 
   return (
-    <div className="flex-shrink-0 px-3 pb-3">
+    <>
+      {/* Desktop: flex layout */}
       <div
-        data-chat-input
-        className={`
-          relative flex items-end rounded-2xl
-          bg-[var(--color-bg-elevated)] border border-[var(--color-border)]
-          shadow-lg shadow-black/20
-          transition-all duration-300 ease-out
-          focus-within:outline-none focus-within:ring-0 focus-within:border-[var(--color-border)]
-        `}
+        className="flex-shrink-0 flex items-center md:flex max-md:hidden"
         style={{
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1)',
-          outline: '2px solid transparent',
-          outlineOffset: '0px',
-          borderColor: 'var(--color-border)',
+          height: 'auto',
+          backgroundColor: 'var(--color-bg-panel)',
         }}
       >
-        {/* 语音模式内容 */}
-        {isVoiceMode ? (
-          <div className="flex items-center w-full min-h-[48px] px-3 relative z-10">
-            <button
-              type="button"
-              onClick={handleKeyboardClick}
-              className="p-2 rounded-full hover:bg-[var(--color-bg-hover)] transition-colors flex-shrink-0"
-              title="切换到键盘输入"
-            >
-              <Keyboard className="w-5 h-5 text-[var(--color-accent)]" />
-            </button>
-            {/* 声波 + 文字容器 */}
-            <div
-              className={`
-                flex-1 flex items-center justify-center relative
-                ${isCancelling
-                  ? 'text-red-400'
-                  : isRecording
-                    ? 'text-[var(--color-accent)]'
-                    : 'text-[var(--color-text-secondary)]'
-                }
-                transition-colors duration-200 select-none
-              `}
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-            >
-              {/* 左边12根声波 - 紧靠文字 */}
-              <div className="absolute right-0 flex items-center gap-px mr-0.5">
-                {[...Array(12)].map((_, i) => {
-                  const distanceFromText = 11 - i;
-                  const baseHeight = 5;
-                  const randomHeight = baseHeight + Math.random() * 16 + distanceFromText * 0.6;
-                  return (
-                    <motion.div
-                      key={`left-${i}`}
-                      className={`w-0.5 rounded-full ${
-                        isCancelling
-                          ? 'bg-red-500'
-                          : isRecording
-                            ? 'bg-[var(--color-accent)]'
-                            : 'bg-[var(--color-text-tertiary)]'
-                      }`}
-                      animate={isRecording ? {
-                        height: [
-                          baseHeight,
-                          randomHeight,
-                          baseHeight + Math.random() * 8,
-                          randomHeight * 0.7,
-                          baseHeight,
-                        ],
-                      } : isCancelling ? {
-                        height: [5, 10, 5],
-                      } : {
-                        height: baseHeight,
-                      }}
-                      transition={{
-                        duration: isRecording ? 0.5 + Math.random() * 0.3 : 0.2,
-                        repeat: isRecording ? Infinity : 0,
-                        ease: 'easeInOut',
-                        delay: i * 0.04,
-                      }}
-                    />
-                  );
-                })}
-              </div>
-              {/* 文字 */}
-              <span className="text-sm font-medium px-2 z-10">
-                {isCancelling
-                  ? '松手取消'
-                  : isRecording
-                    ? '松手发送'
-                    : '按住说话'}
-              </span>
-              {/* 右边12根声波 - 紧靠文字 */}
-              <div className="absolute left-0 flex items-center gap-px ml-0.5">
-                {[...Array(12)].map((_, i) => {
-                  const distanceFromText = 11 - i;
-                  const baseHeight = 5;
-                  const randomHeight = baseHeight + Math.random() * 16 + distanceFromText * 0.6;
-                  return (
-                    <motion.div
-                      key={`right-${i}`}
-                      className={`w-0.5 rounded-full ${
-                        isCancelling
-                          ? 'bg-red-500'
-                          : isRecording
-                            ? 'bg-[var(--color-accent)]'
-                            : 'bg-[var(--color-text-tertiary)]'
-                      }`}
-                      animate={isRecording ? {
-                        height: [
-                          baseHeight,
-                          randomHeight,
-                          baseHeight + Math.random() * 8,
-                          randomHeight * 0.7,
-                          baseHeight,
-                        ],
-                      } : isCancelling ? {
-                        height: [5, 10, 5],
-                      } : {
-                        height: baseHeight,
-                      }}
-                      transition={{
-                        duration: isRecording ? 0.5 + Math.random() * 0.3 : 0.2,
-                        repeat: isRecording ? Infinity : 0,
-                        ease: 'easeInOut',
-                        delay: i * 0.04,
-                      }}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* 键盘模式内容 */
+        <div
+          data-chat-input
+          className={`
+            relative flex items-end rounded-2xl w-full mx-3
+            bg-[var(--color-bg-elevated)] border border-[var(--color-border)]
+            shadow-lg shadow-black/20
+            transition-all duration-300 ease-out
+            focus-within:outline-none focus-within:ring-0 focus-within:border-[var(--color-border)]
+          `}
+          style={{
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1)',
+            outline: '2px solid transparent',
+            outlineOffset: '0px',
+            borderColor: 'var(--color-border)',
+            minHeight: '44px',
+          }}
+        >
+          {/* 内容 */}
           <div className="flex items-center w-full min-h-[48px] relative z-10">
-            {/* 输入框 */}
-            <div className="flex-1 relative flex items-center">
-              {/* 语音图标 - 在输入框内部左侧 */}
-              {isVoiceSupported && (
-                <button
-                  type="button"
-                  onClick={handleVoiceIconClick}
-                  className="p-2 rounded-full hover:bg-[var(--color-bg-hover)] transition-colors flex-shrink-0"
-                  title="切换到语音输入"
-                >
-                  <Mic className="w-5 h-5 text-[var(--color-text-secondary)]" />
-                </button>
-              )}
-              <textarea
-                ref={textareaRef}
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                placeholder={placeholder}
-                disabled={disabled}
-                rows={1}
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="off"
-                spellCheck={false}
-                enterKeyHint="send"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey && value.trim()) {
-                    e.preventDefault();
-                    handleSendClick();
-                  }
-                }}
-                className="
-                  flex-1 resize-none overflow-hidden bg-transparent
-                  text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)]
-                  focus:outline-none focus:ring-0 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed
-                  text-base leading-relaxed py-3
-                "
-                style={{ minHeight: '48px', maxHeight: '120px' }}
-                onInput={(e) => {
-                  const target = e.target as HTMLTextAreaElement;
-                  target.style.height = 'auto';
-                  target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
-                }}
-              />
-            </div>
+            <textarea
+              ref={textareaRef}
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              placeholder={placeholder}
+              disabled={disabled}
+              rows={1}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              enterKeyHint="send"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey && value.trim()) {
+                  e.preventDefault();
+                  handleSendClick();
+                }
+              }}
+              className="
+                flex-1 resize-none overflow-hidden bg-transparent
+                text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)]
+                focus:outline-none focus:ring-0 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed
+                text-base leading-relaxed py-3
+              "
+              style={{ minHeight: '48px', maxHeight: '120px' }}
+              onInput={(e) => {
+                const target = e.target as HTMLTextAreaElement;
+                target.style.height = 'auto';
+                target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
+              }}
+            />
           </div>
-        )}
+        </div>
       </div>
-    </div>
+
+      {/* Mobile: fixed position */}
+      <div
+        className="fixed left-0 right-0 flex items-center md:hidden"
+        style={{
+          bottom: 'calc(13px + env(safe-area-inset-bottom, 0px))',
+          height: 'calc(10px + env(safe-area-inset-bottom, 0px))',
+          backgroundColor: 'var(--color-bg-panel)',
+          paddingLeft: 'env(safe-area-inset-left)',
+          paddingRight: 'env(safe-area-inset-right)',
+          zIndex: 25,
+        }}
+      >
+        <div
+          data-chat-input
+          className={`
+            relative flex items-end rounded-2xl w-full mx-3
+            bg-[var(--color-bg-elevated)] border border-[var(--color-border)]
+            shadow-lg shadow-black/20
+            transition-all duration-300 ease-out
+            focus-within:outline-none focus-within:ring-0 focus-within:border-[var(--color-border)]
+          `}
+          style={{
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1)',
+            outline: '2px solid transparent',
+            outlineOffset: '0px',
+            borderColor: 'var(--color-border)',
+            minHeight: '44px',
+          }}
+        >
+          {/* 语音模式内容 */}
+          {isVoiceMode ? (
+            <div className="flex items-center w-full min-h-[48px] px-3 relative z-10">
+              <button
+                type="button"
+                onClick={handleKeyboardClick}
+                className="p-2 rounded-full hover:bg-[var(--color-bg-hover)] transition-colors flex-shrink-0"
+                title="切换到键盘输入"
+              >
+                <Keyboard className="w-5 h-5 text-[var(--color-accent)]" />
+              </button>
+              {/* 声波 + 文字容器 */}
+              <div
+                className={`
+                  flex-1 flex items-center justify-center relative
+                  ${isCancelling
+                    ? 'text-red-400'
+                    : isRecording
+                      ? 'text-[var(--color-accent)]'
+                      : 'text-[var(--color-text-secondary)]'
+                  }
+                  transition-colors duration-200 select-none
+                `}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+              >
+                {/* 左边12根声波 - 紧靠文字 */}
+                <div className="absolute right-0 flex items-center gap-px mr-0.5">
+                  {[...Array(12)].map((_, i) => {
+                    const distanceFromText = 11 - i;
+                    const baseHeight = 5;
+                    const randomHeight = baseHeight + Math.random() * 16 + distanceFromText * 0.6;
+                    return (
+                      <motion.div
+                        key={`left-${i}`}
+                        className={`w-0.5 rounded-full ${
+                          isCancelling
+                            ? 'bg-red-500'
+                            : isRecording
+                              ? 'bg-[var(--color-accent)]'
+                              : 'bg-[var(--color-text-tertiary)]'
+                        }`}
+                        animate={isRecording ? {
+                          height: [
+                            baseHeight,
+                            randomHeight,
+                            baseHeight + Math.random() * 8,
+                            randomHeight * 0.7,
+                            baseHeight,
+                          ],
+                        } : isCancelling ? {
+                          height: [5, 10, 5],
+                        } : {
+                          height: baseHeight,
+                        }}
+                        transition={{
+                          duration: isRecording ? 0.5 + Math.random() * 0.3 : 0.2,
+                          repeat: isRecording ? Infinity : 0,
+                          ease: 'easeInOut',
+                          delay: i * 0.04,
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+                {/* 文字 */}
+                <span className="text-sm font-medium px-2 z-10">
+                  {isCancelling
+                    ? '松手取消'
+                    : isRecording
+                      ? '松手发送'
+                      : '按住说话'}
+                </span>
+                {/* 右边12根声波 - 紧靠文字 */}
+                <div className="absolute left-0 flex items-center gap-px ml-0.5">
+                  {[...Array(12)].map((_, i) => {
+                    const distanceFromText = 11 - i;
+                    const baseHeight = 5;
+                    const randomHeight = baseHeight + Math.random() * 16 + distanceFromText * 0.6;
+                    return (
+                      <motion.div
+                        key={`right-${i}`}
+                        className={`w-0.5 rounded-full ${
+                          isCancelling
+                            ? 'bg-red-500'
+                            : isRecording
+                              ? 'bg-[var(--color-accent)]'
+                              : 'bg-[var(--color-text-tertiary)]'
+                        }`}
+                        animate={isRecording ? {
+                          height: [
+                            baseHeight,
+                            randomHeight,
+                            baseHeight + Math.random() * 8,
+                            randomHeight * 0.7,
+                            baseHeight,
+                          ],
+                        } : isCancelling ? {
+                          height: [5, 10, 5],
+                        } : {
+                          height: baseHeight,
+                        }}
+                        transition={{
+                          duration: isRecording ? 0.5 + Math.random() * 0.3 : 0.2,
+                          repeat: isRecording ? Infinity : 0,
+                          ease: 'easeInOut',
+                          delay: i * 0.04,
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* 键盘模式内容 */
+            <div className="flex items-center w-full min-h-[48px] relative z-10">
+              {/* 输入框 */}
+              <div className="flex-1 relative flex items-center">
+                {/* 语音图标 - 在输入框内部左侧 */}
+                {isVoiceSupported && (
+                  <button
+                    type="button"
+                    onClick={handleVoiceIconClick}
+                    className="p-2 rounded-full hover:bg-[var(--color-bg-hover)] transition-colors flex-shrink-0"
+                    title="切换到语音输入"
+                  >
+                    <Mic className="w-5 h-5 text-[var(--color-text-secondary)]" />
+                  </button>
+                )}
+                <textarea
+                  ref={textareaRef}
+                  value={value}
+                  onChange={(e) => onChange(e.target.value)}
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => setIsFocused(false)}
+                  placeholder={placeholder}
+                  disabled={disabled}
+                  rows={1}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
+                  enterKeyHint="send"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey && value.trim()) {
+                      e.preventDefault();
+                      handleSendClick();
+                    }
+                  }}
+                  className="
+                    flex-1 resize-none overflow-hidden bg-transparent
+                    text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)]
+                    focus:outline-none focus:ring-0 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed
+                    text-base leading-relaxed py-3
+                  "
+                  style={{ minHeight: '48px', maxHeight: '120px' }}
+                  onInput={(e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = 'auto';
+                    target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
+                  }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
   );
 });
 

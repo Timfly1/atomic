@@ -113,8 +113,7 @@ export default defineConfig({
       // confused by the stale absolute source paths in their sourcemaps.
       ignored: ['**/mobile/ios/**', '**/target/**', '**/dist-web/**', '**/dist/**'],
     },
-    proxy: isWebBuild
-      ? {
+    proxy: {
           '/api': {
             target: 'http://127.0.0.1:8080',
             changeOrigin: true,
@@ -130,8 +129,7 @@ export default defineConfig({
               proxy.on('error', () => {});
             },
           },
-        }
-      : undefined,
+        },
   },
   resolve: {
     // Required when developing against a local file:../atomic-editor package.

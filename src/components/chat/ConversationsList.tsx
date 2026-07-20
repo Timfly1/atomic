@@ -1,13 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, MessageCircle } from 'lucide-react';
+import { Plus, MessageCircle, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore, ConversationWithTags } from '../../stores/chat';
+import { useUIStore } from '../../stores/ui';
 import { ConversationCard } from './ConversationCard';
 import { Modal } from '../ui/Modal';
 
 export function ConversationsList() {
   const { t } = useTranslation();
 
+  const toggleChatSidebar = useUIStore(s => s.toggleChatSidebar);
   const conversations = useChatStore(s => s.conversations);
   const isLoading = useChatStore(s => s.isLoading);
   const error = useChatStore(s => s.error);
@@ -86,14 +88,21 @@ export function ConversationsList() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* New Chat Button */}
-      <div className="flex-shrink-0 px-4 py-3 border-b border-[var(--color-border)]">
+      {/* Header with close button */}
+      <div className="flex-shrink-0 px-4 py-3 border-b border-[var(--color-border)] flex items-center justify-between">
         <button
           onClick={handleNewChat}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-[var(--color-bg-hover)] hover:bg-[var(--color-border)] text-[var(--color-text-primary)] rounded-lg transition-colors"
+          className="flex items-center justify-center gap-2 px-3 py-2 bg-[var(--color-bg-hover)] hover:bg-[var(--color-border)] text-[var(--color-text-primary)] rounded-lg transition-colors"
         >
           <Plus className="w-4 h-4" strokeWidth={2} />
           <span className="text-sm font-medium">{t('chat_new_conversation')}</span>
+        </button>
+        <button
+          onClick={() => toggleChatSidebar()}
+          className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] rounded-lg transition-colors md:hidden"
+          aria-label="Close chat"
+        >
+          <X className="w-5 h-5" strokeWidth={2} />
         </button>
       </div>
 

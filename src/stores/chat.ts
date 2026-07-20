@@ -441,8 +441,14 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         }
       }
 
-      // Get diary context (location, weather) for diary entries
-      const diaryContext = await getDiaryContext();
+      // Get diary context (location, weather) only for diary entries or location-related queries
+      // Only fetch when user explicitly mentions diary/location related content
+      const isDiaryIntent =
+        content.includes('日记') ||
+        content.includes('记录') ||
+        content.includes('定位') ||
+        content.includes('位置');
+      const diaryContext = isDiaryIntent ? await getDiaryContext() : undefined;
 
       await getTransport().invoke<ChatMessageWithContext>('send_chat_message', {
         conversationId: currentConversation.id,

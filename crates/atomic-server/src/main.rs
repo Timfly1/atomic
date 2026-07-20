@@ -669,6 +669,11 @@ async fn run_server(
                 "/api/docs/openapi.json",
                 web::get().to(atomic_server::openapi_spec),
             )
+            // Geocoding proxy (public, no auth — needed for diary location feature)
+            .route(
+                "/api/geocode/reverse",
+                web::get().to(routes::geocoding::reverse_geocode),
+            )
             .service(Scalar::with_url(
                 "/api/docs",
                 atomic_server::ApiDoc::openapi(),

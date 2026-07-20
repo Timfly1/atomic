@@ -1013,6 +1013,9 @@
   "chat_scope_no_matching": "没有匹配的标签",
   "chat_scope_add_tag": "添加标签",
   "chat_scope_remove_tag": "从范围中移除 {{name}}",
+  "chat_conversation_not_found": "对话不存在",
+  "chat_conversation_not_found_desc": "该对话已被删除或不存在",
+  "chat_go_back_to_list": "返回对话列表",
 
   "tags_title": "标签",
   "tags_empty": "暂无标签",

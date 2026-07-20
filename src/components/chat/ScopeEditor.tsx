@@ -176,31 +176,35 @@ export function ScopeEditor({ conversation }: ScopeEditorProps) {
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <span className="text-xs text-[var(--color-text-tertiary)] uppercase tracking-wide">{t('chat_scope_label')}</span>
-
+    <div className="flex items-center gap-1">
       {conversation.tags.length === 0 ? (
-        <span className="text-sm text-[var(--color-text-secondary)] italic">{t('chat_scope_all_atoms')}</span>
+        <span className="text-xs text-[var(--color-text-tertiary)]">{t('chat_scope_all_atoms')}</span>
       ) : (
-        conversation.tags.map((tag) => (
-          <span
-            key={tag.id}
-            className="group inline-flex items-center gap-1 px-2 py-0.5 text-sm rounded bg-[var(--color-accent)]/20 text-[var(--color-accent-light)]"
-          >
-            {tag.name}
-            <button
-              onClick={() => handleRemoveTag(tag.id)}
-              className={`hover:text-red-400 transition-all ${
-                isMobile
-                  ? 'opacity-100 active:text-red-400'
-                  : 'opacity-0 group-hover:opacity-100'
-              }`}
-              aria-label={t('chat_scope_remove_tag', { name: tag.name })}
+        <>
+          <span className="text-xs text-[var(--color-text-tertiary)]">+</span>
+          {conversation.tags.slice(0, 2).map((tag) => (
+            <span
+              key={tag.id}
+              className="group inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs rounded bg-[var(--color-accent)]/20 text-[var(--color-accent-light)]"
             >
-              <X className="w-3 h-3" strokeWidth={2} />
-            </button>
-          </span>
-        ))
+              {tag.name}
+              <button
+                onClick={() => handleRemoveTag(tag.id)}
+                className={`hover:text-red-400 transition-all ${
+                  isMobile
+                    ? 'opacity-100 active:text-red-400'
+                    : 'opacity-0 group-hover:opacity-100'
+                }`}
+                aria-label={t('chat_scope_remove_tag', { name: tag.name })}
+              >
+                <X className="w-2.5 h-2.5" strokeWidth={2} />
+              </button>
+            </span>
+          ))}
+          {conversation.tags.length > 2 && (
+            <span className="text-xs text-[var(--color-text-tertiary)]">+{conversation.tags.length - 2}</span>
+          )}
+        </>
       )}
 
       {/* Add tag button/dropdown */}

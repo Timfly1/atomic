@@ -10,6 +10,7 @@ pub mod databases;
 pub mod embedding;
 pub mod exports;
 pub mod feeds;
+pub mod geocoding;
 pub mod graph;
 pub mod import;
 pub mod ingest;

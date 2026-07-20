@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore } from '../../stores/chat';
 import { useUIStore } from '../../stores/ui';
@@ -187,13 +187,18 @@ export function ChatView() {
     openReader(atomId, highlightText);
   }, [goBack, openReader]);
 
-  // Handle keyboard showing - ensure input is visible
+  // Handle keyboard showing - scroll messages to bottom
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout | null = null;
+
     const handleVisualViewportChange = () => {
-      setTimeout(() => {
-        inputRef.current?.focus();
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-      }, 100);
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        const container = messagesContainerRef.current;
+        if (container) {
+          container.scrollTop = container.scrollHeight;
+        }
+      }, 200);
     };
 
     const viewport = window.visualViewport;
@@ -203,6 +208,7 @@ export function ChatView() {
     }
 
     return () => {
+      if (timeoutId) clearTimeout(timeoutId);
       if (viewport) {
         viewport.removeEventListener('resize', handleVisualViewportChange);
         viewport.removeEventListener('scroll', handleVisualViewportChange);
@@ -210,15 +216,27 @@ export function ChatView() {
     };
   }, []);
 
-  // On mount, ensure input is properly positioned
+  // On mount, ensure messages are scrolled to bottom
   useEffect(() => {
-    const rafId = requestAnimationFrame(() => {
-      setTimeout(() => {
-        inputRef.current?.focus();
-        messagesEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' });
-      }, 150);
-    });
-    return () => cancelAnimationFrame(rafId);
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    // Use multiple passes to ensure scroll settles after layout
+    const scrollToBottom = () => {
+      container.scrollTop = container.scrollHeight;
+    };
+
+    // First scroll immediately
+    scrollToBottom();
+
+    // Then scroll again after layout settles
+    const timeout1 = setTimeout(scrollToBottom, 100);
+    const timeout2 = setTimeout(scrollToBottom, 300);
+
+    return () => {
+      clearTimeout(timeout1);
+      clearTimeout(timeout2);
+    };
   }, [currentConversation?.id]);
 
   if (!currentConversation) {
@@ -238,7 +256,7 @@ export function ChatView() {
       <div
         ref={messagesContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto p-4 space-y-4 relative"
+        className="flex-1 overflow-y-auto p-4 space-y-4 relative max-md:pb-16"
         style={{ overflowAnchor: 'none' }}
       >
         {/* Search bar */}
@@ -300,8 +318,20 @@ export function ChatView() {
 
         {/* Error message */}
         {error && (
-          <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
-            {error}
+          <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-4">
+            <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center">
+              <AlertCircle className="w-8 h-8 text-red-400" strokeWidth={2} />
+            </div>
+            <div>
+              <p className="text-[var(--color-text-primary)] font-medium mb-1">{t('chat_conversation_not_found')}</p>
+              <p className="text-[var(--color-text-secondary)] text-sm">{t('chat_conversation_not_found_desc')}</p>
+            </div>
+            <button
+              onClick={goBack}
+              className="px-4 py-2 bg-[var(--color-accent)] text-white rounded-lg hover:bg-[var(--color-accent)]/90 transition-colors"
+            >
+              {t('chat_go_back_to_list')}
+            </button>
           </div>
         )}
 
