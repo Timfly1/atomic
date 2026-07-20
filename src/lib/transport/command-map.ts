@@ -562,6 +562,7 @@ export const COMMAND_MAP: Record<string, CommandSpec> = {
       content: a.content,
       ...(a.canvasContext ? { canvas_context: a.canvasContext } : {}),
       ...(a.pageContext ? { page_context: a.pageContext } : {}),
+      ...(a.diaryContext ? { diary_context: a.diaryContext } : {}),
     }),
   },
 

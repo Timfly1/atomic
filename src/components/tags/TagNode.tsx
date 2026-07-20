@@ -85,9 +85,9 @@ export const TagNode = memo(function TagNode({ tag, level, selectedTagId, onSele
         {/* Chat icon - visible on hover */}
         <button
           onClick={handleChatClick}
-          className={`w-6 h-6 flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-accent-light)] transition-all ${
+          className={`icon-button text-[var(--color-text-secondary)] hover:text-[var(--color-accent-light)] ${
             isMobile
-              ? 'opacity-100 active:text-[var(--color-accent-light)] active:bg-[var(--color-bg-hover)]'
+              ? 'opacity-100'
               : 'opacity-0 group-hover:opacity-100'
           }`}
           title="Chat with this tag"
@@ -97,9 +97,9 @@ export const TagNode = memo(function TagNode({ tag, level, selectedTagId, onSele
         {/* Article icon - visible on hover */}
         <button
           onClick={handleWikiClick}
-          className={`w-6 h-6 flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-accent-light)] transition-all ${
+          className={`icon-button text-[var(--color-text-secondary)] hover:text-[var(--color-accent-light)] ${
             isMobile
-              ? 'opacity-100 active:text-[var(--color-accent-light)] active:bg-[var(--color-bg-hover)]'
+              ? 'opacity-100'
               : 'opacity-0 group-hover:opacity-100'
           }`}
           title="View wiki article"
@@ -109,9 +109,9 @@ export const TagNode = memo(function TagNode({ tag, level, selectedTagId, onSele
         {!hasChildren && onDelete && (
           <button
             onClick={handleDeleteClick}
-            className={`p-1 rounded-md text-[var(--color-text-tertiary)] hover:text-red-500 hover:bg-red-500/10 transition-all ${
+            className={`icon-button danger ${
               isMobile
-                ? 'opacity-100 active:text-red-500 active:bg-red-500/10'
+                ? 'opacity-100'
                 : 'opacity-0 group-hover:opacity-100'
             }`}
             title={t('common_delete')}

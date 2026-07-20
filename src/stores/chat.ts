@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { getTransport } from '../lib/transport';
+import { getDiaryContext } from '../lib/diary';
 import { useUIStore } from './ui';
 import { useCanvasStore } from './canvas';
 
@@ -440,11 +441,15 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         }
       }
 
+      // Get diary context (location, weather) for diary entries
+      const diaryContext = await getDiaryContext();
+
       await getTransport().invoke<ChatMessageWithContext>('send_chat_message', {
         conversationId: currentConversation.id,
         content,
         canvasContext,
         pageContext: buildPageContext(),
+        diaryContext,
       });
 
       // Refetch the conversation to get the properly saved messages

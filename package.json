@@ -95,6 +95,7 @@
     "@tauri-apps/plugin-fs": "~2.5.0",
     "@tauri-apps/plugin-opener": "~2.5.3",
     "@tauri-apps/plugin-shell": "~2.3.5",
+    "@tauri-apps/plugin-geolocation": "~2.2.0",
     "@types/diff": "^7.0.2",
     "d3-force": "^3.0.0",
     "diff": "^8.0.4",

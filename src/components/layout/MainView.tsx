@@ -245,7 +245,7 @@ export function MainView() {
 
   return (
     <>
-    <main className="relative flex-1 flex flex-col h-full bg-[var(--color-bg-main)] overflow-hidden pb-[calc(48px+env(safe-area-inset-bottom))] md:pb-0">
+    <main className="relative flex-1 flex flex-col h-full bg-[var(--color-bg-main)] overflow-hidden pb-[20px] md:pb-0">
       {/* Titlebar row 鈥?the row itself is a Tauri drag region; interactive
           elements inside it (buttons, tabs) receive their own events normally. */}
       <div

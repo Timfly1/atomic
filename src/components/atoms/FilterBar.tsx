@@ -78,7 +78,7 @@ export function FilterBar() {
         <div className="relative shrink-0" ref={sourceDropdownRef}>
           <button
             onClick={() => { setShowSourceDropdown(!showSourceDropdown); setShowSortDropdown(false); }}
-            className="flex items-center gap-1 text-xs px-2 py-1 rounded-md text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors"
+            className="pressable flex items-center gap-1 text-xs px-2 py-1 rounded-md text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
           >
             <Filter className="w-3.5 h-3.5" strokeWidth={2} />
             Filter
@@ -169,7 +169,7 @@ export function FilterBar() {
       <div className="relative shrink-0" ref={sortDropdownRef}>
         <button
           onClick={() => { setShowSortDropdown(!showSortDropdown); setShowSourceDropdown(false); }}
-          className="flex items-center gap-1 text-xs px-2 py-1 rounded-md text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors"
+          className="pressable flex items-center gap-1 text-xs px-2 py-1 rounded-md text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
         >
           <ArrowDownUp className="w-3.5 h-3.5" strokeWidth={2} />
           {t(currentSort.labelKey)}

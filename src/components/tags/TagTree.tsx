@@ -264,7 +264,7 @@ export function TagTree({ onOpenTagSettings }: TagTreeProps = {}) {
             e.stopPropagation();
             openSearchPalette('#');
           }}
-          className="p-1 rounded hover:bg-[var(--color-bg-hover)] text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
+          className="icon-button text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]"
           title={t('tags_search_title')}
         >
           <Search className="w-4 h-4" strokeWidth={2} />
@@ -345,7 +345,7 @@ export function TagTree({ onOpenTagSettings }: TagTreeProps = {}) {
       {/* New Tag button */}
       <div className="px-3 py-2 border-t border-[var(--color-border)] shrink-0">
         <button
-          className="w-full flex items-center justify-start gap-1.5 px-2 py-1.5 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] rounded-md transition-colors"
+          className="pressable w-full flex items-center justify-start gap-1.5 px-2 py-1.5 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] rounded-md"
           onClick={() => setNewTagModal({ isOpen: true, parentId: null, name: '' })}
         >
           <Plus className="w-3.5 h-3.5" strokeWidth={2} />

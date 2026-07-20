@@ -968,6 +968,8 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
   const [wikiGenerationPrompt, setWikiGenerationPrompt] = useState('');
   const [wikiUpdatePrompt, setWikiUpdatePrompt] = useState('');
   const [chatPrompt, setChatPrompt] = useState('');
+  const [diaryEnabled, setDiaryEnabled] = useState(false);
+  const [diaryTemplate, setDiaryTemplate] = useState('');
   const [taggingPrompt, setTaggingPrompt] = useState('');
   const [chatModel, setChatModel] = useState('anthropic/claude-sonnet-4.6');
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -1389,6 +1391,8 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
     setWikiGenerationPrompt(settings.wiki_generation_prompt || '');
     setWikiUpdatePrompt(settings.wiki_update_prompt || '');
     setChatPrompt(settings.chat_prompt || '');
+    setDiaryEnabled(settings.diary_enabled === 'true');
+    setDiaryTemplate(settings.diary_template || '');
     setTaggingPrompt(settings.tagging_prompt || '');
     setChatModel(settings.chat_model || 'anthropic/claude-sonnet-4.6');
     setOllamaHost(settings.ollama_host || 'http://127.0.0.1:11434');
@@ -2549,6 +2553,54 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
                     )}
                     <OverrideControls settingKey="chat_prompt" />
                   </div>
+
+                  {/* Diary Feature */}
+                  <div className="space-y-1">
+                    <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-primary)]">
+                      <input
+                        type="checkbox"
+                        checked={diaryEnabled}
+                        onChange={(e) => {
+                          setDiaryEnabled(e.target.checked);
+                          autoSave('diary_enabled', e.target.checked ? 'true' : 'false');
+                        }}
+                        className="w-4 h-4 rounded border-[var(--color-border)]"
+                      />
+                      {t('settings_diary_enabled_label') || '日记功能'}
+                    </label>
+                    <p className="text-xs text-[var(--color-text-secondary)]">
+                      {t('settings_diary_enabled_desc') || '启用后，在聊天中输入"日记记录"会自动按模板创建日记原子'}
+                    </p>
+                  </div>
+
+                  {/* Diary Template */}
+                  {diaryEnabled && (
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-[var(--color-text-primary)]">
+                        {t('settings_diary_template_label') || '日记模板'}
+                      </label>
+                      <p className="text-xs text-[var(--color-text-secondary)]">
+                        {t('settings_diary_template_desc') || '使用 {date}、{time}、{location}、{weather}、{mood}、{summary}、{plan} 作为占位符'}
+                      </p>
+                      <textarea
+                        value={diaryTemplate}
+                        onChange={(e) => setDiaryTemplate(e.target.value)}
+                        onBlur={() => autoSave('diary_template', diaryTemplate)}
+                        placeholder={"# 日记 - {date} {time}\n\n## 位置\n📍 {location}\n\n## 天气\n🌤️ {weather}\n\n## 心情\n{mood}\n\n## 今日总结\n{summary}\n\n## 明日计划\n{plan}"}
+                        rows={10}
+                        className="w-full px-3 py-2 rounded-md bg-[var(--color-bg-main)] border border-[var(--color-border)] text-sm text-[var(--color-text-primary)] font-mono resize-y placeholder:text-[var(--color-text-secondary)]/40"
+                      />
+                      {diaryTemplate && (
+                        <button
+                          onClick={() => { setDiaryTemplate(''); autoSave('diary_template', ''); }}
+                          className="text-xs text-[var(--color-accent)] hover:underline"
+                        >
+                          {t('settings_diary_template_reset') || '重置为默认'}
+                        </button>
+                      )}
+                      <OverrideControls settingKey="diary_template" />
+                    </div>
+                  )}
 
                   {/* Tagging Prompt */}
                   <div className="space-y-1">

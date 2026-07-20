@@ -37,7 +37,7 @@ export function ChatHeader({ conversation, onBack }: ChatHeaderProps) {
       <div className="flex items-center gap-3 px-4 py-3">
         <button
           onClick={onBack}
-          className="p-1.5 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] rounded transition-colors"
+          className="icon-button text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
           aria-label={t('chat_back_to_conversations')}
         >
           <ChevronLeft className="w-5 h-5" strokeWidth={2} />

@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { MessageSquare } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { motion, useMotionValue, animate } from 'motion/react';
 import { useChatStore } from '../../stores/chat';
 import { useUIStore } from '../../stores/ui';
 import { useChatEvents } from '../../hooks/useChatEvents';
 import { useContentSearch } from '../../hooks';
+import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { ChatHeader } from './ChatHeader';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
@@ -27,15 +27,22 @@ export function ChatView() {
   const openReader = useUIStore(s => s.openReader);
 
   const [inputValue, setInputValue] = useState('');
+  const [isVoiceMode, setIsVoiceMode] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const isNearBottomRef = useRef(true);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const swipeX = useMotionValue(0);
-  const dragStartX = useRef(0);
-  const startY = useRef(0);
-  const isHorizontalSwipe = useRef(false);
-  const hasTriggeredSwipe = useRef(false);
+  // Speech recognition
+  const {
+    isListening,
+    transcript,
+    interimTranscript,
+    startListening,
+    stopListening,
+    isSupported: isVoiceSupported,
+  } = useSpeechRecognition();
 
   // Combine all message content for search
   const allContent = useMemo(() => {
@@ -77,7 +84,7 @@ export function ChatView() {
     const container = messagesContainerRef.current;
     if (!container) return true;
 
-    const threshold = 100; // pixels from bottom to consider "at bottom"
+    const threshold = 100;
     const { scrollTop, scrollHeight, clientHeight } = container;
     return scrollHeight - scrollTop - clientHeight < threshold;
   }, []);
@@ -100,68 +107,119 @@ export function ChatView() {
     isNearBottomRef.current = true;
   }, []);
 
-  const handleSend = async () => {
+  const handleSend = useCallback(async () => {
     if (!inputValue.trim() || isStreaming) return;
 
     const content = inputValue.trim();
     setInputValue('');
-    scrollToBottom(); // Scroll to bottom when user sends a message
+    scrollToBottom();
     await sendMessage(content);
-  };
+  }, [inputValue, isStreaming, scrollToBottom, sendMessage]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+  // Handle voice mode change
+  const handleVoiceModeChange = useCallback((mode: boolean) => {
+    setIsVoiceMode(mode);
+    if (!mode) {
+      setIsRecording(false);
     }
-  };
+  }, []);
 
-  // Handle viewing an atom from citation - switch drawer to viewer mode
+  // Handle recording state change
+  const handleRecordingChange = useCallback((recording: boolean) => {
+    setIsRecording(recording);
+  }, []);
+
+  // Handle voice recording events from ChatInput
+  useEffect(() => {
+    const handleVoiceStart = () => {
+      startListening();
+    };
+
+    const handleVoiceEnd = () => {
+      stopListening();
+    };
+
+    const handleVoiceCancel = () => {
+      isCancelledRef.current = true;
+      stopListening();
+    };
+
+    window.addEventListener('voice-recording-start', handleVoiceStart);
+    window.addEventListener('voice-recording-end', handleVoiceEnd);
+    window.addEventListener('voice-recording-cancel', handleVoiceCancel);
+
+    return () => {
+      window.removeEventListener('voice-recording-start', handleVoiceStart);
+      window.removeEventListener('voice-recording-end', handleVoiceEnd);
+      window.removeEventListener('voice-recording-cancel', handleVoiceCancel);
+    };
+  }, [startListening, stopListening]);
+
+  // Track if this was a cancel to prevent auto-send
+  const isCancelledRef = useRef(false);
+
+  // When listening stops and we have transcript, auto-send (only if not cancelled)
+  useEffect(() => {
+    if (!isListening && transcript && !isCancelledRef.current) {
+      const newText = transcript.trim();
+      if (newText) {
+        // 直接发送语音文字
+        sendMessage(newText);
+        scrollToBottom();
+        // 发送后保持语音模式，不切换回键盘
+      } else {
+        // 没有文字，退出语音模式
+        setIsVoiceMode(false);
+      }
+    }
+  }, [isListening, transcript, sendMessage, scrollToBottom]);
+
+  // Reset cancel flag when starting new recording
+  useEffect(() => {
+    if (isListening) {
+      isCancelledRef.current = false;
+    }
+  }, [isListening]);
+
+  // Handle viewing an atom from citation
   const handleViewAtom = useCallback((atomId: string, highlightText?: string) => {
     goBack();
     openReader(atomId, highlightText);
   }, [goBack, openReader]);
 
-  // Right swipe to go back to conversation list using Motion
-  const handlePointerDown = (e: React.PointerEvent) => {
-    dragStartX.current = e.clientX;
-    startY.current = e.clientY;
-    isHorizontalSwipe.current = false;
-    hasTriggeredSwipe.current = false;
-  };
+  // Handle keyboard showing - ensure input is visible
+  useEffect(() => {
+    const handleVisualViewportChange = () => {
+      setTimeout(() => {
+        inputRef.current?.focus();
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }, 100);
+    };
 
-  const handlePointerMove = (e: React.PointerEvent) => {
-    const deltaX = e.clientX - dragStartX.current;
-    const deltaY = e.clientY - startY.current;
-
-    if (!isHorizontalSwipe.current && (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)) {
-      isHorizontalSwipe.current = Math.abs(deltaX) > Math.abs(deltaY);
-      if (!isHorizontalSwipe.current) return;
+    const viewport = window.visualViewport;
+    if (viewport) {
+      viewport.addEventListener('resize', handleVisualViewportChange);
+      viewport.addEventListener('scroll', handleVisualViewportChange);
     }
 
-    if (!isHorizontalSwipe.current) return;
+    return () => {
+      if (viewport) {
+        viewport.removeEventListener('resize', handleVisualViewportChange);
+        viewport.removeEventListener('scroll', handleVisualViewportChange);
+      }
+    };
+  }, []);
 
-    // Only allow right swipe (positive delta)
-    if (deltaX <= 0) {
-      swipeX.set(0);
-      return;
-    }
-
-    const clampedDelta = Math.min(deltaX, window.innerWidth * 0.4);
-    swipeX.set(clampedDelta);
-    hasTriggeredSwipe.current = true;
-  };
-
-  const handlePointerUp = () => {
-    const currentX = swipeX.get();
-    if (hasTriggeredSwipe.current && currentX > 100) {
-      animate(swipeX, 0, { duration: 0.2, ease: 'easeOut' });
-      goBack();
-    } else if (hasTriggeredSwipe.current) {
-      animate(swipeX, 0, { duration: 0.3, ease: 'spring' });
-    }
-    hasTriggeredSwipe.current = false;
-  };
+  // On mount, ensure input is properly positioned
+  useEffect(() => {
+    const rafId = requestAnimationFrame(() => {
+      setTimeout(() => {
+        inputRef.current?.focus();
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' });
+      }, 150);
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [currentConversation?.id]);
 
   if (!currentConversation) {
     return (
@@ -172,14 +230,7 @@ export function ChatView() {
   }
 
   return (
-    <motion.div
-      className="h-full flex flex-col"
-      style={{ x: swipeX, touchAction: 'none' }}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerUp}
-    >
+    <div className="h-full flex flex-col">
       {/* Header with back button and scope */}
       <ChatHeader conversation={currentConversation} onBack={goBack} />
 
@@ -227,10 +278,7 @@ export function ChatView() {
           />
         ))}
 
-        {/* Streaming bubble — rendered for the whole streaming turn so tool
-            calls show up while the model is still thinking and persist as
-            streaming content flows in. ChatMessage handles the empty-content
-            "Thinking…" fallback. */}
+        {/* Streaming bubble */}
         {isStreaming && (
           <ChatMessage
             message={{
@@ -262,17 +310,23 @@ export function ChatView() {
 
       {/* Input area */}
       <ChatInput
+        ref={inputRef}
         value={inputValue}
         onChange={setInputValue}
         onSend={handleSend}
-        onKeyDown={handleKeyDown}
         disabled={isStreaming}
         placeholder={
           currentConversation.tags.length > 0
             ? t('chat_ask_about_tags', { tags: currentConversation.tags.map(t => t.name).join(', ') })
             : t('chat_placeholder')
         }
+        isVoiceSupported={isVoiceSupported}
+        isVoiceMode={isVoiceMode}
+        onVoiceModeChange={handleVoiceModeChange}
+        isRecording={isRecording}
+        onRecordingChange={handleRecordingChange}
+        interimTranscript={interimTranscript}
       />
-    </motion.div>
+    </div>
   );
 }

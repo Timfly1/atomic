@@ -161,11 +161,7 @@ export const ReportRow = memo(function ReportRow({
               }}
               title={t('reports_row_actions')}
               aria-label={t('reports_row_actions')}
-              className="
-                p-1 rounded-md text-[var(--color-text-tertiary)]
-                hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]
-                transition-colors
-              "
+              className="icon-button text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]"
             >
               <MoreVertical className="w-4 h-4" strokeWidth={2} />
             </button>

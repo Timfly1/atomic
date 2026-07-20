@@ -229,6 +229,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_geolocation::init())
         .setup(|app| {
             let app_data_dir = app
                 .path()

@@ -83,7 +83,7 @@ export function Modal({
           <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">{title}</h2>
           <button
             onClick={onClose}
-            className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] p-1.5 rounded-lg transition-all"
+            className="icon-button text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
           >
             <X className="w-5 h-5" strokeWidth={2} />
           </button>

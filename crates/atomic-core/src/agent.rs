@@ -326,6 +326,14 @@ pub struct CanvasClusterSummary {
     pub atom_count: i32,
 }
 
+/// Context about location and weather for diary entries.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+pub struct DiaryContext {
+    pub location: String,
+    pub weather: String,
+}
+
 fn get_canvas_tools() -> Vec<ToolDefinition> {
     vec![
         ToolDefinition::new(
@@ -731,26 +739,90 @@ async fn execute_edit_atom(
 
 fn get_system_prompt(scope_description: &str) -> String {
     format!(
-        r#"You are a helpful AI assistant with access to the user's personal knowledge base. Your role is to answer questions by searching through and referencing the user's stored information.
+        r#"You are a helpful AI assistant with access to the user's personal knowledge base.
 
 {}
 
-Guidelines:
-- Use search_atoms to find relevant information before answering, unless another available tool more directly addresses the user's request
-- Only call create_atom or edit_atom when the user explicitly asks you to create or modify an atom
-- Prefer targeted edit_atom operations. Use replace_all only for intentional full-content replacement
-- When you create a new atom, include [[atom_id]] in the final response so the user can open it
-- If the initial search doesn't find enough, try different search queries
-- When you find relevant information, cite it using [N] notation where N is a sequential number
-- Be honest if you cannot find information - do not make things up
-- Keep responses concise but informative
-- If the user asks about something not in their knowledge base, say so
+CRITICAL RULES (Always follow these):
+1. Use search_atoms to find relevant information before answering
+2. When you create an atom, you MUST call the create_atom tool - do NOT just describe what you would create
+3. Include [[atom_id]] in your response when you create an atom so the user can open it
+4. If the initial search doesn't find enough, try different search queries
+5. When you find relevant information, cite it using [N] notation
+6. Be honest if you cannot find information - do not make things up
+7. Keep responses concise but informative
+8. If the user asks about something not in their knowledge base, say so
 
-When citing sources:
-- Use [1], [2], etc. for each unique source
-- Place citations immediately after the relevant claim
-- You can cite the same source multiple times if needed"#,
+REAL-TIME CONTEXT (This is NOT hypothetical - the system provides actual current values):
+- Today's date, current time, location, and weather are provided in the CURRENT CONTEXT section below
+- When user asks "现在几点", "今天几号", "天气怎么样" - use the values from CURRENT CONTEXT
+- Do NOT say "I cannot access real-time information" or "I don't know" about date/time/weather - the information is provided to you
+
+DIARY ENTRIES (MANDATORY):
+- When user says "日记记录" or类似的话, you MUST call create_atom tool immediately
+- Fill in the diary template with actual values from CURRENT CONTEXT
+- Do NOT describe the diary or say "I created a diary" - actually call the tool
+- Wait for the atom_id from the tool result before responding to user"#,
         scope_description
+    )
+}
+
+fn get_default_diary_template() -> String {
+    r#"# 日记 - {date} {time}
+
+## 位置
+📍 {location}
+
+## 天气
+🌤️ {weather}
+
+## 心情
+{mood}
+
+## 今日总结
+{summary}
+
+## 明日计划
+{plan}"#
+        .to_string()
+}
+
+fn get_diary_system_prompt(
+    diary_template: &str,
+    diary_context: &Option<DiaryContext>,
+    current_time: &str,
+) -> String {
+    let context_info = match diary_context {
+        Some(ctx) => format!("Location: {}, Weather: {}", ctx.location, ctx.weather),
+        None => String::from("Location and weather unavailable"),
+    };
+    format!(
+        r#"
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                           DIARY CREATION (MANDATORY)                         ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+When user says "日记记录" or asks to record a diary:
+1. IMMEDIATELY call create_atom tool - this is NOT optional
+2. Do NOT say "I will create a diary" or describe what you would do - actually call it NOW
+3. Fill in the template with:
+   - date: today's date from CURRENT CONTEXT above (e.g., 2026年07月18日)
+   - time: {} (from CURRENT CONTEXT above)
+   - location/weather: {} (from CURRENT CONTEXT above)
+   - mood: infer from user's tone (happy, excited, tired, contemplative, etc.)
+   - summary: what happened today based on user input
+   - plan: suggested next activity or tomorrow's plan
+
+4. WAIT for the tool result containing atom_id
+5. Only after receiving atom_id, respond to user with the [[atom_id]] link
+
+⚠️  WARNING: If you do NOT call create_atom tool, the diary will NOT be created.
+   The user will be disappointed. This is a guaranteed failure if you don't call the tool.
+
+Template:
+{}"#,
+        current_time, context_info, diary_template
     )
 }
 
@@ -1464,6 +1536,7 @@ pub async fn send_chat_message_with_canvas<F>(
     external_settings: Option<std::collections::HashMap<String, String>>,
     canvas_context: Option<CanvasContext>,
     page_context: Option<PageContext>,
+    diary_context: Option<DiaryContext>,
     canvas_cache: Option<crate::CanvasCache>,
 ) -> Result<ChatMessageWithContext, String>
 where
@@ -1546,13 +1619,53 @@ where
     if let Some(ref ctx) = canvas_context {
         system_prompt.push_str(&get_canvas_system_prompt(ctx));
     }
-    let mut api_messages = vec![Message::system(system_prompt)];
+
+    // Inject current date/time and location/weather for context-aware responses
+    let now = chrono::Local::now();
+    let current_date = now.format("%Y年%m月%d日 %A").to_string();
+    let current_time = now.format("%H:%M:%S").to_string();
+
+    let location_info = match &diary_context {
+        Some(ctx) => format!("Location: {}, Weather: {}", ctx.location, ctx.weather),
+        None => String::from("Location and weather information not available"),
+    };
+
+    tracing::info!("Injecting context - date: {} time: {} location/weather: {}", current_date, current_time, location_info);
+
+    system_prompt.push_str(&format!(
+        r#"
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                           CURRENT CONTEXT (REAL DATA)                        ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║  Today's date: {} ({})                                                       ║
+║  Current time: {} (HH:MM:SS format - this is the ACTUAL current time)        ║
+║  {}                                                                       ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+THIS IS REAL DATA PROVIDED BY THE SYSTEM - NOT a placeholder or example.
+When user asks about time, date, weather, or location, use these exact values.
+Do NOT say "I cannot access" or "I don't know" - the answer is right above.
+
+For diary entries, use the template below with these actual values."#,
+        current_date, current_time, current_time, location_info
+    ));
+
+    // Inject diary template (always enabled)
+    let diary_template = get_default_diary_template();
+    system_prompt.push_str(&get_diary_system_prompt(&diary_template, &diary_context, &current_time));
+
+    let mut api_messages = vec![Message::system(system_prompt.clone())];
     api_messages.extend(messages);
+
+    // Debug: log system prompt info
+    let ctx_len = provider_config.context_length_for_model(&model);
+    tracing::info!("System prompt: {} chars, context window: {:?}, message count: {}", system_prompt.len(), ctx_len, api_messages.len());
 
     // Truncate to fit context window for providers with limited context
     let api_messages = truncate_messages_to_context(
         api_messages,
-        provider_config.context_length_for_model(&model),
+        ctx_len,
     );
 
     // Create agent context

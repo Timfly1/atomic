@@ -61,7 +61,7 @@ pub mod tokens;
 pub mod wiki;
 
 // Re-exports for convenience
-pub use agent::{CanvasClusterSummary, CanvasContext, ChatEvent, PageContext};
+pub use agent::{CanvasClusterSummary, CanvasContext, ChatEvent, DiaryContext, PageContext};
 pub use atom_edit::{apply_atom_edits, AtomEditOperation};
 pub use db::Database;
 pub use document::{parse_document, convert, ConversionResult, ConverterConfig, DocumentError, DocumentType, ParseResult};
@@ -2618,6 +2618,7 @@ impl AtomicCore {
         on_event: F,
         canvas_context: Option<CanvasContext>,
         page_context: Option<PageContext>,
+        diary_context: Option<DiaryContext>,
     ) -> Result<ChatMessageWithContext, AtomicCoreError>
     where
         F: Fn(ChatEvent) + Send + Sync + 'static,
@@ -2630,6 +2631,7 @@ impl AtomicCore {
             self.settings_for_background().await,
             canvas_context,
             page_context,
+            diary_context,
             Some(self.canvas_cache.clone()),
         )
         .await

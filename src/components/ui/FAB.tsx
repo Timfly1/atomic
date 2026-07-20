@@ -8,8 +8,8 @@ interface FABProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 export function FAB({ icon, className = "", ...props }: FABProps) {
   return (
     <button
-      className={`absolute right-6 mr-[env(safe-area-inset-right)] w-14 h-14 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:ring-offset-2 focus:ring-offset-[var(--color-bg-main)] ${className}`}
-      style={{ bottom: "calc(40px + env(safe-area-inset-bottom, 0px) + 12px)" }}
+      className={`absolute right-6 mr-[env(safe-area-inset-right)] w-14 h-14 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-90 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:ring-offset-2 focus:ring-offset-[var(--color-bg-main)] ${className}`}
+      style={{ bottom: "calc(20px + env(safe-area-inset-bottom, 0px) + 12px)" }}
       {...props}
     >
       {icon || (
