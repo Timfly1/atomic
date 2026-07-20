@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
+import fs from 'fs'
 
 const isWebBuild = process.env.VITE_BUILD_TARGET === 'web'
 const EDITOR_PEER_DEPS = [
@@ -107,6 +108,10 @@ export default defineConfig({
     strictPort: true,
     host: '0.0.0.0',
     allowedHosts: true,
+    https: {
+      key: fs.readFileSync(path.join(__dirname, 'certs/key.pem')),
+      cert: fs.readFileSync(path.join(__dirname, 'certs/cert.pem')),
+    },
     watch: {
       // The Capacitor iOS scaffold copies dist-web into mobile/ios/App/App/public
       // during `cap sync`. Vite would otherwise crawl those files and get
