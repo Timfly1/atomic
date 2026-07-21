@@ -3,10 +3,10 @@
 services:
   server:
     build:
-      context: .
+      context: ./src
       dockerfile: server.dockerfile
 
   web:
     build:
-      context: .
+      context: ./src
       dockerfile: web.dockerfile

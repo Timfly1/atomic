@@ -323,14 +323,14 @@ export function ChatView() {
               <AlertCircle className="w-8 h-8 text-red-400" strokeWidth={2} />
             </div>
             <div>
-              <p className="text-[var(--color-text-primary)] font-medium mb-1">{t('chat_conversation_not_found')}</p>
-              <p className="text-[var(--color-text-secondary)] text-sm">{t('chat_conversation_not_found_desc')}</p>
+              <p className="text-[var(--color-text-primary)] font-medium mb-1">{t('chat_error_occurred')}</p>
+              <p className="text-[var(--color-text-secondary)] text-sm max-w-md break-all">{error}</p>
             </div>
             <button
-              onClick={goBack}
+              onClick={() => useChatStore.getState().set({ error: null })}
               className="px-4 py-2 bg-[var(--color-accent)] text-white rounded-lg hover:bg-[var(--color-accent)]/90 transition-colors"
             >
-              {t('chat_go_back_to_list')}
+              {t('chat_dismiss_error')}
             </button>
           </div>
         )}

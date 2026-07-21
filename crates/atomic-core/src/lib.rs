@@ -3134,7 +3134,6 @@ impl AtomicCore {
         // Auto-retry failed atoms when provider config changes
         // (covers: URL, API key, model, provider type)
         let retry_keys = [
-            "provider",
             "embedding_model",
             "ollama_embedding_model",
             "ollama_host",

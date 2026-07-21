@@ -1016,6 +1016,8 @@
   "chat_conversation_not_found": "Conversation not found",
   "chat_conversation_not_found_desc": "This conversation has been deleted or does not exist",
   "chat_go_back_to_list": "Go back to list",
+  "chat_error_occurred": "Error occurred",
+  "chat_dismiss_error": "Dismiss",
 
   "tags_title": "Tags",
   "tags_empty": "No tags yet",

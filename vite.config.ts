@@ -60,6 +60,7 @@ export default defineConfig({
             manifest: false,
             includeAssets: ['icons/icon-256.png', 'icons/icon-1024.png', 'vite.svg'],
             workbox: {
+              maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MB
               // App assets (JS/CSS/fonts/images) — cache-first via precache.
               globPatterns: ['**/*.{js,css,html,svg,png,webmanifest,woff,woff2}'],
               // Never precache the SPA shell as precache — we want the SW to

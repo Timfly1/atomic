@@ -1016,6 +1016,8 @@
   "chat_conversation_not_found": "对话不存在",
   "chat_conversation_not_found_desc": "该对话已被删除或不存在",
   "chat_go_back_to_list": "返回对话列表",
+  "chat_error_occurred": "发生错误",
+  "chat_dismiss_error": "关闭",
 
   "tags_title": "标签",
   "tags_empty": "暂无标签",
