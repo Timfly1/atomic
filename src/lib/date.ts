@@ -33,28 +33,9 @@ export function formatRelativeDate(dateString: string): string {
 
 export function formatShortRelativeDate(dateString: string): string {
   const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffSecs = Math.floor(diffMs / 1000);
-  const diffMins = Math.floor(diffSecs / 60);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffSecs < 60) {
-    return 'now';
-  } else if (diffMins < 60) {
-    return `${diffMins}m`;
-  } else if (diffHours < 24) {
-    return `${diffHours}h`;
-  } else if (diffDays < 7) {
-    return `${diffDays}d`;
-  } else if (diffDays < 30) {
-    return `${Math.floor(diffDays / 7)}w`;
-  } else if (diffDays < 365) {
-    return `${Math.floor(diffDays / 30)}mo`;
-  } else {
-    return `${Math.floor(diffDays / 365)}y`;
-  }
+  const monthDay = `${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+  const timeStr = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+  return `${monthDay} ${timeStr}`;
 }
 
 export function formatDate(dateString: string): string {

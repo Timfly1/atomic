@@ -506,11 +506,13 @@ export function MainView() {
     <div
       className={`
         relative flex-shrink-0 border-l border-[var(--color-border)] bg-[var(--color-bg-panel)] overflow-hidden
-        max-md:fixed max-md:top-0 max-md:right-0 max-md:h-full max-md:w-full max-md:z-40 max-md:shadow-2xl
+        max-md:fixed max-md:top-0 max-md:right-0 max-md:h-full max-md:w-full max-md:z-40
         max-md:pt-[env(safe-area-inset-top)] max-md:pb-[env(safe-area-inset-bottom)] max-md:pr-[env(safe-area-inset-right)]
         md:w-[var(--chat-w)]
         ${isResizingChat ? '' : 'transition-[width,transform] duration-300 ease-in-out'}
-        ${chatSidebarOpen ? 'max-md:translate-x-0' : 'max-md:translate-x-full'}
+        ${chatSidebarOpen
+          ? 'max-md:translate-x-0 max-md:border-l-0 max-md:outline max-md:outline-1 max-md:outline-[var(--color-border)]'
+          : 'max-md:translate-x-full max-md:outline-0'}
         ${chatSidebarOpen ? '' : 'md:!w-0 md:border-l-0'}
       `}
       style={{ '--chat-w': `${chatSidebarWidth}px` } as React.CSSProperties}

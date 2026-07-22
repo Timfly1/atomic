@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, useDeferredValue } from 'react';
 import { MessageSquare, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore } from '../../stores/chat';
@@ -33,6 +33,7 @@ export function ChatView() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const isNearBottomRef = useRef(true);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const inputValueRef = useRef('');
 
   // Speech recognition
   const {

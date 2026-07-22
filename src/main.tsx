@@ -7,7 +7,7 @@ import './i18n'
 import './index.css'
 import { initTransport } from './lib/transport'
 
-// iOS PWA keyboard fix: Ensure inputs receive focus when tapped
+// iOS PWA keyboard fix: Ensure inputs receive focus and scroll into view when tapped
 // This is a known issue where iOS PWA standalone mode doesn't always
 // trigger the keyboard when tapping input fields
 function initIOSPWAKeyboardFix() {
@@ -23,6 +23,8 @@ function initIOSPWAKeyboardFix() {
         } else {
           target.focus();
         }
+        // Scroll the input into view so it's visible when keyboard opens
+        target.scrollIntoView({ block: 'end', behavior: 'smooth' });
       }, 10);
     }
   }, { passive: true });

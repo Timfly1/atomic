@@ -58,10 +58,12 @@ export function LeftPanel() {
         className={`
           relative h-full z-10 flex-shrink-0 overflow-hidden
           md:transition-[width,border-color] md:duration-300 md:ease-in-out
-          max-md:transition-all max-md:duration-300 max-md:ease-in-out
-          max-md:fixed max-md:top-0 max-md:left-0 max-md:z-40 max-md:shadow-2xl max-md:w-[260px]
+          max-md:transition-transform max-md:duration-300 max-md:ease-in-out
+          max-md:fixed max-md:top-0 max-md:left-0 max-md:z-40 max-md:w-[260px]
           max-md:pt-[env(safe-area-inset-top)] max-md:pb-[env(safe-area-inset-bottom)] max-md:pl-[env(safe-area-inset-left)]
-          ${leftPanelOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'}
+          ${leftPanelOpen
+            ? 'max-md:translate-x-0 max-md:outline max-md:outline-1 max-md:outline-[var(--color-border)]'
+            : 'max-md:-translate-x-full max-md:outline-0'}
           ${leftPanelOpen ? 'md:w-[260px]' : 'md:w-0'}
         `}
       >

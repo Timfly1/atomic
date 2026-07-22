@@ -198,7 +198,7 @@ export const AtomCard = memo(function AtomCard({
             )}
           </div>
           <span
-            className="shrink-0 mr-10 text-xs text-[var(--color-text-tertiary)] whitespace-nowrap"
+            className="shrink-0 mr-6 text-xs text-[var(--color-text-tertiary)] whitespace-nowrap font-mono"
             title={formatRelativeDate(getDisplayDate(atom))}
           >
             {formatShortRelativeDate(getDisplayDate(atom))}

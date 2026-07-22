@@ -36,6 +36,17 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(({
   const startYRef = useRef<number>(0);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const hasStartedRecordingRef = useRef(false);
+  const lastHeightRef = useRef<number>(0);
+
+  // Auto-resize textarea - only updates DOM when height actually changes
+  const adjustHeight = useCallback((textarea: HTMLTextAreaElement) => {
+    const newHeight = Math.min(textarea.scrollHeight, 120);
+    if (newHeight !== lastHeightRef.current) {
+      lastHeightRef.current = newHeight;
+      textarea.style.height = 'auto';
+      textarea.style.height = `${newHeight}px`;
+    }
+  }, []);
 
   // 暴露ref给父组件
   useEffect(() => {
@@ -237,9 +248,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(({
               "
               style={{ minHeight: '48px', maxHeight: '120px' }}
               onInput={(e) => {
-                const target = e.target as HTMLTextAreaElement;
-                target.style.height = 'auto';
-                target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
+                adjustHeight(e.target as HTMLTextAreaElement);
               }}
             />
           </div>
@@ -434,9 +443,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(({
                   "
                   style={{ minHeight: '48px', maxHeight: '120px' }}
                   onInput={(e) => {
-                    const target = e.target as HTMLTextAreaElement;
-                    target.style.height = 'auto';
-                    target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
+                    adjustHeight(e.target as HTMLTextAreaElement);
                   }}
                 />
               </div>
