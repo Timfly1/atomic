@@ -910,7 +910,8 @@ export function SettingsModal({ isOpen, onClose, initialTab }: SettingsModalProp
   const [theme, setTheme] = useState<Theme>('obsidian');
   const [font, setFont] = useState<Font>('ibm-plex-sans');
   const [timezone, setTimezone] = useState(getBrowserTimeZone());
-  const [language, setLanguage] = useState(i18n.language || 'en');
+  const normalizeLang = (lang: string) => lang.startsWith('zh') ? 'zh' : lang.split('-')[0];
+  const [language, setLanguage] = useState(normalizeLang(i18n.language) || 'en');
   const supportedTimeZones = useMemo(() => getSupportedTimeZones(), []);
 
   // Provider selection

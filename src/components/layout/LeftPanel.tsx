@@ -58,7 +58,7 @@ export function LeftPanel() {
         className={`
           relative h-full z-10 flex-shrink-0 overflow-hidden
           md:transition-[width,border-color] md:duration-300 md:ease-in-out
-          max-md:transition-transform max-md:duration-300 max-md:ease-in-out
+          max-md:transition-all max-md:duration-300 max-md:ease-in-out
           max-md:fixed max-md:top-0 max-md:left-0 max-md:z-40 max-md:w-[260px]
           max-md:pt-[env(safe-area-inset-top)] max-md:pb-[env(safe-area-inset-bottom)] max-md:pl-[env(safe-area-inset-left)]
           ${leftPanelOpen
